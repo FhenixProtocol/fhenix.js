@@ -1,5 +1,5 @@
 {
-  "name": "fhevmjs",
+  "name": "fhenix.js",
   "version": "0.2.1",
   "description": "fhEVM SDK for blockchain using TFHE",
   "main": "lib/node.cjs",
@@ -30,14 +30,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zama-ai/fhevmjs.git"
+    "url": "git+https://github.com/FhenixProtocol/fhenix.js.git"
   },
   "author": "",
   "license": "BSD-3-Clause-Clear",
   "bugs": {
-    "url": "https://github.com/zama-ai/fhevmjs/issues"
+    "url": "https://github.com/FhenixProtocol/fhenix.js/issues"
   },
-  "homepage": "https://github.com/zama-ai/fhevmjs#readme",
+  "homepage": "https://github.com/FhenixProtocol/fhenix.js#readme",
   "dependencies": {
     "commander": "^11.0.0",
     "crypto-js": "^4.1.1",

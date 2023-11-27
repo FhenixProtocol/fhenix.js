@@ -2,7 +2,7 @@ import sodium from 'libsodium-wrappers';
 import { bytesToNumber, fromHexString } from '../utils';
 import { ContractKeypair } from './types';
 
-export const decrypt = (
+export const unseal = (
   keypair: ContractKeypair,
   ciphertext: string | Uint8Array,
 ): number => {

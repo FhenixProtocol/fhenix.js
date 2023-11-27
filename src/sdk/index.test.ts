@@ -16,11 +16,11 @@ describe('token', () => {
       chainId: 1234,
       publicKey: tfhePublicKey,
     });
-    expect(instance.encrypt8).toBeDefined();
-    expect(instance.encrypt16).toBeDefined();
-    expect(instance.encrypt32).toBeDefined();
+    expect(instance.encrypt_uint8).toBeDefined();
+    expect(instance.encrypt_uint16).toBeDefined();
+    expect(instance.encrypt_uint32).toBeDefined();
     expect(instance.generateToken).toBeDefined();
-    expect(instance.decrypt).toBeDefined();
+    expect(instance.unseal).toBeDefined();
     expect(instance.serializeKeypairs).toBeDefined();
     expect(instance.getTokenSignature).toBeDefined();
     expect(instance.hasKeypair).toBeDefined();
@@ -63,7 +63,7 @@ describe('token', () => {
       'hex',
     );
 
-    const cleartext = instance.decrypt(contractAddress, ciphertext);
+    const cleartext = instance.unseal(contractAddress, ciphertext);
     expect(cleartext).toBe(value);
   });
 
@@ -73,17 +73,22 @@ describe('token', () => {
       publicKey: tfhePublicKey,
     });
 
-    expect(() => instance.encrypt8(undefined as any)).toThrow('Missing value');
-    expect(() => instance.encrypt16(undefined as any)).toThrow('Missing value');
-    expect(() => instance.encrypt32(undefined as any)).toThrow('Missing value');
+    expect(() => instance.encrypt_uint8(undefined as any)).toThrow('Missing value');
+    expect(() => instance.encrypt_uint16(undefined as any)).toThrow('Missing value');
+    expect(() => instance.encrypt_uint32(undefined as any)).toThrow('Missing value');
+    expect(() => instance.encrypt(undefined as any)).toThrow('Missing value');
 
-    expect(() => instance.encrypt8('wrong value' as any)).toThrow(
+
+    expect(() => instance.encrypt_uint8('wrong value' as any)).toThrow(
       'Value must be a number',
     );
-    expect(() => instance.encrypt16('wrong value' as any)).toThrow(
+    expect(() => instance.encrypt_uint16('wrong value' as any)).toThrow(
       'Value must be a number',
     );
-    expect(() => instance.encrypt32('wrong value' as any)).toThrow(
+    expect(() => instance.encrypt_uint32('wrong value' as any)).toThrow(
+      'Value must be a number',
+    );
+    expect(() => instance.encrypt('wrong value' as any)).toThrow(
       'Value must be a number',
     );
   });
@@ -165,7 +170,7 @@ describe('token', () => {
       publicKey,
       'hex',
     );
-    const cleartext = instance.decrypt(contractAddress, ciphertext);
+    const cleartext = instance.unseal(contractAddress, ciphertext);
     expect(cleartext).toBe(value);
   });
 });

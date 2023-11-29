@@ -1,15 +1,17 @@
 import { TfheCompactPublicKey } from 'node-tfhe';
 import sodium from 'libsodium-wrappers';
-import { encrypt8, encrypt16, encrypt32 } from './encrypt';
+import { encrypt_uint8, encrypt_uint16, encrypt_uint32, encrypt } from './encrypt';
 import { EIP712, generateToken } from './token';
-import { decrypt } from './decrypt';
+import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
 
 export type FhevmInstance = {
-  encrypt8: (value: number) => Uint8Array;
-  encrypt16: (value: number) => Uint8Array;
-  encrypt32: (value: number) => Uint8Array;
+  encrypt_uint8: (value: number) => Uint8Array;
+  encrypt_uint16: (value: number) => Uint8Array;
+  encrypt_uint32: (value: number) => Uint8Array;
+  encrypt: (value: number, type?: UintTypes) => Uint8Array;
+
   generateToken: (options: {
     verifyingContract: string;
     name?: string;
@@ -24,9 +26,15 @@ export type FhevmInstance = {
     contractAddress: string,
   ) => { publicKey: Uint8Array; signature: string } | null;
   hasKeypair: (contractAddress: string) => boolean;
-  decrypt: (contractAddress: string, ciphertext: string) => number;
+  unseal: (contractAddress: string, ciphertext: string) => number;
   serializeKeypairs: () => ExportedContractKeypairs;
 };
+
+export enum UintTypes {
+  uint8 = 'uint8',
+  uint16 = 'uint16',
+  uint32 = 'uint32',
+}
 
 export type TokenSignature = {
   publicKey: Uint8Array;
@@ -86,23 +94,28 @@ export const createInstance = async (
     );
   };
 
+  const validateValue = (value: number): void => {
+    if (value == null) throw new Error('Missing value');
+    if (typeof value !== 'number') throw new Error('Value must be a number');
+  }
+
   return {
     // Parameters
-    encrypt8(value) {
-      if (value == null) throw new Error('Missing value');
-      if (typeof value !== 'number') throw new Error('Value must be a number');
-      return encrypt8(value, tfheCompactPublicKey);
+    encrypt_uint8(value: number) {
+      validateValue(value);
+      return encrypt_uint8(value, tfheCompactPublicKey);
     },
-    encrypt16(value) {
-      if (value == null) throw new Error('Missing value');
-      if (typeof value !== 'number') throw new Error('Value must be a number');
-      return encrypt16(value, tfheCompactPublicKey);
+    encrypt_uint16(value: number) {
+      validateValue(value);
+      return encrypt_uint16(value, tfheCompactPublicKey);
     },
-
-    encrypt32(value) {
-      if (value == null) throw new Error('Missing value');
-      if (typeof value !== 'number') throw new Error('Value must be a number');
-      return encrypt32(value, tfheCompactPublicKey);
+    encrypt_uint32(value: number) {
+      validateValue(value);
+      return encrypt_uint32(value, tfheCompactPublicKey);
+    },
+    encrypt(value: number, type: UintTypes = UintTypes.uint8) {
+      validateValue(value);
+      return encrypt(value, tfheCompactPublicKey, type);
     },
 
     // Reencryption
@@ -151,12 +164,12 @@ export const createInstance = async (
 
     hasKeypair,
 
-    decrypt(contractAddress, ciphertext) {
+    unseal(contractAddress, ciphertext) {
       if (!ciphertext) throw new Error('Missing ciphertext');
       if (!contractAddress) throw new Error('Missing contract address');
       const kp = contractKeypairs[contractAddress];
       if (!kp) throw new Error(`Missing keypair for ${contractAddress}`);
-      return decrypt(kp, ciphertext);
+      return unseal(kp, ciphertext);
     },
 
     serializeKeypairs() {

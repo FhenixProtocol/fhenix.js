@@ -1,5 +1,5 @@
 import sodium from 'libsodium-wrappers';
-import { decrypt } from './decrypt';
+import { unseal } from './decrypt';
 import { numberToBytes, toHexString } from '../utils';
 
 describe('decrypt', () => {
@@ -16,7 +16,7 @@ describe('decrypt', () => {
       keypair.publicKey,
       'hex',
     );
-    const cleartext = decrypt(keypair, ciphertext);
+    const cleartext = unseal(keypair, ciphertext);
     expect(cleartext).toBe(value);
   });
 
@@ -28,7 +28,7 @@ describe('decrypt', () => {
       numberToBytes(value),
       keypair.publicKey,
     );
-    const cleartext = decrypt(keypair, ciphertext);
+    const cleartext = unseal(keypair, ciphertext);
     expect(cleartext).toBe(value);
   });
 });

@@ -1,7 +1,24 @@
 import sodium from 'libsodium-wrappers';
 import { createInstance } from './index';
+import { mockPublicKey } from './mockPublicKey.test';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
+import { JsonRpcProvider } from "ethers";
+
+class MockProvider {
+  constructor() {}
+  async send(method: string, params: any[] | Record<string, any>): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (method === 'eth_chainId') {
+        resolve('0x1');
+      } else if (method === 'eth_getNetworkPublicKey') {
+        resolve(mockPublicKey);
+      } else {
+        reject('method not implemented');
+      }
+    });
+  }
+}
 
 describe('token', () => {
   let tfhePublicKey: string;
@@ -12,9 +29,9 @@ describe('token', () => {
   });
 
   it('creates an instance', async () => {
+    const provider = new MockProvider();
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider
     });
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
@@ -24,6 +41,39 @@ describe('token', () => {
     expect(instance.serializeKeypairs).toBeDefined();
     expect(instance.getTokenSignature).toBeDefined();
     expect(instance.hasKeypair).toBeDefined();
+  });
+
+  it('creates an instance with ethers provider - unreachable endpoint', async () => {
+    const provider = new JsonRpcProvider('http://localhost:1234');
+
+    await expect(
+      createInstance({
+        provider
+      }),
+    ).rejects.toThrow('connect ECONNREFUSED 127.0.0.1:1234');
+  });
+
+  it('creates an instance with  provider - unreachable endpoint', async () => {
+    const provider = new JsonRpcProvider('http://localhost:1234');
+
+    await expect(
+      createInstance({
+        provider
+      }),
+    ).rejects.toThrow('connect ECONNREFUSED 127.0.0.1:1234');
+  });
+
+  it('creates an unsupported provider', async () => {
+    const provider = new JsonRpcProvider('http://localhost:1234');
+
+    // destroy send method
+    Object.assign(provider, { send: undefined } );
+
+    await expect(
+      createInstance({
+        provider
+      }),
+    ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
   });
 
   it('fails to create an instance', async () => {

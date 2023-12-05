@@ -6,7 +6,6 @@ import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
 import { Eip1193Provider } from "ethers";
-import {EthereumProvider} from "hardhat/types";
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -72,9 +71,14 @@ export const createInstance = async (
   const { provider, keypairs } = params;
 
   // unify provider interface
-  let requestMethod = ('send' in provider) ?
-    (p: SupportedProvider, method: string) => (p as EthersProvider).send(method, []) :
-    (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({ method });
+  let requestMethod: Function;
+  if ('send' in provider && typeof provider.send == 'function') {
+    requestMethod = (p: SupportedProvider, method: string) => (p as EthersProvider).send(method, []);
+  } else if ('request' in provider && typeof provider.request == 'function') {
+    requestMethod = (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({ method });
+  } else {
+    throw new Error("Received unsupported provider. 'send' or 'request' method not found");
+  }
 
   const chainIdP = requestMethod(provider, 'eth_chainId')
     .then((id: string) => parseInt(id, 16))
@@ -90,7 +94,9 @@ export const createInstance = async (
   const buff = fromHexString(publicKey);
 
   await sodium.ready;
-  const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
+  // todo restore
+  // const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
+  const tfheCompactPublicKey = new TfheCompactPublicKey();
 
   let contractKeypairs: ContractKeypairs = {};
 

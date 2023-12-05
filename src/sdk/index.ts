@@ -5,6 +5,7 @@ import { EIP712, generateToken } from './token';
 import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
+import { Eip1193Provider } from "ethers";
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -49,21 +50,40 @@ export type ExportedContractKeypairs = {
   };
 };
 
+interface HardhatProvider {
+  send(method: string, params?: any[]): Promise<any>;
+}
+
+type SupportedProvider = Eip1193Provider | HardhatProvider;
+
 export type FhevmInstanceParams = {
-  chainId: number;
-  publicKey: string;
+  provider: SupportedProvider;
+  // chainId: number;
+  // publicKey: string;
   keypairs?: ExportedContractKeypairs;
 };
 
 export const createInstance = async (
   params: FhevmInstanceParams,
 ): Promise<FhevmInstance> => {
-  await sodium.ready;
-  const { chainId, publicKey, keypairs } = params;
+  const { provider, keypairs } = params;
+
+  // unify provider interface
+  let requestMethod = ('send' in provider) ?
+    (p: SupportedProvider, method: string) => (p as HardhatProvider).send(method) :
+    (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({method});
+
+  const chainIdP = requestMethod(provider, 'eth_chainId').then((id: string) => parseInt(id, 16));
+  const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey');
+  const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
+
+  console.log("returned chainId: ", chainId);
   if (typeof chainId !== 'number') throw new Error('chainId must be a number');
   if (typeof publicKey !== 'string')
     throw new Error('publicKey must be a string');
   const buff = fromHexString(publicKey);
+
+  await sodium.ready;
   const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
 
   let contractKeypairs: ContractKeypairs = {};

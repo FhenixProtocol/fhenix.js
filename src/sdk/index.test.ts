@@ -1,6 +1,6 @@
 import sodium from 'libsodium-wrappers';
 import { createInstance } from './index';
-import { mockPublicKey } from './mockPublicKey.test';
+import { mockPublicKey } from './mockPublicKey';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
 import { JsonRpcProvider } from "ethers";

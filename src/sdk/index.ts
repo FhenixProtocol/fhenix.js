@@ -6,6 +6,7 @@ import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
 import { Eip1193Provider } from "ethers";
+import {EthereumProvider} from "hardhat/types";
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -50,16 +51,18 @@ export type ExportedContractKeypairs = {
   };
 };
 
-interface HardhatProvider {
-  send(method: string, params?: any[]): Promise<any>;
+interface EthersProvider {
+  send(method: string, params?: Array<any> | Record<string, any>): Promise<any>;
 }
 
-type SupportedProvider = Eip1193Provider | HardhatProvider;
+interface HardhatEthersProvider {
+  send(method: string, params?: Array<any> | undefined): Promise<any>;
+}
+
+type SupportedProvider = Eip1193Provider | EthersProvider | HardhatEthersProvider;
 
 export type FhevmInstanceParams = {
   provider: SupportedProvider;
-  // chainId: number;
-  // publicKey: string;
   keypairs?: ExportedContractKeypairs;
 };
 
@@ -70,17 +73,20 @@ export const createInstance = async (
 
   // unify provider interface
   let requestMethod = ('send' in provider) ?
-    (p: SupportedProvider, method: string) => (p as HardhatProvider).send(method) :
-    (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({method});
+    (p: SupportedProvider, method: string) => (p as EthersProvider).send(method, []) :
+    (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({ method });
 
-  const chainIdP = requestMethod(provider, 'eth_chainId').then((id: string) => parseInt(id, 16));
+  const chainIdP = requestMethod(provider, 'eth_chainId')
+    .then((id: string) => parseInt(id, 16))
+    .catch((err: any) => {
+      throw new Error(`chainId request did not return a hex number: ${err}`);
+    });
   const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey');
   const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
 
-  console.log("returned chainId: ", chainId);
   if (typeof chainId !== 'number') throw new Error('chainId must be a number');
   if (typeof publicKey !== 'string')
-    throw new Error('publicKey must be a string');
+    throw new Error('Error using publicKey from provider: expected string');
   const buff = fromHexString(publicKey);
 
   await sodium.ready;

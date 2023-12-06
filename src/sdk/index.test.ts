@@ -1,18 +1,23 @@
 import sodium from 'libsodium-wrappers';
 import { createInstance } from './index';
-import { mockPublicKey } from './mockPublicKey';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
 import { JsonRpcProvider } from "ethers";
 
 class MockProvider {
-  constructor() {}
+  publicKey: any;
+  chainId: any;
+
+  constructor(pk: any, chainId?: any) {
+    this.publicKey = pk;
+    this.chainId = chainId || '0x10';
+  }
   async send(method: string, params: any[] | Record<string, any>): Promise<any> {
     return new Promise((resolve, reject) => {
       if (method === 'eth_chainId') {
-        resolve('0x1');
+        resolve(this.chainId);
       } else if (method === 'eth_getNetworkPublicKey') {
-        resolve(mockPublicKey);
+        resolve(this.publicKey);
       } else {
         reject('method not implemented');
       }
@@ -29,10 +34,8 @@ describe('token', () => {
   });
 
   it('creates an instance', async () => {
-    const provider = new MockProvider();
-    const instance = await createInstance({
-      provider
-    });
+    const provider = new MockProvider(tfhePublicKey);
+    const instance = await createInstance({provider});
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
     expect(instance.encrypt_uint32).toBeDefined();
@@ -47,20 +50,11 @@ describe('token', () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
 
     await expect(
-      createInstance({
-        provider
-      }),
-    ).rejects.toThrow('connect ECONNREFUSED 127.0.0.1:1234');
-  });
+      createInstance({provider}),
+    ).rejects.toThrow('Error while requesting chainId from provider: Error: connect ECONNREFUSED 127.0.0.1:1234');
 
-  it('creates an instance with  provider - unreachable endpoint', async () => {
-    const provider = new JsonRpcProvider('http://localhost:1234');
-
-    await expect(
-      createInstance({
-        provider
-      }),
-    ).rejects.toThrow('connect ECONNREFUSED 127.0.0.1:1234');
+    // prevent endless fetching
+    await provider.destroy();
   });
 
   it('creates an unsupported provider', async () => {
@@ -70,23 +64,21 @@ describe('token', () => {
     Object.assign(provider, { send: undefined } );
 
     await expect(
-      createInstance({
-        provider
-      }),
+      createInstance({provider}),
     ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
   });
 
   it('fails to create an instance', async () => {
-    await expect(
-      createInstance({
-        chainId: BigInt(1234) as any,
-        publicKey: tfhePublicKey,
-      }),
-    ).rejects.toThrow('chainId must be a number');
+    const provider = new MockProvider(tfhePublicKey, "not a number");
 
     await expect(
-      createInstance({ chainId: 9000, publicKey: 43 as any }),
-    ).rejects.toThrow('publicKey must be a string');
+      createInstance({provider}),
+    ).rejects.toThrow(`received non-hex number from chainId request: "not a number"`);
+
+    const secondProvider = new MockProvider(BigInt(10));
+    await expect(
+      createInstance({ provider: secondProvider }),
+    ).rejects.toThrow('Error using publicKey from provider: expected string');
   });
 
   it('creates an instance with keypairs', async () => {

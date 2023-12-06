@@ -80,23 +80,26 @@ export const createInstance = async (
     throw new Error("Received unsupported provider. 'send' or 'request' method not found");
   }
 
-  const chainIdP = requestMethod(provider, 'eth_chainId')
-    .then((id: string) => parseInt(id, 16))
-    .catch((err: any) => {
-      throw new Error(`chainId request did not return a hex number: ${err}`);
-    });
-  const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey');
+  const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {
+    throw Error(`Error while requesting chainId from provider: ${err}`);
+  })
+  const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey').catch((err: Error) => {
+    throw Error(`Error while requesting network public key from provider: ${err}`);
+  });
+
   const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
 
-  if (typeof chainId !== 'number') throw new Error('chainId must be a number');
+  const chainIdNum: number = parseInt(chainId, 16);
+  if (isNaN(chainIdNum)) {
+    throw new Error(`received non-hex number from chainId request: "${chainId}"`);
+  }
+
   if (typeof publicKey !== 'string')
     throw new Error('Error using publicKey from provider: expected string');
   const buff = fromHexString(publicKey);
 
   await sodium.ready;
-  // todo restore
-  // const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
-  const tfheCompactPublicKey = new TfheCompactPublicKey();
+  const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
 
   let contractKeypairs: ContractKeypairs = {};
 
@@ -164,7 +167,7 @@ export const createInstance = async (
         verifyingContract: options.verifyingContract,
         name: options.name,
         version: options.version,
-        chainId,
+        chainId: chainIdNum,
         keypair: kp,
       });
       contractKeypairs[options.verifyingContract] = {

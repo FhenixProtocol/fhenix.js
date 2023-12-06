@@ -5,6 +5,7 @@ import { EIP712, generateToken } from './token';
 import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
+import { Eip1193Provider } from "ethers";
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -49,21 +50,55 @@ export type ExportedContractKeypairs = {
   };
 };
 
+interface EthersProvider {
+  send(method: string, params?: Array<any> | Record<string, any>): Promise<any>;
+}
+
+interface HardhatEthersProvider {
+  send(method: string, params?: Array<any> | undefined): Promise<any>;
+}
+
+type SupportedProvider = Eip1193Provider | EthersProvider | HardhatEthersProvider;
+
 export type FhevmInstanceParams = {
-  chainId: number;
-  publicKey: string;
+  provider: SupportedProvider;
   keypairs?: ExportedContractKeypairs;
 };
 
 export const createInstance = async (
   params: FhevmInstanceParams,
 ): Promise<FhevmInstance> => {
-  await sodium.ready;
-  const { chainId, publicKey, keypairs } = params;
-  if (typeof chainId !== 'number') throw new Error('chainId must be a number');
+  const { provider, keypairs } = params;
+
+  // unify provider interface
+  let requestMethod: Function;
+  if ('send' in provider && typeof provider.send == 'function') {
+    requestMethod = (p: SupportedProvider, method: string) => (p as EthersProvider).send(method, []);
+  } else if ('request' in provider && typeof provider.request == 'function') {
+    requestMethod = (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({ method });
+  } else {
+    throw new Error("Received unsupported provider. 'send' or 'request' method not found");
+  }
+
+  const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {
+    throw Error(`Error while requesting chainId from provider: ${err}`);
+  })
+  const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey').catch((err: Error) => {
+    throw Error(`Error while requesting network public key from provider: ${err}`);
+  });
+
+  const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
+
+  const chainIdNum: number = parseInt(chainId, 16);
+  if (isNaN(chainIdNum)) {
+    throw new Error(`received non-hex number from chainId request: "${chainId}"`);
+  }
+
   if (typeof publicKey !== 'string')
-    throw new Error('publicKey must be a string');
+    throw new Error('Error using publicKey from provider: expected string');
   const buff = fromHexString(publicKey);
+
+  await sodium.ready;
   const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
 
   let contractKeypairs: ContractKeypairs = {};
@@ -132,7 +167,7 @@ export const createInstance = async (
         verifyingContract: options.verifyingContract,
         name: options.name,
         version: options.version,
-        chainId,
+        chainId: chainIdNum,
         keypair: kp,
       });
       contractKeypairs[options.verifyingContract] = {

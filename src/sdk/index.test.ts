@@ -2,6 +2,28 @@ import sodium from 'libsodium-wrappers';
 import { createInstance } from './index';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
+import { JsonRpcProvider } from "ethers";
+
+class MockProvider {
+  publicKey: any;
+  chainId: any;
+
+  constructor(pk: any, chainId?: any) {
+    this.publicKey = pk;
+    this.chainId = chainId || '0x10';
+  }
+  async send(method: string, params: any[] | Record<string, any>): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (method === 'eth_chainId') {
+        resolve(this.chainId);
+      } else if (method === 'eth_getNetworkPublicKey') {
+        resolve(this.publicKey);
+      } else {
+        reject('method not implemented');
+      }
+    });
+  }
+}
 
 describe('token', () => {
   let tfhePublicKey: string;
@@ -12,10 +34,8 @@ describe('token', () => {
   });
 
   it('creates an instance', async () => {
-    const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
-    });
+    const provider = new MockProvider(tfhePublicKey);
+    const instance = await createInstance({provider});
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
     expect(instance.encrypt_uint32).toBeDefined();
@@ -26,17 +46,37 @@ describe('token', () => {
     expect(instance.hasKeypair).toBeDefined();
   });
 
-  it('fails to create an instance', async () => {
-    await expect(
-      createInstance({
-        chainId: BigInt(1234) as any,
-        publicKey: tfhePublicKey,
-      }),
-    ).rejects.toThrow('chainId must be a number');
+  it('creates an instance with ethers provider - unreachable endpoint', async () => {
+    const provider = new JsonRpcProvider('http://localhost:1234');
 
     await expect(
-      createInstance({ chainId: 9000, publicKey: 43 as any }),
-    ).rejects.toThrow('publicKey must be a string');
+      createInstance({provider}),
+    ).rejects.toThrow('Error while requesting chainId from provider: Error: connect ECONNREFUSED 127.0.0.1:1234');
+
+    // prevent endless fetching
+    await provider.destroy();
+  });
+
+  it('creates an unsupported provider', async () => {
+    const provider = new JsonRpcProvider('http://localhost:1234');
+
+    // destroy send method
+    Object.assign(provider, { send: undefined } );
+
+    await expect(
+      createInstance({provider}),
+    ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
+  });
+
+  it('fails to create an instance', async () => {
+    await expect(
+      createInstance({provider: new MockProvider(tfhePublicKey, "not a number")}),
+    ).rejects.toThrow(`received non-hex number from chainId request: "not a number"`);
+
+    const secondProvider = new MockProvider(BigInt(10));
+    await expect(
+      createInstance({ provider: secondProvider }),
+    ).rejects.toThrow('Error using publicKey from provider: expected string');
   });
 
   it('creates an instance with keypairs', async () => {
@@ -45,8 +85,7 @@ describe('token', () => {
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
 
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
       keypairs: {
         [contractAddress]: {
           privateKey: keypair.privateKey,
@@ -69,8 +108,7 @@ describe('token', () => {
 
   it('controls encrypt', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     expect(() => instance.encrypt_uint8(undefined as any)).toThrow('Missing value');
@@ -95,8 +133,7 @@ describe('token', () => {
 
   it('controls generateToken', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
     expect(() => instance.generateToken(undefined as any)).toThrow(
       'Missing contract address',
@@ -111,8 +148,7 @@ describe('token', () => {
 
   it('save generated token', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
@@ -131,8 +167,7 @@ describe('token', () => {
 
   it("don't export keys without signature", async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
@@ -149,8 +184,7 @@ describe('token', () => {
 
   it('decrypts data', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';

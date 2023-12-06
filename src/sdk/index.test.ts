@@ -69,10 +69,8 @@ describe('token', () => {
   });
 
   it('fails to create an instance', async () => {
-    const provider = new MockProvider(tfhePublicKey, "not a number");
-
     await expect(
-      createInstance({provider}),
+      createInstance({provider: new MockProvider(tfhePublicKey, "not a number")}),
     ).rejects.toThrow(`received non-hex number from chainId request: "not a number"`);
 
     const secondProvider = new MockProvider(BigInt(10));
@@ -87,8 +85,7 @@ describe('token', () => {
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
 
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
       keypairs: {
         [contractAddress]: {
           privateKey: keypair.privateKey,
@@ -111,8 +108,7 @@ describe('token', () => {
 
   it('controls encrypt', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     expect(() => instance.encrypt_uint8(undefined as any)).toThrow('Missing value');
@@ -137,8 +133,7 @@ describe('token', () => {
 
   it('controls generateToken', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
     expect(() => instance.generateToken(undefined as any)).toThrow(
       'Missing contract address',
@@ -153,8 +148,7 @@ describe('token', () => {
 
   it('save generated token', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
@@ -173,8 +167,7 @@ describe('token', () => {
 
   it("don't export keys without signature", async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
@@ -191,8 +184,7 @@ describe('token', () => {
 
   it('decrypts data', async () => {
     const instance = await createInstance({
-      chainId: 1234,
-      publicKey: tfhePublicKey,
+      provider: new MockProvider(tfhePublicKey),
     });
 
     const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';

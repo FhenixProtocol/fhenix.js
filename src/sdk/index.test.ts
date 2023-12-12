@@ -57,6 +57,17 @@ describe('token', () => {
     await provider.destroy();
   });
 
+  it('creates an instance with window.ethereum provider - unreachable endpoint', async () => {
+    const provider = new JsonRpcProvider('http://localhost:1234');
+
+    await expect(
+      createInstance({provider}),
+    ).rejects.toThrow('Error while requesting chainId from provider: Error: connect ECONNREFUSED 127.0.0.1:1234');
+
+    // prevent endless fetching
+    await provider.destroy();
+  });
+
   it('creates an unsupported provider', async () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
 

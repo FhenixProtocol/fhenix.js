@@ -5,7 +5,7 @@ import { EIP712, generateToken } from './token';
 import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
-import { Eip1193Provider } from "ethers";
+import { Eip1193Provider, Interface } from "ethers";
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -68,26 +68,56 @@ export type FhevmInstanceParams = {
 export const createInstance = async (
   params: FhevmInstanceParams,
 ): Promise<FhevmInstance> => {
+  console.log("calling createInstance 2"); // todo remove
+  if (params === undefined) {
+    throw new Error('Missing params');
+  }
+
+  if (typeof params !== "object") {
+    throw new Error('Params is not an object');
+  }
+
+  if (params.provider === undefined) {
+    throw new Error('Params.provider is undefined');
+  }
+
   const { provider, keypairs } = params;
 
   // unify provider interface
   let requestMethod: Function;
-  if ('send' in provider && typeof provider.send == 'function') {
-    requestMethod = (p: SupportedProvider, method: string) => (p as EthersProvider).send(method, []);
-  } else if ('request' in provider && typeof provider.request == 'function') {
-    requestMethod = (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({ method });
+  if ('request' in provider && typeof provider.request == 'function') {
+    console.log("using request method");
+    requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as Eip1193Provider).request({ method, params });
+  } else if ('send' in provider && typeof provider.send == 'function') {
+    console.log("using send method");
+    requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as EthersProvider).send(method, params);
   } else {
     throw new Error("Received unsupported provider. 'send' or 'request' method not found");
   }
 
+  console.log("set method"); // todo remove
+
   const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {
     throw Error(`Error while requesting chainId from provider: ${err}`);
   })
-  const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey').catch((err: Error) => {
+
+  const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
+  const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
+  const callParams = [{ to: "0x0000000000000000000000000000000000000080", data: callData}, "latest"];
+
+  const publicKeyP = requestMethod(provider, 'eth_call', callParams).then((res: string) => {
+    console.log("got public key:", res.slice(0, 130)); // todo remove
+    res = "0x" + res.slice(194);
+    console.log("trimming public key:", res.slice(0, 130)); // todo remove
+    console.log("now public key has bytes:", res.length); // todo remove
+    return res
+  }).catch((err: Error) => {
     throw Error(`Error while requesting network public key from provider: ${err}`);
   });
 
+  console.log("getting chainId+public key"); // todo remove
   const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
+  console.log("got chainId+public key"); // todo remove
 
   const chainIdNum: number = parseInt(chainId, 16);
   if (isNaN(chainIdNum)) {

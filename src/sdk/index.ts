@@ -68,17 +68,14 @@ export type FhevmInstanceParams = {
 export const createInstance = async (
   params: FhevmInstanceParams,
 ): Promise<FhevmInstance> => {
-  console.log("calling createInstance 2"); // todo remove
   if (params === undefined) {
-    throw new Error('Missing params');
+    throw new Error('createInstance: missing params');
   }
-
   if (typeof params !== "object") {
-    throw new Error('Params is not an object');
+    throw new Error('createInstance: params is not an object');
   }
-
   if (params.provider === undefined) {
-    throw new Error('Params.provider is undefined');
+    throw new Error('createInstance: missing params.provider');
   }
 
   const { provider, keypairs } = params;
@@ -95,8 +92,6 @@ export const createInstance = async (
     throw new Error("Received unsupported provider. 'send' or 'request' method not found");
   }
 
-  console.log("set method"); // todo remove
-
   const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {
     throw Error(`Error while requesting chainId from provider: ${err}`);
   })
@@ -105,19 +100,11 @@ export const createInstance = async (
   const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
   const callParams = [{ to: "0x0000000000000000000000000000000000000080", data: callData}, "latest"];
 
-  const publicKeyP = requestMethod(provider, 'eth_call', callParams).then((res: string) => {
-    console.log("got public key:", res.slice(0, 130)); // todo remove
-    res = "0x" + res.slice(194);
-    console.log("trimming public key:", res.slice(0, 130)); // todo remove
-    console.log("now public key has bytes:", res.length); // todo remove
-    return res
-  }).catch((err: Error) => {
+  const publicKeyP = requestMethod(provider, 'eth_call', callParams).catch((err: Error) => {
     throw Error(`Error while requesting network public key from provider: ${err}`);
   });
 
-  console.log("getting chainId+public key"); // todo remove
   const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
-  console.log("got chainId+public key"); // todo remove
 
   const chainIdNum: number = parseInt(chainId, 16);
   if (isNaN(chainIdNum)) {

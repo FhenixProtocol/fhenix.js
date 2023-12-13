@@ -5,7 +5,7 @@ import { EIP712, generateToken } from './token';
 import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
-import { Eip1193Provider, Interface } from "ethers";
+import { Eip1193Provider, Interface, AbiCoder } from "ethers";
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -83,10 +83,8 @@ export const createInstance = async (
   // unify provider interface
   let requestMethod: Function;
   if ('request' in provider && typeof provider.request == 'function') {
-    console.log("using request method");
     requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as Eip1193Provider).request({ method, params });
   } else if ('send' in provider && typeof provider.send == 'function') {
-    console.log("using send method");
     requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as EthersProvider).send(method, params);
   } else {
     throw new Error("Received unsupported provider. 'send' or 'request' method not found");
@@ -101,7 +99,7 @@ export const createInstance = async (
   const callParams = [{ to: "0x0000000000000000000000000000000000000080", data: callData}, "latest"];
 
   const publicKeyP = requestMethod(provider, 'eth_call', callParams).catch((err: Error) => {
-    throw Error(`Error while requesting network public key from provider: ${err}`);
+    throw Error(`Error while requesting network public key from provider: ${JSON.stringify(err)}`);
   });
 
   const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
@@ -113,10 +111,18 @@ export const createInstance = async (
 
   if (typeof publicKey !== 'string')
     throw new Error('Error using publicKey from provider: expected string');
-  const buff = fromHexString(publicKey);
+
+  const abiCoder = AbiCoder.defaultAbiCoder();
+  const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
+  const buff = fromHexString(publicKeyDecoded);
 
   await sodium.ready;
-  const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
+  let tfheCompactPublicKey: TfheCompactPublicKey;
+  try {
+    tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
+  } catch (err) {
+    throw new Error(`Error deserializing public key: did you initialize fhenix.js with "initFhevm()"?`);
+  }
 
   let contractKeypairs: ContractKeypairs = {};
 

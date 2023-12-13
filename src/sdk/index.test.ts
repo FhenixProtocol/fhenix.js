@@ -2,7 +2,8 @@ import sodium from 'libsodium-wrappers';
 import { createInstance } from './index';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
-import { JsonRpcProvider } from "ethers";
+import { JsonRpcProvider, AbiCoder } from "ethers";
+import * as buffer from "buffer";
 
 class MockProvider {
   publicKey: any;
@@ -16,8 +17,16 @@ class MockProvider {
     return new Promise((resolve, reject) => {
       if (method === 'eth_chainId') {
         resolve(this.chainId);
-      } else if (method === 'eth_getNetworkPublicKey') {
-        resolve(this.publicKey);
+      } else if (method === 'eth_call') {
+        //abi-encode public key as bytes:
+        if (typeof this.publicKey === 'string') {
+          const abiCoder = new AbiCoder();
+          const buff = fromHexString(this.publicKey);
+          const encoded = abiCoder.encode(['bytes'], [buff]);
+          resolve(encoded);
+        } else {
+          resolve(this.publicKey);
+        }
       } else {
         reject('method not implemented');
       }

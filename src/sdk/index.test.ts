@@ -86,6 +86,9 @@ describe('token', () => {
     await expect(
       createInstance({provider}),
     ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
+
+    // prevent endless fetching
+    await provider.destroy();
   });
 
   it('fails to create an instance', async () => {

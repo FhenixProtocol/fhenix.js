@@ -60,8 +60,8 @@ describe('token', () => {
 
     await expect(
       createInstance({provider})
-        .finally(() => provider.destroy())
-    ).rejects.toThrow(/Error while requesting chainId from provider: Error: connect ECONNREFUSED .*:1234/);
+    ).rejects.toThrow(/Error while requesting chainId from provider: Error: connect ECONNREFUSED .*:1234/)
+      .finally(() => provider.destroy());
   });
 
   it('creates an unsupported provider', async () => {
@@ -72,8 +72,8 @@ describe('token', () => {
 
     await expect(
       createInstance({provider})
-        .finally(() => provider.destroy())
-    ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
+    ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found")
+      .finally(() => provider.destroy());
   });
 
   it('fails to create an instance', async () => {

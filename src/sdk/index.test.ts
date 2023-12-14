@@ -57,23 +57,23 @@ describe('token', () => {
 
   it('creates an instance with ethers provider - unreachable endpoint', async () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
+    await provider.on("error", (_) => provider.destroy());
 
     await expect(
       createInstance({provider})
-    ).rejects.toThrow(/Error while requesting chainId from provider: Error: connect ECONNREFUSED .*:1234/)
-      .finally(() => provider.destroy());
+    ).rejects.toThrow(/Error while requesting chainId from provider: Error: connect ECONNREFUSED .*:1234/);
   });
 
   it('creates an unsupported provider', async () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
+    await provider.on("error", (_) => provider.destroy());
 
     // destroy send method
     Object.assign(provider, { send: undefined } );
 
     await expect(
       createInstance({provider})
-    ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found")
-      .finally(() => provider.destroy());
+    ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
   });
 
   it('fails to create an instance', async () => {

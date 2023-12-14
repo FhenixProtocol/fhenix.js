@@ -57,6 +57,7 @@ describe('token', () => {
 
   it('creates an instance with ethers provider - unreachable endpoint', async () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
+    // prevent endless fetching
     await provider.on("error", (_) => provider.destroy());
 
     await expect(
@@ -66,6 +67,7 @@ describe('token', () => {
 
   it('creates an unsupported provider', async () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
+    // prevent endless fetching
     await provider.on("error", (_) => provider.destroy());
 
     // destroy send method

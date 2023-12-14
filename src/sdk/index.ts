@@ -6,6 +6,7 @@ import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
 import { Eip1193Provider, Interface, AbiCoder } from "ethers";
+import { FheOpsAddress } from './consts';
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -80,7 +81,8 @@ export const createInstance = async (
 
   const { provider, keypairs } = params;
 
-  // unify provider interface
+  // unify provider interface: eip-1193-compatible providers such as metamask's expose "request",
+  // while ethers' and hardhat's may expose a slightly different "send", to issue RPC calls.
   let requestMethod: Function;
   if ('request' in provider && typeof provider.request == 'function') {
     requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as Eip1193Provider).request({ method, params });
@@ -96,7 +98,7 @@ export const createInstance = async (
 
   const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
   const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
-  const callParams = [{ to: "0x0000000000000000000000000000000000000080", data: callData}, "latest"];
+  const callParams = [{ to: FheOpsAddress, data: callData}, "latest"];
 
   const publicKeyP = requestMethod(provider, 'eth_call', callParams).catch((err: Error) => {
     throw Error(`Error while requesting network public key from provider: ${JSON.stringify(err)}`);

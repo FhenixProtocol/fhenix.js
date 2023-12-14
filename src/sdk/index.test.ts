@@ -59,22 +59,18 @@ describe('token', () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
 
     await expect(
-      createInstance({provider}),
+      createInstance({provider})
+        .finally(() => provider.destroy())
     ).rejects.toThrow('Error while requesting chainId from provider: Error: connect ECONNREFUSED 127.0.0.1:1234');
-
-    // prevent endless fetching
-    await provider.destroy();
   });
 
   it('creates an instance with window.ethereum provider - unreachable endpoint', async () => {
     const provider = new JsonRpcProvider('http://localhost:1234');
 
     await expect(
-      createInstance({provider}),
+      createInstance({provider})
+        .finally(() => provider.destroy())
     ).rejects.toThrow('Error while requesting chainId from provider: Error: connect ECONNREFUSED 127.0.0.1:1234');
-
-    // prevent endless fetching
-    await provider.destroy();
   });
 
   it('creates an unsupported provider', async () => {
@@ -84,11 +80,9 @@ describe('token', () => {
     Object.assign(provider, { send: undefined } );
 
     await expect(
-      createInstance({provider}),
+      createInstance({provider})
+        .finally(() => provider.destroy())
     ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
-
-    // prevent endless fetching
-    await provider.destroy();
   });
 
   it('fails to create an instance', async () => {

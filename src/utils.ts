@@ -1,4 +1,5 @@
 import sha3 from 'sha3';
+import { Buffer } from 'buffer';
 
 export const fromHexString = (hexString: string): Uint8Array => {
   const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);

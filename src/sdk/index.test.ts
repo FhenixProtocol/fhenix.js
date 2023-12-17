@@ -2,7 +2,8 @@ import sodium from 'libsodium-wrappers';
 import { createInstance } from './index';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
-import { JsonRpcProvider } from "ethers";
+import { JsonRpcProvider, AbiCoder } from "ethers";
+import * as buffer from "buffer";
 
 class MockProvider {
   publicKey: any;
@@ -16,8 +17,16 @@ class MockProvider {
     return new Promise((resolve, reject) => {
       if (method === 'eth_chainId') {
         resolve(this.chainId);
-      } else if (method === 'eth_getNetworkPublicKey') {
-        resolve(this.publicKey);
+      } else if (method === 'eth_call') {
+        //abi-encode public key as bytes:
+        if (typeof this.publicKey === 'string') {
+          const abiCoder = new AbiCoder();
+          const buff = fromHexString(this.publicKey);
+          const encoded = abiCoder.encode(['bytes'], [buff]);
+          resolve(encoded);
+        } else {
+          resolve(this.publicKey);
+        }
       } else {
         reject('method not implemented');
       }
@@ -52,8 +61,8 @@ describe('token', () => {
     await provider.on("error", (_) => provider.destroy());
 
     await expect(
-      createInstance({provider}),
-    ).rejects.toThrow('Error while requesting chainId from provider: Error: connect ECONNREFUSED 127.0.0.1:1234');
+      createInstance({provider})
+    ).rejects.toThrow(/Error while requesting chainId from provider: Error: connect ECONNREFUSED .*:1234/);
   });
 
   it('creates an unsupported provider', async () => {
@@ -65,7 +74,7 @@ describe('token', () => {
     Object.assign(provider, { send: undefined } );
 
     await expect(
-      createInstance({provider}),
+      createInstance({provider})
     ).rejects.toThrow("Received unsupported provider. 'send' or 'request' method not found");
   });
 

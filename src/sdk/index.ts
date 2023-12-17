@@ -5,7 +5,8 @@ import { EIP712, generateToken } from './token';
 import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
 import { ContractKeypairs } from './types';
-import { Eip1193Provider } from "ethers";
+import { Eip1193Provider, Interface, AbiCoder } from "ethers";
+import { FheOpsAddress } from './consts';
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -68,14 +69,25 @@ export type FhevmInstanceParams = {
 export const createInstance = async (
   params: FhevmInstanceParams,
 ): Promise<FhevmInstance> => {
+  if (params === undefined) {
+    throw new Error('createInstance: missing params');
+  }
+  if (typeof params !== "object") {
+    throw new Error('createInstance: params is not an object');
+  }
+  if (params.provider === undefined) {
+    throw new Error('createInstance: missing params.provider');
+  }
+
   const { provider, keypairs } = params;
 
-  // unify provider interface
+  // unify provider interface: eip-1193-compatible providers such as metamask's expose "request",
+  // while ethers' and hardhat's may expose a slightly different "send", to issue RPC calls.
   let requestMethod: Function;
-  if ('send' in provider && typeof provider.send == 'function') {
-    requestMethod = (p: SupportedProvider, method: string) => (p as EthersProvider).send(method, []);
-  } else if ('request' in provider && typeof provider.request == 'function') {
-    requestMethod = (p: SupportedProvider, method: string) => (p as Eip1193Provider).request({ method });
+  if ('request' in provider && typeof provider.request == 'function') {
+    requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as Eip1193Provider).request({ method, params });
+  } else if ('send' in provider && typeof provider.send == 'function') {
+    requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as EthersProvider).send(method, params);
   } else {
     throw new Error("Received unsupported provider. 'send' or 'request' method not found");
   }
@@ -83,8 +95,13 @@ export const createInstance = async (
   const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {
     throw Error(`Error while requesting chainId from provider: ${err}`);
   })
-  const publicKeyP = requestMethod(provider, 'eth_getNetworkPublicKey').catch((err: Error) => {
-    throw Error(`Error while requesting network public key from provider: ${err}`);
+
+  const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
+  const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
+  const callParams = [{ to: FheOpsAddress, data: callData}, "latest"];
+
+  const publicKeyP = requestMethod(provider, 'eth_call', callParams).catch((err: Error) => {
+    throw Error(`Error while requesting network public key from provider: ${JSON.stringify(err)}`);
   });
 
   const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
@@ -96,10 +113,18 @@ export const createInstance = async (
 
   if (typeof publicKey !== 'string')
     throw new Error('Error using publicKey from provider: expected string');
-  const buff = fromHexString(publicKey);
+
+  const abiCoder = AbiCoder.defaultAbiCoder();
+  const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
+  const buff = fromHexString(publicKeyDecoded);
 
   await sodium.ready;
-  const tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
+  let tfheCompactPublicKey: TfheCompactPublicKey;
+  try {
+    tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
+  } catch (err) {
+    throw new Error(`Error deserializing public key: did you initialize fhenix.js with "initFhevm()"?`);
+  }
 
   let contractKeypairs: ContractKeypairs = {};
 

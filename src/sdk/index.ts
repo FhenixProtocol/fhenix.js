@@ -115,7 +115,7 @@ export const createInstance = async (
     throw new Error('Error using publicKey from provider: expected string');
 
   const abiCoder = AbiCoder.defaultAbiCoder();
-  const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
+  const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0].slice(66); // slice - Fix the public key format
   const buff = fromHexString(publicKeyDecoded);
 
   await sodium.ready;

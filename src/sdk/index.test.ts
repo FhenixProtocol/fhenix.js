@@ -3,7 +3,6 @@ import { createInstance } from './index';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
 import { JsonRpcProvider, AbiCoder } from "ethers";
-import * as buffer from "buffer";
 
 class MockProvider {
   publicKey: any;
@@ -21,7 +20,12 @@ class MockProvider {
         //abi-encode public key as bytes:
         if (typeof this.publicKey === 'string') {
           const abiCoder = new AbiCoder();
-          const buff = fromHexString(this.publicKey);
+          const keyBuff = fromHexString(this.publicKey);
+
+          // add padding so that it matches the output from the node:
+          const buff = new Uint8Array(32 + keyBuff.length);
+          buff.set(keyBuff, 32);
+
           const encoded = abiCoder.encode(['bytes'], [buff]);
           resolve(encoded);
         } else {

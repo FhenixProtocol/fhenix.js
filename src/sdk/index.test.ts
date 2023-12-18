@@ -20,12 +20,7 @@ class MockProvider {
         //abi-encode public key as bytes:
         if (typeof this.publicKey === 'string') {
           const abiCoder = new AbiCoder();
-          const keyBuff = fromHexString(this.publicKey);
-
-          // add padding so that it matches the output from the node:
-          const buff = new Uint8Array(32 + keyBuff.length);
-          buff.set(keyBuff, 32);
-
+          const buff = fromHexString(this.publicKey);
           const encoded = abiCoder.encode(['bytes'], [buff]);
           resolve(encoded);
         } else {

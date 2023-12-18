@@ -115,7 +115,7 @@ export const createInstance = async (
     throw new Error('Error using publicKey from provider: expected string');
 
   const abiCoder = AbiCoder.defaultAbiCoder();
-  const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0].slice(66); // slice - Fix the public key format
+  const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
   const buff = fromHexString(publicKeyDecoded);
 
   await sodium.ready;
@@ -123,7 +123,7 @@ export const createInstance = async (
   try {
     tfheCompactPublicKey = TfheCompactPublicKey.deserialize(buff);
   } catch (err) {
-    throw new Error(`Error deserializing public key: did you initialize fhenix.js with "initFhevm()"?`);
+    throw new Error(`Error deserializing public key: did you initialize fhenix.js with "initFhevm()"? ${err}`);
   }
 
   let contractKeypairs: ContractKeypairs = {};

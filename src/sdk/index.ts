@@ -1,12 +1,13 @@
 import { TfheCompactPublicKey } from 'node-tfhe';
 import sodium from 'libsodium-wrappers';
 import { encrypt_uint8, encrypt_uint16, encrypt_uint32, encrypt } from './encrypt';
-import { EIP712, generateToken } from './token';
 import { unseal } from './decrypt';
 import { fromHexString, isAddress, toHexString } from '../utils';
-import { ContractKeypairs } from './types';
+import { ContractKeypairs, SupportedProvider, EthersProvider, determineRequestMethod } from './types';
 import { Eip1193Provider, Interface, AbiCoder } from "ethers";
 import { FheOpsAddress } from './consts';
+import { Permit } from '../extensions/access_control/permit';
+
 
 export type FhevmInstance = {
   encrypt_uint8: (value: number) => Uint8Array;
@@ -14,19 +15,7 @@ export type FhevmInstance = {
   encrypt_uint32: (value: number) => Uint8Array;
   encrypt: (value: number, type?: UintTypes) => Uint8Array;
 
-  generateToken: (options: {
-    verifyingContract: string;
-    name?: string;
-    version?: string;
-    force?: boolean;
-  }) => {
-    publicKey: Uint8Array;
-    token: EIP712;
-  };
-  setTokenSignature: (contractAddress: string, signature: string) => void;
-  getTokenSignature: (
-    contractAddress: string,
-  ) => { publicKey: Uint8Array; signature: string } | null;
+  loadPermit: (permit: Permit) => void;
   hasKeypair: (contractAddress: string) => boolean;
   unseal: (contractAddress: string, ciphertext: string) => number;
   serializeKeypairs: () => ExportedContractKeypairs;
@@ -38,7 +27,7 @@ export enum UintTypes {
   uint32 = 'uint32',
 }
 
-export type TokenSignature = {
+export type PermitSignature = {
   publicKey: Uint8Array;
   signature: string;
 };
@@ -50,16 +39,6 @@ export type ExportedContractKeypairs = {
     signature?: string | null;
   };
 };
-
-interface EthersProvider {
-  send(method: string, params?: Array<any> | Record<string, any>): Promise<any>;
-}
-
-interface HardhatEthersProvider {
-  send(method: string, params?: Array<any> | undefined): Promise<any>;
-}
-
-type SupportedProvider = Eip1193Provider | EthersProvider | HardhatEthersProvider;
 
 export type FhevmInstanceParams = {
   provider: SupportedProvider;
@@ -81,16 +60,7 @@ export const createInstance = async (
 
   const { provider, keypairs } = params;
 
-  // unify provider interface: eip-1193-compatible providers such as metamask's expose "request",
-  // while ethers' and hardhat's may expose a slightly different "send", to issue RPC calls.
-  let requestMethod: Function;
-  if ('request' in provider && typeof provider.request == 'function') {
-    requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as Eip1193Provider).request({ method, params });
-  } else if ('send' in provider && typeof provider.send == 'function') {
-    requestMethod = (p: SupportedProvider, method: string, params?: any[]) => (p as EthersProvider).send(method, params);
-  } else {
-    throw new Error("Received unsupported provider. 'send' or 'request' method not found");
-  }
+  const requestMethod = determineRequestMethod(provider);
 
   const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {
     throw Error(`Error while requesting chainId from provider: ${err}`);
@@ -178,48 +148,12 @@ export const createInstance = async (
       return encrypt(value, tfheCompactPublicKey, type);
     },
 
-    // Reencryption
-    generateToken(options) {
-      if (!options || !options.verifyingContract)
-        throw new Error('Missing contract address');
-      if (!isAddress(options.verifyingContract))
-        throw new Error('Invalid contract address');
-      let kp;
-      if (!options.force && contractKeypairs[options.verifyingContract]) {
-        kp = contractKeypairs[options.verifyingContract];
+    loadPermit(permit: Permit) {
+      contractKeypairs[permit.contractAddress] = {
+        publicKey: permit.keypair.publicKey,
+        privateKey: permit.keypair.privateKey,
+        signature: permit.keypair.signature        
       }
-      const { token, keypair } = generateToken({
-        verifyingContract: options.verifyingContract,
-        name: options.name,
-        version: options.version,
-        chainId: chainIdNum,
-        keypair: kp,
-      });
-      contractKeypairs[options.verifyingContract] = {
-        privateKey: keypair.privateKey,
-        publicKey: keypair.publicKey,
-        signature: null,
-      };
-      return { token, publicKey: keypair.publicKey };
-    },
-
-    setTokenSignature(contractAddress: string, signature: string) {
-      if (
-        contractKeypairs[contractAddress] &&
-        contractKeypairs[contractAddress].privateKey
-      ) {
-        contractKeypairs[contractAddress].signature = signature;
-      }
-    },
-
-    getTokenSignature(contractAddress: string): TokenSignature | null {
-      if (hasKeypair(contractAddress)) {
-        return {
-          publicKey: contractKeypairs[contractAddress].publicKey,
-          signature: contractKeypairs[contractAddress].signature!,
-        };
-      }
-      return null;
     },
 
     hasKeypair,
@@ -247,3 +181,5 @@ export const createInstance = async (
     },
   };
 };
+
+export * from "../extensions/access_control"

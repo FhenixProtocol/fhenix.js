@@ -3,6 +3,13 @@ import { createInstance } from './index';
 import { createTfhePublicKey } from '../tfhe';
 import { fromHexString, toHexString, numberToBytes } from '../utils';
 import { JsonRpcProvider, AbiCoder } from "ethers";
+import { getPermit } from "../extensions/access_control/permit";
+
+class MockSigner {
+  async _signTypedData(domain: any, types: any, value: any): Promise<any> {
+    return "0x123";
+  }
+}
 
 class MockProvider {
   publicKey: any;
@@ -31,14 +38,54 @@ class MockProvider {
       }
     });
   }
+
+  async getSigner(): Promise<MockSigner> {
+    return new MockSigner();
+  }
 }
+
+const localStorageMock: Storage = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem(key: string): string | null {
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
+    },
+    setItem(key: string, value: string): void {
+      store[key] = value.toString();
+    },
+    removeItem(key: string): void {
+      delete store[key];
+    },
+    clear(): void {
+      store = {};
+    },
+    get length(): number {
+      return Object.keys(store).length;
+    },
+    key(index: number): string | null {
+      const keys = Object.keys(store);
+      return index < keys.length ? keys[index] : null;
+    }
+  };
+})();
+
+// Assign the localStorage mock to global scope if window is not defined
+if (typeof window === 'undefined') {
+  (global as any).window = {};
+  (global as any).window.localStorage = localStorageMock;
+}
+
 
 describe('token', () => {
   let tfhePublicKey: string;
-
+  const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
+  
   beforeAll(async () => {
     await sodium.ready;
     tfhePublicKey = createTfhePublicKey();
+    localStorageMock.clear();
+
   });
 
   it('creates an instance', async () => {
@@ -47,10 +94,9 @@ describe('token', () => {
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
     expect(instance.encrypt_uint32).toBeDefined();
-    expect(instance.generateToken).toBeDefined();
     expect(instance.unseal).toBeDefined();
+    expect(instance.loadPermit).toBeDefined();    
     expect(instance.serializeKeypairs).toBeDefined();
-    expect(instance.getTokenSignature).toBeDefined();
     expect(instance.hasKeypair).toBeDefined();
   });
 
@@ -90,8 +136,6 @@ describe('token', () => {
 
   it('creates an instance with keypairs', async () => {
     const keypair = sodium.crypto_box_keypair('hex');
-
-    const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
 
     const instance = await createInstance({
       provider: new MockProvider(tfhePublicKey),
@@ -140,77 +184,58 @@ describe('token', () => {
     );
   });
 
-  it('controls generateToken', async () => {
+  it('get permit', async () => {
+
+    const provider = new MockProvider(tfhePublicKey);
+    await expect(getPermit(undefined as any, provider)).rejects.toThrow(
+      'Missing contract address',
+    );
+    await expect(getPermit(contractAddress.slice(0, 10), provider)).rejects.toThrow(
+      'Invalid contract address'
+    );
+    await expect(getPermit(contractAddress, undefined as any)).rejects.toThrow(
+      'Missing provider',
+    );
+    
+    const permit = await getPermit(contractAddress, provider);
+    expect(permit.contractAddress).toBe(contractAddress);
+    expect(permit.keypair.signature).toBe("0x123");
+
     const instance = await createInstance({
       provider: new MockProvider(tfhePublicKey),
     });
-    expect(() => instance.generateToken(undefined as any)).toThrow(
-      'Missing contract address',
-    );
-    expect(() => instance.generateToken({ verifyingContract: '' })).toThrow(
-      'Missing contract address',
-    );
-    expect(() =>
-      instance.generateToken({ verifyingContract: '0x847473829d' }),
-    ).toThrow('Invalid contract address');
-  });
-
-  it('save generated token', async () => {
-    const instance = await createInstance({
-      provider: new MockProvider(tfhePublicKey),
-    });
-
-    const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
-
-    const { token, publicKey } = instance.generateToken({
-      verifyingContract: contractAddress,
-    });
-
-    instance.setTokenSignature(contractAddress, 'signnnn');
-
+    instance.loadPermit(permit);
     expect(instance.hasKeypair(contractAddress)).toBeTruthy();
-
-    const kp = instance.getTokenSignature(contractAddress);
-    expect(kp!.publicKey).toBe(publicKey);
   });
 
-  it("don't export keys without signature", async () => {
-    const instance = await createInstance({
-      provider: new MockProvider(tfhePublicKey),
-    });
+  it('returns a saved permit from localStorage', async () => {
+    const provider = new MockProvider(tfhePublicKey);
+    const permit = await getPermit(contractAddress, provider);
 
-    const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
+    // Mock a saved permit in localStorage
+    localStorageMock.setItem(`Fhenix_saved_permit_${contractAddress}`, JSON.stringify(permit));
 
-    const { token, publicKey } = instance.generateToken({
-      verifyingContract: contractAddress,
-    });
-    const keypairs = instance.serializeKeypairs();
-    expect(keypairs[contractAddress]).toBeUndefined();
-    const keypair = instance.getTokenSignature(contractAddress);
-    expect(keypair).toBeNull();
-    expect(instance.hasKeypair(contractAddress)).toBeFalsy();
+    const savedPermit = await getPermit(contractAddress, provider);
+    expect(savedPermit).toEqual(permit);
   });
+  
+
 
   it('decrypts data', async () => {
+    const provider = new MockProvider(tfhePublicKey);
+
     const instance = await createInstance({
       provider: new MockProvider(tfhePublicKey),
     });
 
-    const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
+    const permit = await getPermit(contractAddress, provider);    
 
-    const { token, publicKey } = instance.generateToken({
-      verifyingContract: contractAddress,
-    });
-
-    instance.setTokenSignature(contractAddress, 'signnnn');
-
-    const kp = instance.getTokenSignature(contractAddress);
-    expect(kp!.publicKey).toBe(publicKey);
+    instance.loadPermit(permit);
 
     const value = 89290;
     const ciphertext = sodium.crypto_box_seal(
       numberToBytes(value),
-      publicKey,
+      permit.keypair.publicKey,
       'hex',
     );
     const cleartext = instance.unseal(contractAddress, ciphertext);

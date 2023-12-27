@@ -32,7 +32,7 @@ export default [
     input: 'src/web.ts',
     output: {
       dir: 'lib',
-      name: 'fhevm',
+      name: 'fhenixjs',
       format: 'es',
     },
     plugins: [...plugins],
@@ -41,7 +41,8 @@ export default [
     input: 'src/node.ts',
     output: {
       file: 'lib/node.cjs',
-      name: 'fhevm',
+      inlineDynamicImports: true,
+      name: 'fhenixjs',
       format: 'cjs',
     },
     plugins: [

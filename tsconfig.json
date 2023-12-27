@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "noEmit": false,
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "bundle",
     "declaration": false,
-    "target": "ES5",
-    "lib": ["es5", "DOM"],
+    "target": "ES6",
+    "lib": ["ES6", "DOM"],
     "module": "commonjs",
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -18,5 +18,5 @@
     }
   },
   "include": ["src", "types"],
-  "exclude": ["node_modules", "src/*.test.ts"]
+  "exclude": ["node_modules", "src/*.test.ts", "test"],
 }

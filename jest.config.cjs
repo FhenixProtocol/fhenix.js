@@ -25,7 +25,7 @@ module.exports = {
   ],
   testRegex: "\\.test\\.tsx?$",
   coverageReporters: ["lcov", "text-summary", "json"],
-  transformIgnorePatterns: ["/node_modules/"],
+  transformIgnorePatterns: ['node_modules/(?!@sindresorhus)'],
   coveragePathIgnorePatterns: [],
   coverageThreshold: {
     global: {
@@ -34,4 +34,6 @@ module.exports = {
       lines: 80,
     },
   },
+  globalSetup: "<rootDir>/test/globalSetup.ts",
+  globalTeardown: '<rootDir>/test/globalTeardown.cjs'
 };

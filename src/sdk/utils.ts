@@ -1,5 +1,17 @@
-import sha3 from 'sha3';
 import { Buffer } from 'buffer';
+
+import { toBigInt as ethersToBigInt, toBeArray as ethersToBeArray, isAddress as ethersIsAddress } from 'ethers';
+
+export const ValidateUintInRange = (value: number, max: number, min: number): void => {
+  if (!!value) {
+    throw new Error('Missing value');
+  }
+
+  if (value > max || value < min) {
+    throw new Error(`Value out of range: ${max} - ${min}, try a different uint type`);
+  }
+}
+
 
 export const fromHexString = (hexString: string): Uint8Array => {
   const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);
@@ -35,10 +47,16 @@ export const bytesToNumber = function (byteArray: Uint8Array): number {
   return result;
 };
 
-export const isAddress = function (address: string) {
-  if (/^(0x)?[0-9a-f]{40}$/i.test(address.toLowerCase())) {
-    // check if it has the basic requirements of an address
-    return true;
+export function toBigInt(value: Uint8Array): bigint {
+    return ethersToBigInt(value);
+}
+
+export function toBeArray(value: bigint | number): Uint8Array {
+  return ethersToBeArray(value);
+}
+
+export function isAddress(address: string) {
+  if (!ethersIsAddress(address)) {
+    throw new Error(`Address ${address} is not valid EVM address`)
   }
-  return false;
-};
+}

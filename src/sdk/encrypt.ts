@@ -4,13 +4,7 @@ import {
   CompactFheUint16List,
   CompactFheUint32List,
 } from 'node-tfhe';
-
-
-export enum UintTypes {
-  uint8 = 'uint8',
-  uint16 = 'uint16',
-  uint32 = 'uint32',
-}
+import { EncryptionTypes } from './types';
 
 export const encrypt_uint8 = (
   value: number,
@@ -48,13 +42,13 @@ export const encrypt_uint32 = (
   return encrypted.serialize();
 };
 
-export const encrypt = (value: number, publicKey: TfheCompactPublicKey, type: UintTypes = UintTypes.uint8): Uint8Array => {
+export const encrypt = (value: number, publicKey: TfheCompactPublicKey, type: EncryptionTypes = EncryptionTypes.uint8): Uint8Array => {
   switch (type) {
-    case UintTypes.uint8:
+    case EncryptionTypes.uint8:
       return encrypt_uint8(value, publicKey);
-    case UintTypes.uint16:
+    case EncryptionTypes.uint16:
       return encrypt_uint16(value, publicKey);
-    case UintTypes.uint32:
+    case EncryptionTypes.uint32:
       return encrypt_uint32(value, publicKey);
     default:
       throw new Error('Invalid type');

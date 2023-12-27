@@ -5,7 +5,7 @@ const PATHS = require("./paths.cjs");
 
 const web = {
   entry: {
-    "fhevm.min": PATHS.web,
+    "fhenixjs.min": PATHS.web,
   },
   output: {
     path: PATHS.build,
@@ -13,7 +13,7 @@ const web = {
     chunkFilename: "[name].js",
     globalObject: "this",
     library: {
-      name: "fhevm",
+      name: "fhenixjs",
       type: "umd2",
     },
   },

@@ -1,0 +1,11 @@
+{
+  "entryPoints": ["../src/sdk/index.ts"],
+  "out": "./docs",
+  "githubPages": false,
+  "name": "fhenix.js Docs",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "media": "./media",
+  "hideGenerator": true,
+  "customCss": "./typedoc.css"
+}

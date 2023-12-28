@@ -44,6 +44,15 @@ export const getPermit = async (contract: string, provider: SupportedProvider): 
   return generatePermit(contract, provider);
 }
 
+const sign = async (signer: any, domain: any, types: any, value: any): Promise<string> => {
+  if ('_signTypedData' in signer && typeof signer._signTypedData == 'function') {
+    return await signer._signTypedData(domain, types, value);
+  } else if ('signTypedData' in signer && typeof signer.signTypedData == 'function') {
+    return await signer.signTypedData(domain, types, value);
+  }
+  throw new Error('Unsupported signer');
+}
+
 export const generatePermit = async (contract: string, provider: SupportedProvider): Promise<Permit> => {
   if (!provider) {
     throw new Error('Provider is undefined');
@@ -89,9 +98,8 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
     },
   };
 
-  const msgSig = await signer._signTypedData(
-    msgParams.domain,
-    { Reencrypt: msgParams.types.Reencrypt },
+  const msgSig = await sign(signer, msgParams.domain, 
+    { Reencrypt: msgParams.types.Reencrypt }, 
     msgParams.message
   );
 

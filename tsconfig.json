@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
     "noEmit": false,
-    "rootDir": ".",
-    "outDir": "bundle",
-    "declaration": false,
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "target": "ES6",
     "lib": ["ES6", "DOM"],
     "module": "commonjs",
@@ -11,12 +12,8 @@
     "esModuleInterop": true,
     "allowJs": true,
     "strict": true,
-    "baseUrl": ".",
     "resolveJsonModule": true,
-    "paths": {
-      "*": ["*"]
-    }
+    "forceConsistentCasingInFileNames": true,
   },
-  "include": ["src", "types"],
-  "exclude": ["node_modules", "src/*.test.ts", "test"],
+  "exclude": ["node_modules", "dist","src/*.test.ts", "test", "**/*.wasm", "test-browser"],
 }

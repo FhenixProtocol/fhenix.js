@@ -1,5 +1,5 @@
 import sodium from 'libsodium-wrappers';
-import { GenerateSealingKey, SealingKey } from '../src/sdk/sealing';
+import { GenerateSealingKey, SealingKey } from '../src';
 import { fromHexString } from '../src/sdk/utils';
 
 describe('tests sealing and unsealing using SealingKey', () => {

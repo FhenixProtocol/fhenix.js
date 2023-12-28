@@ -1,10 +1,10 @@
 import sodium from 'libsodium-wrappers';
 import { createTfhePublicKey } from '../src/sdk/tfhe/tfhe';
 import { JsonRpcProvider } from "ethers";
-import { generatePermit, getPermit, Permit } from '../src/sdk';
+import { generatePermit, getPermit, Permit } from '../src';
 import { MockProvider } from './utils';
-import { GenerateSealingKey, SealingKey } from '../src/sdk';
-import { FhenixClient } from '../src/sdk';
+import { GenerateSealingKey, SealingKey } from '../src';
+import { FhenixClient } from '../src';
 
 
 describe('token', () => {

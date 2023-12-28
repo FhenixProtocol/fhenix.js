@@ -9,19 +9,12 @@ import {
   EncryptionTypes
 } from './types';
 import { assert } from '@sindresorhus/is';
-import { AbiCoder, Interface } from 'ethers';
+import { AbiCoder, Interface, JsonRpcProvider } from 'ethers';
 
 import { FheOpsAddress, MAX_UINT16, MAX_UINT32, MAX_UINT8 } from './consts';
 import { Permit } from '../extensions/access_control';
 import { ValidateUintInRange } from './utils';
 import * as tfheEncrypt from './encrypt';
-
-export * from "../extensions/access_control"
-export {
-  SealingKey,
-  GenerateSealingKey
-} from "./sealing";
-
 
 export class FhenixClient {
   private permits: ContractPermits = {};
@@ -33,7 +26,11 @@ export class FhenixClient {
 
   public static Create = async (params: InstanceParams) => {
     assert.plainObject(params)
-    assert.object(params.provider)
+    //assert.object(params.provider)
+
+    if (params?.provider === undefined) {
+      params.provider = new JsonRpcProvider("http://localhost:8545")
+    }
 
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)

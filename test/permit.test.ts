@@ -1,9 +1,9 @@
 import sodium from 'libsodium-wrappers';
 import { createTfhePublicKey } from '../src/sdk/tfhe/tfhe';
 import { MockProvider } from './utils';
-import { FhenixClient, getPermit, SealingKey } from '../src/sdk';
+import { FhenixClient, getPermit, SealingKey } from '../src';
 import { fromHexString, numberToBytes } from '../src/sdk/utils';
-import { GenerateSealingKey, Permit } from '../src/sdk';
+import { GenerateSealingKey, Permit } from '../src';
 
 // @ts-ignore
 const localStorageMock: Storage = (() => {

@@ -19,11 +19,8 @@
     "build:prod": "webpack --config webpack/webpack.production.js",
     "build:dev": "webpack --config webpack/webpack.development.js --profile --json > stats.json",
     "serve": "webpack serve",
-    "test": "vitest",
-    "test-ci": "jest --forceExit --runInBand",
-    "test:watch": "jest --colors --passWithNoTests --watch",
-    "test-browser": "web-test-runner \"test-browser/**/*.test.js\" --node-resolve --puppeteer",
-    "coverage": "vitest run --coverage",
+    "test": "VITE_CJS_IGNORE_WARNING=true vitest",
+    "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
     "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\""
   },
   "repository": {

@@ -15,6 +15,7 @@ jobs:
           - 5000:3000 # Faucet
     permissions:
       contents: read
+      packages: read
       # Required to put a comment into the pull-request
       pull-requests: write
     env:

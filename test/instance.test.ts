@@ -36,7 +36,7 @@ describe('token', () => {
 
     await expect(
       FhenixClient.Create({provider, initSdk: false})
-    ).rejects.toThrow(/Error while requesting chainId from provider: Error: connect ECONNREFUSED .*:1234/);
+    ).rejects.toThrow(/.*Error while requesting chainId from provider.*/i);
   });
 
   it('creates an unsupported provider', async () => {

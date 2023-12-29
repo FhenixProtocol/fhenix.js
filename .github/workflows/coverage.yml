@@ -7,11 +7,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      secret:
+        image: ghcr.io/fhenixprotocol/fhenix-node-dev:v0.0.7-standalone
+        ports:
+          - 8545:8547 # RPC
+          - 5000:3000 # Faucet
     permissions:
       contents: read
       # Required to put a comment into the pull-request
       pull-requests: write
-
+    env:
+      SKIP_LOCAL_ENV: "true"
     steps:
       - uses: actions/checkout@v4
       - name: 'Install Node'

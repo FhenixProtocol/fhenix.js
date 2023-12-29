@@ -1,12 +1,32 @@
-name: PR test
+name: Coverage
 
 on:
   pull_request:
-    branches:
-      - main
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: ArtiomTr/jest-coverage-report-action@v2
+      - uses: actions/checkout@v4
+      - name: 'Install Node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: 'Install Deps'
+        run: pnpm install
+      - name: 'Test with Coverage'
+        run: pnpm coverage
+      - name: 'Report Coverage'
+        # Set if: always() to also generate the report if tests are failing
+        # Only works if you set `reportOnFailure: true` in your vite config as specified above
+        if: always()
+        uses:  davelosert/vitest-coverage-report-action@v2

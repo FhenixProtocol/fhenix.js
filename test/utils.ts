@@ -1,5 +1,4 @@
 import { JsonRpcProvider, AbiCoder } from "ethers";
-import { fromHexString } from '../src/sdk/utils';
 
 // Initialize genesis accounts
 const mnemonics = [
@@ -8,9 +7,11 @@ const mnemonics = [
   "chair love bleak wonder skirt permit say assist aunt credit roast size obtain minute throw sand usual age smart exact enough room shadow charge", // account c
 ];
 
-const fundTestAccount = () => {
-
-}
+export const fromHexString = (hexString: string): Uint8Array => {
+  const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);
+  if (!arr) return new Uint8Array();
+  return Uint8Array.from(arr.map((byte) => parseInt(byte, 16)));
+};
 
 export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

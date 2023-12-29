@@ -1,7 +1,7 @@
 // for mobile
-if (typeof BigInt === "undefined") {
-  global.BigInt = require("big-integer");
-}
+// if (typeof BigInt === "undefined") {
+//   global.BigInt = require("big-integer");
+// }
 
 export {
  FhenixClient

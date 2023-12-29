@@ -6,9 +6,7 @@ const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 // const webpack = require('webpack');
 
 const web = {
-  entry: {
-    "fhenixjs.min": path.resolve(__dirname, "src", "index.ts"),
-  },
+  entry: path.resolve(__dirname, "src", "index.ts"),
   output: {
     //path: PATHS.build,
     path: path.resolve(__dirname, 'dist'),
@@ -16,45 +14,32 @@ const web = {
     globalObject: "this",
     library: {
       name: "fhenixjs",
-      type: "umd",
+      type: "umd2",
     },
+    clean: true,
   },
   devtool: "source-map",
   experiments: {
     asyncWebAssembly: true,
     topLevelAwait: true,
   },
-  // optimization: {
-  //   splitChunks: {
-  //     chunks: "all",
-  //     minRemainingSize: 0,
-  //     minChunks: 1,
-  //     cacheGroups: {
-  //       default: {
-  //         minChunks: 1,
-  //         priority: 1000,
-  //         reuseExistingChunk: true,
-  //       },
-  //     },
-  //   },
-  // },
+
   mode: "production",
-  performance: {
-    hints: false,
-    maxEntrypointSize: 512000,
-    maxAssetSize: 512000,
-  },
   module: {
     rules: [
       // Check for TypeScript files
       {
-        test: /\.tsx?$/,
+        test: /\.ts?$/,
         exclude: [/node_modules/],
         use: ["ts-loader"],
         generator: {
           filename: "[name][ext]",
         },
       },
+      {
+        test: /\.wasm$/,
+        type: 'asset/inline',
+      }
     ],
   },
   resolve: {

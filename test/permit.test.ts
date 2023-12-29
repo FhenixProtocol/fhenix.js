@@ -4,6 +4,7 @@ import { MockProvider } from './utils';
 import { FhenixClient, getPermit, SealingKey } from '../src';
 import { fromHexString, numberToBytes } from '../src/sdk/utils';
 import { GenerateSealingKey, Permit } from '../src';
+import { assert, expect, test, describe, it, beforeAll } from 'vitest'
 
 // @ts-ignore
 const localStorageMock: Storage = (() => {

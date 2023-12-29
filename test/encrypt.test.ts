@@ -11,6 +11,7 @@ import {
 import { createTfheKeypair } from '../src/sdk/tfhe/tfhe';
 import { encrypt_uint8, encrypt_uint16, encrypt_uint32, encrypt } from '../src/sdk/encrypt';
 import { EncryptionTypes } from '../src/sdk/types';
+import { assert, expect, test, describe, it, beforeAll } from 'vitest'
 
 describe('encrypt_uint8', () => {
   let clientKey: TfheClientKey;

@@ -1,19 +1,18 @@
 {
   "compilerOptions": {
-    "noEmit": false,
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "target": "ES6",
+    "target": "es6",
     "lib": ["ES6", "DOM"],
     "module": "commonjs",
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowJs": true,
     "strict": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
   },
-  "exclude": ["node_modules", "dist","src/*.test.ts", "test", "**/*.wasm", "test-browser"],
+  "exclude": ["node_modules", "dist", "test", "**/*.wasm", "test-browser"],
 }

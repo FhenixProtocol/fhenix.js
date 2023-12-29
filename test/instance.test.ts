@@ -5,6 +5,7 @@ import { generatePermit, getPermit, Permit } from '../src';
 import { MockProvider } from './utils';
 import { GenerateSealingKey, SealingKey } from '../src';
 import { FhenixClient } from '../src';
+import { assert, expect, test, describe, it, beforeAll } from 'vitest'
 
 
 describe('token', () => {

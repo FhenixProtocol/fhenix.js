@@ -1,4 +1,3 @@
-import sodium from 'libsodium-wrappers';
 import { createTfhePublicKey } from '../src/sdk/tfhe/tfhe';
 import { MockProvider } from './utils';
 import { FhenixClient, getPermit, SealingKey } from '../src';
@@ -45,7 +44,6 @@ describe('Permit Tests', () => {
   const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
 
   beforeAll(async () => {
-    await sodium.ready;
     tfhePublicKey = createTfhePublicKey();
     localStorageMock.clear();
   });
@@ -69,11 +67,12 @@ describe('Permit Tests', () => {
 
     instance.storePermit(permit);
 
+
+
     const value = 937387;
-    const ciphertext = sodium.crypto_box_seal(
-      numberToBytes(value),
-      fromHexString(keypair.publicKey),
-      'hex',
+    const ciphertext = SealingKey.seal(
+      value,
+      keypair.publicKey,
     );
 
     const cleartext = instance.unseal(contractAddress, ciphertext);

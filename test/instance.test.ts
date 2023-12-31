@@ -1,4 +1,3 @@
-import sodium from 'libsodium-wrappers';
 import { createTfhePublicKey } from '../src/sdk/tfhe/tfhe';
 import { JsonRpcProvider } from "ethers";
 import { generatePermit, getPermit, Permit } from '../src';
@@ -7,13 +6,11 @@ import { GenerateSealingKey, SealingKey } from '../src';
 import { FhenixClient } from '../src';
 import { assert, expect, test, describe, it, beforeAll } from 'vitest'
 
-
 describe('token', () => {
   let tfhePublicKey: string;
   const contractAddress = '0x1c786b8ca49D932AFaDCEc00827352B503edf16c';
 
   beforeAll(async () => {
-    await sodium.ready;
     tfhePublicKey = createTfhePublicKey();
   });
 

@@ -38,8 +38,6 @@ export class FhenixClient {
       await initFhevm();
     }
 
-    await sodium.ready;
-
     const client = new FhenixClient();
 
     const { provider } = params;

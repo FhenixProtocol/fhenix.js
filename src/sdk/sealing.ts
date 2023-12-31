@@ -1,4 +1,4 @@
-import { fromHexString, numberToBytes, toBeArray, toBigInt } from './utils';
+import { fromHexString, numberToBytes, toBeArray, toBigInt, toHexString } from './utils';
 import is, { assert } from '@sindresorhus/is';
 import * as nacl from 'tweetnacl';
 import * as naclUtil from 'tweetnacl-util';
@@ -44,14 +44,20 @@ export class SealingKey {
     const ephemPublicKey = naclUtil.decodeBase64(
       parsedData.ephemPublicKey,
     );
-
+    const dataToDecrypt = naclUtil.decodeBase64(
+      parsedData.ciphertext,
+    );
     // decrypt
     const decryptedMessage = nacl.box.open(
-      ciphertext,
+      dataToDecrypt,
       nonce,
       ephemPublicKey,
       fromHexString(this.privateKey),
     );
+
+    if (!decryptedMessage) {
+      throw new Error("Failed to decrypt message");
+    }
 
     return toBigInt(decryptedMessage);
   };
@@ -88,7 +94,8 @@ export class SealingKey {
       ciphertext: naclUtil.encodeBase64(encryptedMessage),
     };
 
-    return JSON.stringify(output)
+    // mimicking encoding from the chain
+    return toHexString(Buffer.from(JSON.stringify(output)))
   }
 
 }
@@ -96,5 +103,6 @@ export class SealingKey {
 export const GenerateSealingKey = async (): Promise<SealingKey> => {
   const sodiumKeypair = nacl.box.keyPair();
 
-  return new SealingKey(sodiumKeypair.privateKey, sodiumKeypair.publicKey);
+  return new SealingKey(
+    toHexString(sodiumKeypair.secretKey), toHexString(sodiumKeypair.publicKey));
 }

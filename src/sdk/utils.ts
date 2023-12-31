@@ -11,7 +11,6 @@ export const ValidateUintInRange = (value: number, max: number, min: number): vo
   }
 }
 
-
 export const fromHexString = (hexString: string): Uint8Array => {
   const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);
   if (!arr) return new Uint8Array();

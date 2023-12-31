@@ -95,7 +95,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
       verifyingContract: contract //params.verifyingContract,
     },
     message: {
-      publicKey: `${keypair.publicKey}`,
+      publicKey: `0x${keypair.publicKey}`,
     },
   };
 
@@ -108,7 +108,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
     contractAddress: contract,
     sealingKey: keypair,
     signature: msgSig,
-    publicKey: keypair.publicKey
+    publicKey: `0x${keypair.publicKey}`
     //permit: msgParams,
     //msgSig
   };

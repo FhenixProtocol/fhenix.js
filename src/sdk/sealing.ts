@@ -6,6 +6,8 @@ import * as naclUtil from 'tweetnacl-util';
 const PRIVATE_KEY_LENGTH = 64;
 const PUBLIC_KEY_LENGTH = 64;
 
+// This structure has been cloned from metamask's signing util, which is licensed under
+// ISC, a copy of which can be found in the /licenses folder
 export type EthEncryptedData = {
   version: string;
   nonce: string;
@@ -68,14 +70,6 @@ export class SealingKey {
 
     // generate ephemeral keypair
     const ephemeralKeyPair = nacl.box.keyPair();
-
-    // assemble encryption parameters - from string to UInt8
-    let pubKeyUInt8Array: Uint8Array;
-    try {
-      pubKeyUInt8Array = naclUtil.decodeBase64(publicKey);
-    } catch (err) {
-      throw new Error('Bad public key');
-    }
 
     const nonce = nacl.randomBytes(nacl.box.nonceLength);
 

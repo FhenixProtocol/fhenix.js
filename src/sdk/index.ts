@@ -1,5 +1,4 @@
 import { TfheCompactPublicKey } from 'node-tfhe';
-import sodium from 'libsodium-wrappers';
 import { isAddress, fromHexString } from './utils';
 import {
   ContractPermits,

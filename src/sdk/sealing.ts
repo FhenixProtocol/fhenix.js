@@ -1,9 +1,17 @@
-import sodium from 'libsodium-wrappers';
 import { fromHexString, numberToBytes, toBeArray, toBigInt } from './utils';
 import is, { assert } from '@sindresorhus/is';
+import * as nacl from 'tweetnacl';
+import * as naclUtil from 'tweetnacl-util';
 
 const PRIVATE_KEY_LENGTH = 64;
 const PUBLIC_KEY_LENGTH = 64;
+
+export type EthEncryptedData = {
+  version: string;
+  nonce: string;
+  ephemPublicKey: string;
+  ciphertext: string;
+};
 
 export class SealingKey {
   privateKey: string;
@@ -27,31 +35,66 @@ export class SealingKey {
     const toDecrypt =
       typeof ciphertext === 'string' ? fromHexString(ciphertext) : ciphertext;
 
-    const decrypted = sodium.crypto_box_seal_open(
-      toDecrypt,
-      fromHexString(this.publicKey),
+    // json decoding
+    const jsonString =Buffer.from(toDecrypt).toString('utf8')
+    const parsedData: EthEncryptedData = JSON.parse(jsonString)
+
+    // assemble decryption parameters
+    const nonce = naclUtil.decodeBase64(parsedData.nonce);
+    const ephemPublicKey = naclUtil.decodeBase64(
+      parsedData.ephemPublicKey,
+    );
+
+    // decrypt
+    const decryptedMessage = nacl.box.open(
+      ciphertext,
+      nonce,
+      ephemPublicKey,
       fromHexString(this.privateKey),
     );
-    return toBigInt(decrypted);
+
+    return toBigInt(decryptedMessage);
   };
 
   static seal = (value: bigint | number, publicKey: string): string => {
     assert.string(publicKey);
     assert.any([is.bigint, is.number], value)
 
-    return sodium.crypto_box_seal(
+    // generate ephemeral keypair
+    const ephemeralKeyPair = nacl.box.keyPair();
+
+    // assemble encryption parameters - from string to UInt8
+    let pubKeyUInt8Array: Uint8Array;
+    try {
+      pubKeyUInt8Array = naclUtil.decodeBase64(publicKey);
+    } catch (err) {
+      throw new Error('Bad public key');
+    }
+
+    const nonce = nacl.randomBytes(nacl.box.nonceLength);
+
+    const encryptedMessage = nacl.box(
       toBeArray(value),
+      nonce,
       fromHexString(publicKey),
-      'hex',
+      ephemeralKeyPair.secretKey,
     );
+
+    // handle encrypted data
+    const output = {
+      version: 'x25519-xsalsa20-poly1305',
+      nonce: naclUtil.encodeBase64(nonce),
+      ephemPublicKey: naclUtil.encodeBase64(ephemeralKeyPair.publicKey),
+      ciphertext: naclUtil.encodeBase64(encryptedMessage),
+    };
+
+    return JSON.stringify(output)
   }
 
 }
 
 export const GenerateSealingKey = async (): Promise<SealingKey> => {
-  await sodium.ready;
-
-  const sodiumKeypair = sodium.crypto_box_keypair('hex');
+  const sodiumKeypair = nacl.box.keyPair();
 
   return new SealingKey(sodiumKeypair.privateKey, sodiumKeypair.publicKey);
 }

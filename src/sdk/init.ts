@@ -11,6 +11,8 @@ export const initFhevm: InitFhevm = async () => {
   }
   return initialized;
 };
-
+// export function import_wasm() {
+//   return import("tfhe/tfhe_bg.wasm");
+// }
 
 

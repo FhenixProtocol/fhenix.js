@@ -2,7 +2,7 @@ const path = require("path");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
 module.exports = {
-  entry: path.resolve(__dirname, "../","src", "index.ts"),
+  entry: path.resolve(__dirname, '../', 'src', 'index.ts'),
   output: {
     path: path.resolve(__dirname, '../', 'dist'),
     filename: "browser.js",
@@ -23,9 +23,6 @@ module.exports = {
         test: /\.ts?$/,
         exclude: [/node_modules/],
         use: ["ts-loader"],
-        generator: {
-          filename: "[name][ext]",
-        },
       },
       {
         test: /\.wasm$/,
@@ -34,7 +31,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    extensions: [".ts", ".js"],
     alias: {
       "node-tfhe": "tfhe/tfhe",
     },

@@ -7,13 +7,13 @@ import {
   SupportedProvider,
   EncryptionTypes
 } from './types';
-import { assert } from '@sindresorhus/is';
 import { AbiCoder, Interface, JsonRpcProvider } from 'ethers';
 
 import { FheOpsAddress, MAX_UINT16, MAX_UINT32, MAX_UINT8 } from './consts';
 import { Permit } from '../extensions/access_control';
 import { ValidateUintInRange } from './utils';
 import * as tfheEncrypt from './encrypt';
+import { isNumber, isPlainObject, isString } from './validation';
 
 export class FhenixClient {
   private permits: ContractPermits = {};
@@ -24,8 +24,7 @@ export class FhenixClient {
   // **************** Class creation
 
   public static Create = async (params: InstanceParams) => {
-    assert.plainObject(params)
-    //assert.object(params.provider)
+    isPlainObject(params);
 
     if (params?.provider === undefined) {
       params.provider = new JsonRpcProvider("http://localhost:8545")
@@ -50,7 +49,7 @@ export class FhenixClient {
   // *********************** Encryption
 
   encrypt_uint8(value: number) {
-    assert.number(value);
+    isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
     }
@@ -59,7 +58,7 @@ export class FhenixClient {
   };
 
   encrypt_uint16(value: number) {
-    assert.number(value);
+    isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
     }
@@ -67,7 +66,7 @@ export class FhenixClient {
     return tfheEncrypt.encrypt_uint16(value, this.fhePublicKey);
   };
   encrypt_uint32(value: number) {
-    assert.number(value);
+    isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
     }
@@ -75,7 +74,7 @@ export class FhenixClient {
     return tfheEncrypt.encrypt_uint32(value, this.fhePublicKey);
   };
   encrypt(value: number, type?: EncryptionTypes) {
-    assert.number(value);
+    isNumber(value);
 
     let outputSize = type;
 
@@ -115,7 +114,7 @@ export class FhenixClient {
 
   unseal(contractAddress: string, ciphertext: string) {
     isAddress(contractAddress);
-    assert.string(ciphertext);
+    isString(ciphertext);
 
     if (!this.hasPermit(contractAddress)) {
       throw new Error(`Missing keypair for ${contractAddress}`);

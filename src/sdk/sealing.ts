@@ -1,7 +1,7 @@
 import { fromHexString, numberToBytes, toBeArray, toBigInt, toHexString } from './utils';
-import is, { assert } from '@sindresorhus/is';
 import * as nacl from 'tweetnacl';
 import * as naclUtil from 'tweetnacl-util';
+import { isBigIntOrNumber, isString } from './validation';
 
 const PRIVATE_KEY_LENGTH = 64;
 const PUBLIC_KEY_LENGTH = 64;
@@ -65,8 +65,8 @@ export class SealingKey {
   };
 
   static seal = (value: bigint | number, publicKey: string): string => {
-    assert.string(publicKey);
-    assert.any([is.bigint, is.number], value)
+    isString(publicKey);
+    isBigIntOrNumber(value);
 
     // generate ephemeral keypair
     const ephemeralKeyPair = nacl.box.keyPair();

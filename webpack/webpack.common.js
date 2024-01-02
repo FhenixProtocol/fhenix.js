@@ -1,28 +1,36 @@
 const path = require("path");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
+const webpack = require('webpack');
+const { merge } = require("webpack-merge");
+const nodeExternals = require('webpack-node-externals');
 
-module.exports = {
+let commonConfig = {
   entry: path.resolve(__dirname, '../', 'src', 'index.ts'),
   output: {
     path: path.resolve(__dirname, '../', 'dist'),
-    filename: "browser.js",
     globalObject: "this",
     library: {
       name: "fhenixjs",
       type: "umd2",
     },
-    clean: true,
+  },
+  resolve: {
+    extensions: [".ts", ".js"],
   },
   experiments: {
     asyncWebAssembly: true,
     topLevelAwait: true,
   },
+};
+
+let clientConfig = merge(commonConfig, {
+  target: 'web',
   module: {
     rules: [
       {
         test: /\.ts?$/,
         exclude: [/node_modules/],
-        use: ["ts-loader"],
+        use: [{ loader: 'ts-loader' }],
       },
       {
         test: /\.wasm$/,
@@ -31,7 +39,6 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: [".ts", ".js"],
     alias: {
       "node-tfhe": "tfhe/tfhe",
     },
@@ -40,7 +47,44 @@ module.exports = {
       "node-tfhe": require.resolve("tfhe/tfhe"),
     },
   },
+  output: {
+    filename: "browser.js",
+  },
   plugins: [
     new NodePolyfillPlugin()
   ],
+});
+
+const ifdefLoaderOpts = {
+  DEBUG: true,
+  version: 3,
 };
+
+let serverConfig = merge(commonConfig, {
+  target: "node",
+  externalsPresets: { node: true },
+  output: {
+    filename: "index.node.js",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts?$/,
+        exclude: [/node_modules/],
+        use: [
+          { loader: 'ts-loader'},
+          { loader: "ifdef-loader", options: ifdefLoaderOpts }
+        ],
+      }
+    ],
+  },
+  externals: [
+    {
+      'utf-8-validate': 'commonjs utf-8-validate',
+      bufferutil: 'commonjs bufferutil',
+      'node-tfhe': 'commonjs node-tfhe',
+    },
+  ],
+});
+
+module.exports = [clientConfig, serverConfig];

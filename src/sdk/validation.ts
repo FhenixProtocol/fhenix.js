@@ -1,6 +1,6 @@
 function assertIs(is: boolean, expected: string, value: unknown) {
   if (!is) {
-    throw new Error(`Value ${value} is not a ${expected}: ${typeof value}`);
+    throw new Error(`Expected value which is \`${expected}\`, received value of type \`${typeof value}\`.`);
   }
 }
 

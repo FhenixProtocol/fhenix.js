@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "The JavaScript SDK for Fhenix",
   "types": "dist/types/index.d.ts",
-  "main": "dist/index.js",
+  "main": "dist/index.node.js",
   "browser": "dist/browser.js",
   "files": [
     "dist",
@@ -17,7 +17,7 @@
   "scripts": {
     "lint": "eslint src/",
     "build:prod": "webpack --config webpack/webpack.production.js && tsc",
-    "build:dev": "webpack --config webpack/webpack.development.js --profile --json > stats.json && tsc",
+    "build:dev": "webpack --config webpack/webpack.development.js && tsc",
     "serve": "webpack serve",
     "test": "VITE_CJS_IGNORE_WARNING=true vitest",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
@@ -58,6 +58,8 @@
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.10.1",
     "webpack-cli": "^5.1.4",
-    "webpack-merge": "^5.10.0"
+    "webpack-merge": "^5.10.0",
+    "webpack-node-externals": "^3.0.0",
+    "ifdef-loader": "^2.3.2"
   }
 }

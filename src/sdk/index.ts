@@ -32,10 +32,18 @@ export class FhenixClient {
 
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)
-    if (params?.initSdk !== false) {
-      const { initFhevm } = await import ('./init');
-      await initFhevm();
+    /// #if DEBUG
+    /// #else
+    try{
+      if (params?.initSdk !== false) {
+        const { initFhevm } = await import ('./init');
+        await initFhevm();
+      }
+    } catch (err) {
+      throw new Error(`Error initializing fhenix client - maybe try calling with initSdk: false. ${err}`);
     }
+    /// #endif
+
 
     const client = new FhenixClient();
 
@@ -86,10 +94,10 @@ export class FhenixClient {
     if (!outputSize) {
       if (value < MAX_UINT8) {
         outputSize = EncryptionTypes.uint8;
-      } else       if (value < MAX_UINT8) {
-        outputSize = EncryptionTypes.uint8;
-      } else       if (value < MAX_UINT8) {
-        outputSize = EncryptionTypes.uint8;
+      } else       if (value < MAX_UINT16) {
+        outputSize = EncryptionTypes.uint16;
+      } else       if (value < MAX_UINT32) {
+        outputSize = EncryptionTypes.uint32;
       } else {
         throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
       }

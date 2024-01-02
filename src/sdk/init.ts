@@ -1,5 +1,6 @@
+/// #if DEBUG
+/// #else
 import initSDK, { InitOutput } from 'tfhe';
-//@ts-ignore
 import wasm from 'tfhe/tfhe_bg.wasm';
 
 let initialized: InitOutput;
@@ -17,3 +18,4 @@ export const initFhevm: InitFhevm = async () => {
 // }
 
 
+/// #endif

@@ -1,9 +1,9 @@
 {
-  "name": "fhenix.js",
+  "name": "fhenixjs",
   "version": "0.2.1",
   "description": "The JavaScript SDK for Fhenix",
-  "types": "dist/index.d.ts",
-  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "main": "dist/index.node.js",
   "browser": "dist/browser.js",
   "files": [
     "dist",
@@ -16,8 +16,8 @@
   ],
   "scripts": {
     "lint": "eslint src/",
-    "build:prod": "webpack --config webpack/webpack.production.js",
-    "build:dev": "webpack --config webpack/webpack.development.js --profile --json > stats.json",
+    "build:prod": "webpack --config webpack/webpack.production.js && tsc",
+    "build:dev": "webpack --config webpack/webpack.development.js && tsc",
     "serve": "webpack serve",
     "test": "VITE_CJS_IGNORE_WARNING=true vitest",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
@@ -34,18 +34,15 @@
   },
   "homepage": "https://github.com/FhenixProtocol/fhenix.js#readme",
   "dependencies": {
-    "@sindresorhus/is": "^6.1.0",
     "ethers": "^6.9.1",
-    "libsodium": "^0.7.11",
-    "libsodium-wrappers": "^0.7.11",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
     "node-tfhe": "^0.3.1",
     "tfhe": "^0.3.1"
   },
   "devDependencies": {
     "@esm-bundle/chai": "^4.3.4-fix.0",
-    "@types/libsodium-wrappers": "^0.7.10",
     "@types/node": "^18.11.3",
-    "@vitest/coverage-istanbul": "^1.1.0",
     "@vitest/coverage-v8": "^1.1.0",
     "compression-webpack-plugin": "^10.0.0",
     "node-polyfill-webpack-plugin": "^3.0.0",
@@ -61,6 +58,8 @@
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.10.1",
     "webpack-cli": "^5.1.4",
-    "webpack-merge": "^5.10.0"
+    "webpack-merge": "^5.10.0",
+    "webpack-node-externals": "^3.0.0",
+    "ifdef-loader": "^2.3.2"
   }
 }

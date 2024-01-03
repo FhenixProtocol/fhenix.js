@@ -1,12 +1,8 @@
-import sodium from 'libsodium-wrappers';
 import { GenerateSealingKey, SealingKey } from '../src';
 import { fromHexString } from '../src/sdk/utils';
 import { assert, expect, test, describe, it, beforeAll } from 'vitest'
 
 describe('tests sealing and unsealing using SealingKey', () => {
-  beforeAll(async () => {
-    await sodium.ready;
-  });
 
   it('decrypts a hex value', async () => {
     const keypair = await GenerateSealingKey();

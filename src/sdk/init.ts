@@ -1,3 +1,5 @@
+/// #if DEBUG
+/// #else
 import initSDK, { InitOutput } from 'tfhe';
 import wasm from 'tfhe/tfhe_bg.wasm';
 
@@ -11,6 +13,9 @@ export const initFhevm: InitFhevm = async () => {
   }
   return initialized;
 };
+// export function import_wasm() {
+//   return import("tfhe/tfhe_bg.wasm");
+// }
 
 
-
+/// #endif

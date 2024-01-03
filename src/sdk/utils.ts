@@ -1,16 +1,15 @@
 import { Buffer } from 'buffer';
 
 import { toBigInt as ethersToBigInt, toBeArray as ethersToBeArray, isAddress as ethersIsAddress } from 'ethers';
-import { assert } from '@sindresorhus/is';
+import { isNumber } from './validation';
 
 export const ValidateUintInRange = (value: number, max: number, min: number): void => {
-  assert.number(value);
+  isNumber(value);
 
   if (value > max || value < min) {
     throw new Error(`Value out of range: ${max} - ${min}, try a different uint type`);
   }
 }
-
 
 export const fromHexString = (hexString: string): Uint8Array => {
   const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);

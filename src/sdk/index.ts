@@ -143,6 +143,11 @@ export class FhenixClient {
   storePermit(permit: Permit) {
       this.permits[permit.contractAddress] = permit
   }
+  removePermit(contractAddress: string) {
+    if (this.hasPermit(contractAddress)) {
+      delete this.permits[contractAddress];
+    }
+  }
   hasPermit(contractAddress: string) {
     return (
       this.permits[contractAddress] !== null

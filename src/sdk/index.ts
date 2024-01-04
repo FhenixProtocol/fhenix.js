@@ -63,7 +63,7 @@ export class FhenixClient {
     }
     ValidateUintInRange(value, MAX_UINT8, 0);
     return tfheEncrypt.encrypt_uint8(value, this.fhePublicKey);
-  };
+  }
 
   encrypt_uint16(value: number) {
     isNumber(value);
@@ -72,7 +72,7 @@ export class FhenixClient {
     }
     ValidateUintInRange(value, MAX_UINT16, 0);
     return tfheEncrypt.encrypt_uint16(value, this.fhePublicKey);
-  };
+  }
   encrypt_uint32(value: number) {
     isNumber(value);
     if (!this.fhePublicKey) {
@@ -80,7 +80,7 @@ export class FhenixClient {
     }
     ValidateUintInRange(value, MAX_UINT32, 0);
     return tfheEncrypt.encrypt_uint32(value, this.fhePublicKey);
-  };
+  }
   encrypt(value: number, type?: EncryptionTypes) {
     isNumber(value);
 
@@ -129,7 +129,7 @@ export class FhenixClient {
     }
 
     return this.permits[contractAddress].sealingKey.unseal(ciphertext);
-  };
+  }
 
   // ******************* Permit functions
   getPermit(contractAddress: string) {
@@ -152,11 +152,11 @@ export class FhenixClient {
     return (
       this.permits[contractAddress] !== null
     );
-  };
+  }
 
   exportPermits() {
     return this.permits;
-  };
+  }
 
   private static async getFheKeyFromProvider(provider: SupportedProvider) {
     const requestMethod = determineRequestMethod(provider);

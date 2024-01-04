@@ -1,15 +1,33 @@
-import { isAddress, toHexString } from '../../../sdk/utils';
+import { isAddress } from '../../../sdk/utils';
 import { determineRequestMethod, determineRequestSigner, SupportedProvider } from '../../../sdk/types';
-import { EIP712 } from '../EIP712';
+import { EIP712, EIP712Domain, EIP712Message, EIP712Types } from '../EIP712';
 import { GenerateSealingKey, SealingKey } from '../../../sdk/sealing';
 
 const PERMIT_PREFIX = "Fhenix_saved_permit_";
 
+/**
+ * Represents a permit with cryptographic properties.
+ */
 export type Permit = {
-  contractAddress: string,
+  /**
+   * The Ethereum contract address associated with the permit.
+   */
+  contractAddress: string;
+
+  /**
+   * The sealing key information required to seal or unseal data related to the permit.
+   */
   sealingKey: SealingKey;
+
+  /**
+   * A cryptographic signature proving the authenticity and integrity of the permit.
+   */
   signature: string;
-  publicKey: string
+
+  /**
+   * The public key corresponding to the private key used to generate the signature.
+   */
+  publicKey: string;
 };
 
 type SerializedPermit = {
@@ -57,7 +75,7 @@ export const getPermit = async (contract: string, provider: SupportedProvider): 
 }
 
 export const getAllPermits = (): Map<string, Permit> => {
-  let permits: Map<string, Permit> = new Map();
+  const permits: Map<string, Permit> = new Map();
 
   for (let i = 0; i < window.localStorage.length; i++) {
     const key = window.localStorage.key(i);
@@ -75,7 +93,15 @@ export const getAllPermits = (): Map<string, Permit> => {
 
 }
 
-const sign = async (signer: any, domain: any, types: any, value: any): Promise<string> => {
+interface SignerPublicSignedTypedData {
+  signTypedData(domain: object, types: object, value: object): Promise<string>;
+}
+interface SignerPrivateSignedTypedData {
+  _signTypedData(domain: object, types: object, value: object): Promise<string>;
+}
+type PermitSigner = SignerPrivateSignedTypedData | SignerPublicSignedTypedData;
+
+const sign = async (signer: PermitSigner, domain: EIP712Domain, types: EIP712Types, value: EIP712Message): Promise<string> => {
   if ('_signTypedData' in signer && typeof signer._signTypedData == 'function') {
     return await signer._signTypedData(domain, types, value);
   } else if ('signTypedData' in signer && typeof signer.signTypedData == 'function') {
@@ -129,8 +155,8 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
     },
   };
 
-  const msgSig = await sign(signer, msgParams.domain, 
-    { Reencrypt: msgParams.types.Reencrypt }, 
+  const msgSig = await sign(signer, msgParams.domain,
+    { Reencrypt: msgParams.types.Reencrypt },
     msgParams.message
   );
 
@@ -145,7 +171,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
   if (typeof window !== 'undefined' && window.localStorage) {
 
     // Sealing key is a class, and will include methods in the JSON
-    let serialized: SerializedPermit = {
+    const serialized: SerializedPermit = {
       contractAddress: permit.contractAddress,
       sealingKey: {
         publicKey: permit.sealingKey.publicKey,

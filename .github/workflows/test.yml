@@ -35,8 +35,8 @@ jobs:
         run: pnpm install
       - name: Run Tests
         run: pnpm test
-#      - name: Run ESLint
-#        run: eslint . --ext .js,.jsx,.ts,.tsx
+      - name: Run ESLint
+        run: pnpm lint
 
   test-build:
     runs-on: ubuntu-latest

@@ -4,8 +4,17 @@
 // }
 
 export {
- FhenixClient
+ FhenixClient,
 } from "./sdk/index";
+
+export {
+  ContractPermits,
+  InstanceParams,
+  SupportedProvider,
+  EncryptionTypes,
+  HardhatEthersProvider,
+  EthersProvider
+} from './sdk/types';
 
 export * from "./extensions/access_control";
 

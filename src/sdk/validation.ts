@@ -10,7 +10,7 @@ export function isString(value: unknown) {
   assertIs(is, 'string', value);
 }
 
-export function isPlainObject<Value = unknown>(value: unknown){
+export function isPlainObject(value: unknown){
   // From: https://github.com/sindresorhus/is-plain-obj/blob/main/index.js
   if (typeof value !== 'object' || value === null) {
     return false;

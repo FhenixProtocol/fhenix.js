@@ -18,6 +18,7 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8
+      - run: pnpm install
       # Generate your TypeDoc documentation
       - run: pnpm typedoc
       # https://github.com/actions/upload-pages-artifact

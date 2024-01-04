@@ -1,0 +1,40 @@
+name: Coverage
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      secret:
+        image: ghcr.io/fhenixprotocol/fhenix-node-dev:v0.0.7-standalone
+        ports:
+          - 8545:8547 # RPC
+          - 5000:3000 # Faucet
+    permissions:
+      contents: read
+      packages: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
+    env:
+      SKIP_LOCAL_ENV: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - name: 'Install Node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: 'Install Deps'
+        run: pnpm install
+      - name: 'Test with Coverage'
+        run: pnpm coverage
+      - name: 'Report Coverage'
+        # Set if: always() to also generate the report if tests are failing
+        # Only works if you set `reportOnFailure: true` in your vite config as specified above
+        if: always()
+        uses:  davelosert/vitest-coverage-report-action@v2

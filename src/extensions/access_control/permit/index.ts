@@ -1,21 +1,41 @@
-import sodium from 'libsodium-wrappers';
-import { toHexString, isAddress } from '../../../utils';
-import { ContractKeypair, SupportedProvider, determineRequestMethod, determineRequestSigner } from '../../../sdk/types';
+import { isAddress, toHexString } from '../../../sdk/utils';
+import { determineRequestMethod, determineRequestSigner, SupportedProvider } from '../../../sdk/types';
 import { EIP712 } from '../EIP712';
+import { GenerateSealingKey, SealingKey } from '../../../sdk/sealing';
+
+const PERMIT_PREFIX = "Fhenix_saved_permit_";
 
 export type Permit = {
   contractAddress: string,
-  keypair: ContractKeypair;
+  sealingKey: SealingKey;
+  signature: string;
   publicKey: string
 };
 
+type SerializedPermit = {
+  contractAddress: string;
+  sealingKey: {
+    privateKey: string;
+    publicKey: string;
+  }
+  signature: string;
+}
+
+const parsePermit = (savedPermit: string): Permit => {
+  const o = JSON.parse(savedPermit) as SerializedPermit;
+  if (o) {
+    return {
+      contractAddress: o.contractAddress,
+      sealingKey: new SealingKey(o.sealingKey.privateKey, o.sealingKey.publicKey),
+      signature: o.signature,
+      publicKey: o.sealingKey.publicKey
+    };
+  }
+  throw new Error(`Cannot parse permit`);
+}
+
 export const getPermit = async (contract: string, provider: SupportedProvider): Promise<Permit> => {
-  if (!contract || contract.trim() === "") {
-    throw new Error(`Missing contract address`);
-  }
-  if (!isAddress(contract)) {
-    throw new Error('Invalid contract address');
-  }
+  isAddress(contract);
   if (!provider) {
     throw new Error(`Missing provider`);
   }
@@ -23,25 +43,36 @@ export const getPermit = async (contract: string, provider: SupportedProvider): 
 
   let savedPermit = null;
   if (typeof window !== 'undefined' && window.localStorage) {
-    savedPermit = window.localStorage.getItem(`Fhenix_saved_permit_${contract}`);
+    savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
   }
 
   if (savedPermit) {
-    const o = JSON.parse(savedPermit) as Permit;
-    if (o) { 
-      const permit : Permit = {
-        contractAddress: o.contractAddress,
-        keypair: {
-          publicKey: new Uint8Array(Object.values(o.keypair.publicKey)),
-          privateKey: new Uint8Array(Object.values(o.keypair.privateKey)),
-          signature: o.keypair.signature
-        },
-        publicKey: o.publicKey
-      }
-      return permit;
+    try {
+      return parsePermit(savedPermit);
+    } catch (err) {
+      console.warn(err);
     }
-  } 
+  }
   return generatePermit(contract, provider);
+}
+
+export const getAllPermits = (): Map<string, Permit> => {
+  let permits: Map<string, Permit> = new Map();
+
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key && key.includes(PERMIT_PREFIX)) {
+      const contract = key.replace(PERMIT_PREFIX,"");
+      try {
+        const permit = parsePermit(window.localStorage.getItem(key)!);
+        permits.set(contract, permit);
+      } catch(err) {
+        console.warn(err);
+      }
+    }
+  }
+  return permits;
+
 }
 
 const sign = async (signer: any, domain: any, types: any, value: any): Promise<string> => {
@@ -65,7 +96,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
 
   const chainId = await requestMethod(provider, "eth_chainId", [ ]);
 
-  const keypair = sodium.crypto_box_keypair(); // params.keypair || 
+  const keypair = await GenerateSealingKey();
   const msgParams: EIP712 = {
     types: {
       // This refers to the domain the contract is hosted on.
@@ -94,7 +125,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
       verifyingContract: contract //params.verifyingContract,
     },
     message: {
-      publicKey: `0x${toHexString(keypair.publicKey)}`,
+      publicKey: `0x${keypair.publicKey}`,
     },
   };
 
@@ -105,17 +136,29 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
 
   const permit : Permit = {
     contractAddress: contract,
-    keypair: {
-      publicKey: keypair.publicKey,
-      privateKey: keypair.privateKey,
-      signature: msgSig
-    },
-    publicKey: `0x${toHexString(keypair.publicKey)}`
+    sealingKey: keypair,
+    signature: msgSig,
+    publicKey: `0x${keypair.publicKey}`
     //permit: msgParams,
     //msgSig
   };
   if (typeof window !== 'undefined' && window.localStorage) {
-    window.localStorage.setItem(`Fhenix_saved_permit_${contract}`, JSON.stringify(permit));
+
+    // Sealing key is a class, and will include methods in the JSON
+    let serialized: SerializedPermit = {
+      contractAddress: permit.contractAddress,
+      sealingKey: {
+        publicKey: permit.sealingKey.publicKey,
+        privateKey: permit.sealingKey.privateKey
+      },
+      signature: permit.signature
+    };
+
+    window.localStorage.setItem(`${PERMIT_PREFIX}${contract}`, JSON.stringify(serialized));
   }
   return permit;
 };
+
+export const removePermit = (contract: string): void => {
+  window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}`);
+}

@@ -1,8 +1,24 @@
-import { Eip1193Provider, BrowserProvider } from "ethers";
+import { Eip1193Provider, BrowserProvider, isAddress as ethersIsAddress } from "ethers";
+import { Permit } from '../extensions/access_control';
 
-export type ContractKeypairs = {
-  [key: string]: ContractKeypair;
+export type ContractPermits = Record<string, Permit>;
+
+export enum EncryptionTypes {
+  uint8 = 'uint8',
+  uint16 = 'uint16',
+  uint32 = 'uint32',
+}
+
+export type PermitSignature = {
+  publicKey: Uint8Array;
+  signature: string;
 };
+
+export type InstanceParams = {
+  provider?: SupportedProvider;
+  initSdk?: boolean;
+};
+
 
 export type ContractKeypair = {
   publicKey: Uint8Array;
@@ -42,3 +58,4 @@ export function determineRequestSigner(provider: SupportedProvider): Function {
     throw new Error("The supplied provider cannot get a signer");
   }
 }
+

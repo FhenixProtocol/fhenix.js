@@ -1,23 +1,55 @@
-name: PR test
+name: Run Tests
 
 on:
-  pull_request:
-    branches:
-      - main
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+
 jobs:
-  build:
+
+  test:
     runs-on: ubuntu-latest
 
+    services:
+      secret:
+        image: ghcr.io/fhenixprotocol/fhenix-node-dev:v0.0.7-standalone
+        ports:
+          - 8545:8547 # RPC
+          - 5000:3000 # Faucet
+    env:
+        SKIP_LOCAL_ENV: "true"
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [20.x, 18.x]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - uses: ArtiomTr/jest-coverage-report-action@v2
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Run Tests
+        run: pnpm test
+#      - name: Run ESLint
+#        run: eslint . --ext .js,.jsx,.ts,.tsx
+
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v4
+     - name: Use Node.js ${{ matrix.node-version }}
+       uses: actions/setup-node@v3
+       with:
+         node-version: ${{ matrix.node-version }}
+     - uses: pnpm/action-setup@v2
+       with:
+         version: 8
+     - name: Install Dependencies
+       run: pnpm install
+     - name: Test Build
+       run: pnpm build:dev

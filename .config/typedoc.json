@@ -1,7 +1,7 @@
 {
-  "entryPoints": ["../src/sdk/index.ts"],
-  "out": "./docs",
-  "githubPages": false,
+  "entryPoints": ["../src/index.ts"],
+  "out": "./../docs",
+  "githubPages": true,
   "name": "fhenix.js Docs",
   "excludePrivate": true,
   "excludeProtected": true,

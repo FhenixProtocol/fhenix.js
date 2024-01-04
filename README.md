@@ -17,30 +17,45 @@
 </p>
 
 
+## General
+
+fhenix.js allows developers to add support for encrypted data when developing dApps on Fhenix.
+fhenix.js includes easy helpers for encryption, unsealing and helpers to create apps that utilize private data.
+
 ## Installation
 
 ```bash
 # Using npm
 npm install fhenixjs
-
-# Using Yarn
-yarn add fhenixjs
-
-# Using pnpm
-pnpm add fhenixjs
 ```
 
-This will download and install the fhenix.js library and its dependencies into your project.
+## Usage
 
-## Credits
+```javascript
+// initialize your web3 provider
+const provider = new JsonRpcProvider('http://localhost:8545');
 
-This project is based on [fhevmjs](https://github.com/zama-ai/fhevmjs) by Zama.
+// initialize Fhenix Client
+const client = await FhenixClient.Create({provider});
 
-## Need support?
+// to encrypt data for a Fhenix contract
+let encrypted = client.encrypt(5, EncryptionTypes.uint8);
+// ... call contract with `encrypted`
+
+// to unseal data from a Fhenix contract
+const cleartext = client.unseal(contractAddress, sealed);
+```
+
+### Permits & Access Control
+
+We recommend the helper `Permit` structure, which is a built-in method for providing access control for your FHE-enabled view functions.
+
+
+
+#### Credits
+
+This project is based on [fhevmjs](https://github.com/zama-ai/fhevmjs) by Zama and utilizes [tfhe.rs](https://github.com/zama-ai/tfhe-rs) to provide FHE functionality
+
+#### Need support?
 
 Todo: discord link, telegram link, etc.
-
-## License
-
-This software is distributed under the BSD-3-Clause-Clear license. If you have any questions,
-please contact us at `info@fhenix.io`.

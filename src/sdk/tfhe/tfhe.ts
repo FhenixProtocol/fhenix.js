@@ -11,10 +11,10 @@ export const createTfheKeypair = () => {
   const block_params = new ShortintParameters(
     ShortintParametersName.PARAM_MESSAGE_2_CARRY_2_COMPACT_PK_PBS_KS,
   );
-  let config = TfheConfigBuilder.all_disabled()
+  const config = TfheConfigBuilder.all_disabled()
     .enable_custom_integers(block_params)
     .build();
-  let clientKey = TfheClientKey.generate(config);
+  const clientKey = TfheClientKey.generate(config);
   let publicKey = TfheCompactPublicKey.new(clientKey);
   publicKey = TfheCompactPublicKey.deserialize(publicKey.serialize());
   return { clientKey, publicKey };

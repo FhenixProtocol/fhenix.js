@@ -1,4 +1,4 @@
-import { fromHexString, numberToBytes, toBeArray, toBigInt, toHexString } from './utils';
+import { fromHexString, toBeArray, toBigInt, toHexString } from './utils';
 import * as nacl from 'tweetnacl';
 import * as naclUtil from 'tweetnacl-util';
 import { isBigIntOrNumber, isString } from './validation';
@@ -15,10 +15,28 @@ export type EthEncryptedData = {
   ciphertext: string;
 };
 
+/**
+ * A class representing a SealingKey which provides cryptographic sealing (encryption)
+ * and unsealing (decryption) capabilities.
+ */
 export class SealingKey {
+  /**
+   * The private key used for decryption.
+   */
   privateKey: string;
+  /**
+   * The public key used for encryption.
+   */
   publicKey: string;
 
+  /**
+   * Constructs a SealingKey instance with the given private and public keys.
+   *
+   * @param {string} privateKey - The private key used for decryption.
+   * @param {string} publicKey - The public key used for encryption.
+   * @throws Will throw an error if the provided keys lengths do not match
+   *         the required lengths for private and public keys.
+   */
   constructor(privateKey: string, publicKey: string) {
 
     if (privateKey.length !== PRIVATE_KEY_LENGTH) {
@@ -33,12 +51,19 @@ export class SealingKey {
     this.publicKey = publicKey;
   }
 
+  /**
+   * Unseals (decrypts) the provided ciphertext using the instance's private key.
+   *
+   * @param {string | Uint8Array} ciphertext - The encrypted data to be decrypted.
+   * @returns BigInt - The decrypted message as a bigint.
+   * @throws Will throw an error if the decryption process fails.
+   */
   unseal = (ciphertext: string | Uint8Array): bigint => {
     const toDecrypt =
       typeof ciphertext === 'string' ? fromHexString(ciphertext) : ciphertext;
 
-    // json decoding
-    const jsonString =Buffer.from(toDecrypt).toString('utf8')
+    // decode json structure that gets returned from the chain
+    const jsonString = Buffer.from(toDecrypt).toString('utf8')
     const parsedData: EthEncryptedData = JSON.parse(jsonString)
 
     // assemble decryption parameters
@@ -49,7 +74,7 @@ export class SealingKey {
     const dataToDecrypt = naclUtil.decodeBase64(
       parsedData.ciphertext,
     );
-    // decrypt
+    // call the nacl box function to decrypt the data
     const decryptedMessage = nacl.box.open(
       dataToDecrypt,
       nonce,
@@ -64,6 +89,15 @@ export class SealingKey {
     return toBigInt(decryptedMessage);
   };
 
+  /**
+   * Seals (encrypts) the provided message for a receiver with the specified public key.
+   *
+   * @param {bigint | number} value - The message to be encrypted.
+   * @param {string} publicKey - The public key of the intended recipient.
+   * @returns string - The encrypted message in hexadecimal format.
+   * @static
+   * @throws Will throw if the provided publicKey or value do not meet defined preconditions.
+   */
   static seal = (value: bigint | number, publicKey: string): string => {
     isString(publicKey);
     isBigIntOrNumber(value);

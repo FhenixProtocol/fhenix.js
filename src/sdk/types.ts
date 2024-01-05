@@ -76,6 +76,7 @@ export type SupportedProvider = BrowserProvider | Eip1193Provider | EthersProvid
  * @param {SupportedProvider} provider - The provider to determine the request method for.
  * @returns {Function} - The determined request function.
  */
+// eslint-disable-next-line  @typescript-eslint/ban-types
 export function determineRequestMethod(provider: SupportedProvider): Function {
   // unify provider interface: eip-1193-compatible providers such as metamask's expose "request",
   // while ethers' and hardhat's may expose a slightly different "send", to issue RPC calls.
@@ -107,3 +108,10 @@ export function determineRequestSigner(provider: SupportedProvider): Function {
   }
 }
 
+export interface EncryptedNumber {
+  data: Uint8Array;
+}
+
+export interface EncryptedUint8 extends EncryptedNumber {}
+export interface EncryptedUint16 extends EncryptedNumber {}
+export interface EncryptedUint32 extends EncryptedNumber {}

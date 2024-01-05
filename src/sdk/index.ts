@@ -15,15 +15,24 @@ import { ValidateUintInRange } from './utils';
 import * as tfheEncrypt from './encrypt';
 import { isNumber, isPlainObject, isString } from './validation';
 
+
+/**
+ * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+ * It includes methods for encryption, unsealing, and managing permits.
+ */
 export class FhenixClient {
   private permits: ContractPermits = {};
   private fhePublicKey: TfheCompactPublicKey | undefined = undefined;
 
   private constructor() {}
 
-  // **************** Class creation
-
-  public static Create = async (params: InstanceParams) => {
+  /**
+   * Asynchronously creates an instance of FhenixClient.
+   * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
+   * @param {InstanceParams} params - Parameters to initialize the client.
+   * @returns {Promise<FhenixClient>} - The initialized FhenixClient instance.
+   */
+  public static Create = async (params: InstanceParams): Promise<FhenixClient> => {
     isPlainObject(params);
 
     if (params?.provider === undefined) {
@@ -54,9 +63,14 @@ export class FhenixClient {
     return client;
   }
 
-  // *********************** Encryption
+  // Encryption Methods
 
-  encrypt_uint8(value: number) {
+  /**
+   * Encrypts a Uint8 value using the stored public key.
+   * @param {number} value - The Uint8 value to encrypt.
+   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   */
+  encrypt_uint8(value: number): Uint8Array {
     isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
@@ -65,7 +79,12 @@ export class FhenixClient {
     return tfheEncrypt.encrypt_uint8(value, this.fhePublicKey);
   }
 
-  encrypt_uint16(value: number) {
+  /**
+   * Encrypts a Uint16 value using the stored public key.
+   * @param {number} value - The Uint16 value to encrypt.
+   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   */
+  encrypt_uint16(value: number): Uint8Array {
     isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
@@ -73,6 +92,12 @@ export class FhenixClient {
     ValidateUintInRange(value, MAX_UINT16, 0);
     return tfheEncrypt.encrypt_uint16(value, this.fhePublicKey);
   }
+
+  /**
+   * Encrypts a Uint32 value using the stored public key.
+   * @param {number} value - The Uint32 value to encrypt.
+   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   */
   encrypt_uint32(value: number) {
     isNumber(value);
     if (!this.fhePublicKey) {
@@ -81,6 +106,13 @@ export class FhenixClient {
     ValidateUintInRange(value, MAX_UINT32, 0);
     return tfheEncrypt.encrypt_uint32(value, this.fhePublicKey);
   }
+
+  /**
+   * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
+   * @param {number} value - The numeric value to encrypt.
+   * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
+   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   */
   encrypt(value: number, type?: EncryptionTypes) {
     isNumber(value);
 
@@ -118,8 +150,14 @@ export class FhenixClient {
     return tfheEncrypt.encrypt(value, this.fhePublicKey, type);
   }
 
-  // ************************ Unsealing
+  // Unsealing Method
 
+  /**
+   * Unseals an encrypted message using the stored permit for a specific contract address.
+   * @param {string} contractAddress - The address of the contract.
+   * @param {string} ciphertext - The encrypted message to unseal.
+   * @returns {any} - The unsealed message.
+   */
   unseal(contractAddress: string, ciphertext: string) {
     isAddress(contractAddress);
     isString(ciphertext);
@@ -131,7 +169,13 @@ export class FhenixClient {
     return this.permits[contractAddress].sealingKey.unseal(ciphertext);
   }
 
-  // ******************* Permit functions
+  // Permit Management Methods
+
+  /**
+   * Retrieves the stored permit for a specific contract address.
+   * @param {string} contractAddress - The address of the contract.
+   * @returns {Permit} - The permit associated with the contract address.
+   */
   getPermit(contractAddress: string) {
     if (!this.hasPermit(contractAddress)) {
       throw new Error(`Missing keypair for ${contractAddress}`);
@@ -140,25 +184,52 @@ export class FhenixClient {
     return this.permits[contractAddress];
   }
 
+  /**
+   * Stores a permit for a specific contract address. Will overwrite any existing permit for the same contract address.
+   * Does not store the permit in localstorage (should it?)
+   * @param {Permit} permit - The permit to store.
+   */
   storePermit(permit: Permit) {
       this.permits[permit.contractAddress] = permit
   }
+
+  /**
+   * Removes a stored permit for a specific contract address.
+   * @param {string} contractAddress - The address of the contract.
+   */
   removePermit(contractAddress: string) {
     if (this.hasPermit(contractAddress)) {
       delete this.permits[contractAddress];
     }
   }
-  hasPermit(contractAddress: string) {
+
+  /**
+   * Checks if a permit exists for a specific contract address.
+   * @param {string} contractAddress - The address of the contract.
+   * @returns {boolean} - True if a permit exists, false otherwise.
+   */
+  hasPermit(contractAddress: string): boolean {
     return (
       this.permits[contractAddress] !== null
     );
   }
 
+  /**
+   * Exports all stored permits.
+   * @returns {ContractPermits} - All stored permits.
+   */
   exportPermits() {
     return this.permits;
   }
 
-  private static async getFheKeyFromProvider(provider: SupportedProvider) {
+  // Private helper methods
+
+  /**
+   * Retrieves the FHE public key from the provider.
+   * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+   * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
+   */
+  private static async getFheKeyFromProvider(provider: SupportedProvider): Promise<TfheCompactPublicKey> {
     const requestMethod = determineRequestMethod(provider);
 
     const chainIdP = requestMethod(provider, 'eth_chainId').catch((err: Error) => {

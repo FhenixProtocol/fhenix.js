@@ -1,7 +1,7 @@
+name: Publish Package to npmjs
 on:
   release:
-    types: [created]
-
+    types: [published]
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -13,9 +13,9 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8
+      - name: Set publishing config
+        run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
       - run: pnpm install
-      - run: pnpm test
-      - run: pnpm build:prod
-      - uses: JS-DevTools/npm-publish@0f451a94170d1699fd50710966d48fb26194d939
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
+      - run: pnpm publish --no-git-checks

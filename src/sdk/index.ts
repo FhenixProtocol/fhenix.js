@@ -5,7 +5,7 @@ import {
   determineRequestMethod,
   InstanceParams,
   SupportedProvider,
-  EncryptionTypes
+  EncryptionTypes, EncryptedUint8, EncryptedUint16, EncryptedUint32, EncryptedNumber
 } from './types';
 import { AbiCoder, Interface, JsonRpcProvider } from 'ethers';
 
@@ -68,9 +68,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint8 value using the stored public key.
    * @param {number} value - The Uint8 value to encrypt.
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
    */
-  encrypt_uint8(value: number): Uint8Array {
+  encrypt_uint8(value: number): EncryptedUint8 {
     isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
@@ -82,9 +82,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint16 value using the stored public key.
    * @param {number} value - The Uint16 value to encrypt.
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
    */
-  encrypt_uint16(value: number): Uint8Array {
+  encrypt_uint16(value: number): EncryptedUint16 {
     isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
@@ -96,9 +96,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint32 value using the stored public key.
    * @param {number} value - The Uint32 value to encrypt.
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
    */
-  encrypt_uint32(value: number) {
+  encrypt_uint32(value: number): EncryptedUint32 {
     isNumber(value);
     if (!this.fhePublicKey) {
       throw new Error("Public key somehow not initialized");
@@ -111,9 +111,9 @@ export class FhenixClient {
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
    * @param {number} value - The numeric value to encrypt.
    * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
    */
-  encrypt(value: number, type?: EncryptionTypes) {
+  encrypt(value: number, type?: EncryptionTypes): EncryptedNumber {
     isNumber(value);
 
     let outputSize = type;
@@ -158,7 +158,7 @@ export class FhenixClient {
    * @param {string} ciphertext - The encrypted message to unseal.
    * @returns {any} - The unsealed message.
    */
-  unseal(contractAddress: string, ciphertext: string) {
+  unseal(contractAddress: string, ciphertext: string): any {
     isAddress(contractAddress);
     isString(ciphertext);
 
@@ -176,7 +176,7 @@ export class FhenixClient {
    * @param {string} contractAddress - The address of the contract.
    * @returns {Permit} - The permit associated with the contract address.
    */
-  getPermit(contractAddress: string) {
+  getPermit(contractAddress: string): Permit {
     if (!this.hasPermit(contractAddress)) {
       throw new Error(`Missing keypair for ${contractAddress}`);
     }

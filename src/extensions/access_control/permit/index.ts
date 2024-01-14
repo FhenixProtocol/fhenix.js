@@ -5,6 +5,11 @@ import { GenerateSealingKey, SealingKey } from '../../../sdk/sealing';
 
 const PERMIT_PREFIX = "Fhenix_saved_permit_";
 
+export type Permission = {
+  signature: string;
+  publicKey: string;
+}
+
 /**
  * Represents a permit with cryptographic properties.
  */

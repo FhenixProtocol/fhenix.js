@@ -10,7 +10,7 @@ import {
 import { AbiCoder, Interface, JsonRpcProvider } from 'ethers';
 
 import { FheOpsAddress, MAX_UINT16, MAX_UINT32, MAX_UINT8 } from './consts';
-import { Permit } from '../extensions/access_control';
+import { Permit, Permission } from '../extensions/access_control';
 import { ValidateUintInRange } from './utils';
 import * as tfheEncrypt from './encrypt';
 import { isNumber, isPlainObject, isString } from './validation';
@@ -220,6 +220,13 @@ export class FhenixClient {
    */
   exportPermits() {
     return this.permits;
+  }
+
+  extractPermitPermission(permit: Permit) : Permission {
+    return {
+      signature: permit.signature,
+      publicKey: permit.publicKey
+    };
   }
 
   // Private helper methods

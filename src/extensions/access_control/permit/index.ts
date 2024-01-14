@@ -147,7 +147,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
     primaryType: 'Reencrypt',
     domain: {
       // Give a user-friendly name to the specific contract you're signing for.
-      name: 'Authorization permit', // params.name
+      name: 'Fhenix Permission', // params.name
       // This identifies the latest version.
       version: '1', //params.version ||
       // This defines the network, in this case, Mainnet.

@@ -5,6 +5,11 @@ import { GenerateSealingKey, SealingKey } from '../../../sdk/sealing';
 
 const PERMIT_PREFIX = "Fhenix_saved_permit_";
 
+export type Permission = {
+  signature: string;
+  publicKey: string;
+}
+
 /**
  * Represents a permit with cryptographic properties.
  */
@@ -46,7 +51,7 @@ const parsePermit = (savedPermit: string): Permit => {
       contractAddress: o.contractAddress,
       sealingKey: new SealingKey(o.sealingKey.privateKey, o.sealingKey.publicKey),
       signature: o.signature,
-      publicKey: o.sealingKey.publicKey
+      publicKey: `0x${o.sealingKey.publicKey}`
     };
   }
   throw new Error(`Cannot parse permit`);
@@ -133,18 +138,18 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
         { name: 'verifyingContract', type: 'address' },
       ],
       // Refer to primaryType.
-      Reencrypt: [{ name: 'publicKey', type: 'bytes32' }],
+      Permissioned: [{ name: 'publicKey', type: 'bytes32' }],
     },
     // This defines the message you're proposing the user to sign, is dapp-specific, and contains
     // anything you want. There are no required fields. Be as explicit as possible when building out
     // the message schema.
     // This refers to the keys of the following types object.
-    primaryType: 'Reencrypt',
+    primaryType: 'Permissioned',
     domain: {
       // Give a user-friendly name to the specific contract you're signing for.
-      name: 'Authorization permit', // params.name
+      name: 'Fhenix Permission', // params.name
       // This identifies the latest version.
-      version: '1', //params.version ||
+      version: '1.0', //params.version ||
       // This defines the network, in this case, Mainnet.
       chainId: chainId,
       // // Add a verifying contract to make sure you're establishing contracts with the proper entity.
@@ -156,7 +161,7 @@ export const generatePermit = async (contract: string, provider: SupportedProvid
   };
 
   const msgSig = await sign(signer, msgParams.domain,
-    { Reencrypt: msgParams.types.Reencrypt },
+    { Permissioned: msgParams.types.Permissioned },
     msgParams.message
   );
 

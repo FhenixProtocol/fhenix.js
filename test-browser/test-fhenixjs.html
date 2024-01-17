@@ -1,34 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <title></title>
-  <script id="fhenixjs" src="../dist/browser.js" ></script>
-</head>
-<body>
-<button id="fetch">
-  Fetch
-</button>
-<div id="output"></div>
-</body>
-<script>
-  async function doFetch() {
-    const resp = await fhenixjs.FhenixClient.Create({});
+  <head>
+    <title></title>
+    <script id="fhenixjs" src="../dist/browser.js"></script>
+  </head>
+  <body>
+    <button id="fetch">Fetch</button>
+    <div id="output"></div>
+  </body>
+  <script>
+    async function doFetch() {
+      const resp = new fhenixjs.FhenixClient({});
 
-    let x = resp.encrypt_uint8(3);
+      let x = await resp.encrypt_uint8(3);
 
-    return (`encrypted u8: ${JSON.stringify(x)}`)
-  }
+      return `encrypted u8: ${JSON.stringify(x)}`;
+    }
 
-  function setOutput(text) {
-    document.getElementById("output").innerText = text;
-  }
+    function setOutput(text) {
+      document.getElementById("output").innerText = text;
+    }
 
-  document.getElementById("fetch").onclick = (evt) => {
-    evt.target.style.display = "none";
+    document.getElementById("fetch").onclick = (evt) => {
+      evt.target.style.display = "none";
 
-    doFetch()
-      .then(res => setOutput(`result: ${res}`))
-      .catch(err => setOutput(`error: ${err}`))
-  }
-</script>
+      doFetch()
+        .then((res) => setOutput(`result: ${res}`))
+        .catch((err) => setOutput(`error: ${err}`));
+    };
+  </script>
 </html>

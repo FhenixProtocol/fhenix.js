@@ -35,11 +35,14 @@ export class FhenixClient {
       params.provider = new JsonRpcProvider("http://localhost:8545");
     }
 
+    const { provider } = params;
+
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)
     /// #if DEBUG
+    this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider);
     /// #else
-    const asyncInitFhevm = async () => {
+    const asyncInitFhevm: () => Promise<void> = async () => {
       try {
         if (params?.initSdk !== false) {
           const { initFhevm } = await import("./init");
@@ -51,13 +54,11 @@ export class FhenixClient {
         );
       }
     };
-    /// #endif
-
-    const { provider } = params;
 
     this.fhePublicKey = asyncInitFhevm().then(() =>
       FhenixClient.getFheKeyFromProvider(provider),
     );
+    /// #endif
   }
 
   // Encryption Methods

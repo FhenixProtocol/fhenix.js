@@ -35,6 +35,7 @@ export class FhenixClient {
       params.provider = new JsonRpcProvider("http://localhost:8545");
     }
 
+    //@ts-ignore
     const isInTest = typeof global?.it === "function";
     this.fhePublicKey = Promise.resolve(undefined); // make Typescript shut up
 

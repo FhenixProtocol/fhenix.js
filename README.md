@@ -16,7 +16,6 @@
   <a href="https://docs.fhenix.io" target="_blank"><strong>Explore the Docs »</strong></a>
 </p>
 
-
 ## General
 
 fhenix.js allows developers to add support for encrypted data when developing dApps on Fhenix.
@@ -33,13 +32,13 @@ npm install fhenixjs
 
 ```javascript
 // initialize your web3 provider
-const provider = new JsonRpcProvider('http://localhost:8545');
+const provider = new JsonRpcProvider("http://localhost:8545");
 
 // initialize Fhenix Client
-const client = await FhenixClient.Create({provider});
+const client = new FhenixClient({ provider });
 
 // to encrypt data for a Fhenix contract
-let encrypted = client.encrypt(5, EncryptionTypes.uint8);
+let encrypted = await client.encrypt(5, EncryptionTypes.uint8);
 // ... call contract with `encrypted`
 
 // to unseal data from a Fhenix contract
@@ -49,8 +48,6 @@ const cleartext = client.unseal(contractAddress, sealed);
 ### Permits & Access Control
 
 We recommend the helper `Permit` structure, which is a built-in method for providing access control for your FHE-enabled view functions.
-
-
 
 #### Credits
 

@@ -1,5 +1,5 @@
 import { Eip1193Provider, BrowserProvider } from "ethers";
-import { Permit } from '../extensions/access_control';
+import { Permit } from "../extensions/access_control";
 
 /**
  * A type representing a mapping of contract addresses to their corresponding permits.
@@ -12,9 +12,9 @@ export type ContractPermits = Record<string, Permit>;
  * uint8, uint16, and uint32 represent the different sizes of integers that can be encrypted.
  */
 export enum EncryptionTypes {
-  uint8 = 'uint8',
-  uint16 = 'uint16',
-  uint32 = 'uint32',
+  uint8 = "uint8",
+  uint16 = "uint16",
+  uint32 = "uint32",
 }
 
 /**
@@ -45,7 +45,6 @@ export type ContractKeypair = {
   signature?: string | null;
 };
 
-
 export interface EthersProvider {
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   send(method: string, params?: Array<any> | Record<string, any>): Promise<any>;
@@ -67,7 +66,11 @@ export interface HardhatEthersProvider {
  * A type representing a supported provider.
  * Can be one of BrowserProvider, Eip1193Provider, EthersProvider, or HardhatEthersProvider.
  */
-export type SupportedProvider = BrowserProvider | Eip1193Provider | EthersProvider | HardhatEthersProvider;
+export type SupportedProvider =
+  | BrowserProvider
+  | Eip1193Provider
+  | EthersProvider
+  | HardhatEthersProvider;
 
 /**
  * Determines the request method for a given provider.
@@ -81,14 +84,18 @@ export function determineRequestMethod(provider: SupportedProvider): Function {
   // unify provider interface: eip-1193-compatible providers such as metamask's expose "request",
   // while ethers' and hardhat's may expose a slightly different "send", to issue RPC calls.
   // eslint-disable-next-line  @typescript-eslint/ban-types
-  if ('request' in provider && typeof provider.request == 'function') {
+  if ("request" in provider && typeof provider.request == "function") {
     // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-    return (p: SupportedProvider, method: string, params?: any[]) => (p as Eip1193Provider).request({ method, params });
-  } else if ('send' in provider && typeof provider.send == 'function') {
+    return (p: SupportedProvider, method: string, params?: any[]) =>
+      (p as Eip1193Provider).request({ method, params });
+  } else if ("send" in provider && typeof provider.send == "function") {
     // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-    return (p: SupportedProvider, method: string, params?: any[]) => (p as EthersProvider).send(method, params);
+    return (p: SupportedProvider, method: string, params?: any[]) =>
+      (p as EthersProvider).send(method, params);
   } else {
-    throw new Error("Received unsupported provider. 'send' or 'request' method not found");
+    throw new Error(
+      "Received unsupported provider. 'send' or 'request' method not found",
+    );
   }
 }
 
@@ -101,7 +108,7 @@ export function determineRequestMethod(provider: SupportedProvider): Function {
  */
 // eslint-disable-next-line  @typescript-eslint/ban-types
 export function determineRequestSigner(provider: SupportedProvider): Function {
-  if ('getSigner' in provider && typeof provider.getSigner == 'function') {
+  if ("getSigner" in provider && typeof provider.getSigner == "function") {
     return (p: SupportedProvider) => (p as EthersProvider).getSigner();
   } else {
     throw new Error("The supplied provider cannot get a signer");

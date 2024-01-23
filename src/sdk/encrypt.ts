@@ -3,8 +3,14 @@ import {
   CompactFheUint8List,
   CompactFheUint16List,
   CompactFheUint32List,
-} from 'node-tfhe';
-import { EncryptedNumber, EncryptedUint16, EncryptedUint32, EncryptedUint8, EncryptionTypes } from './types';
+} from "node-tfhe";
+import {
+  EncryptedNumber,
+  EncryptedUint16,
+  EncryptedUint32,
+  EncryptedUint8,
+  EncryptionTypes,
+} from "./types";
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
@@ -22,7 +28,7 @@ export const encrypt_uint8 = (
     publicKey,
   );
   return {
-    data: encrypted.serialize()
+    data: encrypted.serialize(),
   };
 };
 
@@ -42,7 +48,7 @@ export const encrypt_uint16 = (
     publicKey,
   );
   return {
-    data: encrypted.serialize()
+    data: encrypted.serialize(),
   };
 };
 
@@ -62,7 +68,7 @@ export const encrypt_uint32 = (
     publicKey,
   );
   return {
-    data: encrypted.serialize()
+    data: encrypted.serialize(),
   };
 };
 
@@ -87,6 +93,6 @@ export const encrypt = (
     case EncryptionTypes.uint32:
       return encrypt_uint32(value, publicKey);
     default:
-      throw new Error('Invalid type');
+      throw new Error("Invalid type");
   }
-}
+};

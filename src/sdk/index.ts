@@ -5,9 +5,13 @@ import {
   determineRequestMethod,
   InstanceParams,
   SupportedProvider,
-  EncryptionTypes, EncryptedUint8, EncryptedUint16, EncryptedUint32, EncryptedNumber
+  EncryptionTypes,
+  EncryptedUint8,
+  EncryptedUint16,
+  EncryptedUint32,
+  EncryptedNumber,
 } from "./types";
-import { AbiCoder, Interface, JsonRpcProvider } from 'ethers';
+import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
 import { FheOpsAddress, MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "./consts";
 import { Permit, Permission } from "../extensions/access_control";
@@ -35,33 +39,24 @@ export class FhenixClient {
       params.provider = new JsonRpcProvider("http://localhost:8545");
     }
 
-    //@ts-expect-error make Typescript shut up
-    const isInTest = typeof global?.it === "function";
-    this.fhePublicKey = Promise.resolve(undefined); // make Typescript shut up
-
     const { provider } = params;
 
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)
     /// #if DEBUG
-    if (isInTest) {
-      this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider);
-    }
+    this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider);
     /// #else
-    if (!isInTest) {
-      const asyncInitFhevm: () => Promise<void> = async () => {
-        try {
-          if (params?.initSdk !== false) {
-            const { initFhevm } = await import("./init");
-            await initFhevm();
-          }
-        } catch (err) {
-          throw new Error(
-            `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
-          );
-        }
-      };
-
+    const asyncInitFhevm: () => Promise<void> = async () => {
+      try {
+        const { initFhevm } = await import("./init");
+        await initFhevm();
+      } catch (err) {
+        throw new Error(
+          `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
+        );
+      }
+    };
+    if (params?.initSdk !== false) {
       this.fhePublicKey = asyncInitFhevm().then(() =>
         FhenixClient.getFheKeyFromProvider(provider),
       );
@@ -116,7 +111,7 @@ export class FhenixClient {
       throw new Error("Public key somehow not initialized");
     }
     ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, this.fhePublicKey);
+    return tfheEncrypt.encrypt_uint32(value, fhePublicKey);
   }
 
   /**
@@ -125,7 +120,10 @@ export class FhenixClient {
    * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
    * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
    */
-  encrypt(value: number, type?: EncryptionTypes): Promise<EncryptedNumber> {
+  async encrypt(
+    value: number,
+    type?: EncryptionTypes,
+  ): Promise<EncryptedNumber> {
     isNumber(value);
 
     let outputSize = type;
@@ -169,9 +167,9 @@ export class FhenixClient {
    * Unseals an encrypted message using the stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
    * @param {string} ciphertext - The encrypted message to unseal.
-   * @returns {any} - The unsealed message.
+   * @returns {bigint} - The unsealed message.
    */
-  unseal(contractAddress: string, ciphertext: string): any {
+  unseal(contractAddress: string, ciphertext: string): bigint {
     isAddress(contractAddress);
     isString(ciphertext);
 

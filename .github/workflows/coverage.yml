@@ -22,19 +22,19 @@ jobs:
       SKIP_LOCAL_ENV: "true"
     steps:
       - uses: actions/checkout@v4
-      - name: 'Install Node'
+      - name: "Install Node"
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: "20.x"
       - uses: pnpm/action-setup@v2
         with:
           version: 8
-      - name: 'Install Deps'
+      - name: "Install Deps"
         run: pnpm install
-      - name: 'Test with Coverage'
+      - name: "Test with Coverage"
         run: pnpm coverage
-      - name: 'Report Coverage'
+      - name: "Report Coverage"
         # Set if: always() to also generate the report if tests are failing
         # Only works if you set `reportOnFailure: true` in your vite config as specified above
         if: always()
-        uses:  davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@v2

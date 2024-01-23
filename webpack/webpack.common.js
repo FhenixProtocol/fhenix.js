@@ -1,13 +1,13 @@
 const path = require("path");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
-const webpack = require('webpack');
+const webpack = require("webpack");
 const { merge } = require("webpack-merge");
-const nodeExternals = require('webpack-node-externals');
+const nodeExternals = require("webpack-node-externals");
 
 let commonConfig = {
-  entry: path.resolve(__dirname, '../', 'src', 'index.ts'),
+  entry: path.resolve(__dirname, "../", "src", "index.ts"),
   output: {
-    path: path.resolve(__dirname, '../', 'dist'),
+    path: path.resolve(__dirname, "../", "dist"),
     globalObject: "this",
     library: {
       name: "fhenixjs",
@@ -24,18 +24,18 @@ let commonConfig = {
 };
 
 let clientConfig = merge(commonConfig, {
-  target: 'web',
+  target: "web",
   module: {
     rules: [
       {
         test: /\.ts?$/,
         exclude: [/node_modules/],
-        use: [{ loader: 'ts-loader' }],
+        use: [{ loader: "ts-loader" }],
       },
       {
         test: /\.wasm$/,
-        type: 'asset/inline',
-      }
+        type: "asset/inline",
+      },
     ],
   },
   resolve: {
@@ -50,9 +50,7 @@ let clientConfig = merge(commonConfig, {
   output: {
     filename: "browser.js",
   },
-  plugins: [
-    new NodePolyfillPlugin()
-  ],
+  plugins: [new NodePolyfillPlugin()],
 });
 
 const ifdefLoaderOpts = {
@@ -72,17 +70,17 @@ let serverConfig = merge(commonConfig, {
         test: /\.ts?$/,
         exclude: [/node_modules/],
         use: [
-          { loader: 'ts-loader'},
-          { loader: "ifdef-loader", options: ifdefLoaderOpts }
+          { loader: "ts-loader" },
+          { loader: "ifdef-loader", options: ifdefLoaderOpts },
         ],
-      }
+      },
     ],
   },
   externals: [
     {
-      'utf-8-validate': 'commonjs utf-8-validate',
-      bufferutil: 'commonjs bufferutil',
-      'node-tfhe': 'commonjs node-tfhe',
+      "utf-8-validate": "commonjs utf-8-validate",
+      bufferutil: "commonjs bufferutil",
+      "node-tfhe": "commonjs node-tfhe",
     },
   ],
 });

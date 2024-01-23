@@ -3,16 +3,9 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
-    "types": [
-      "jest",
-      "node"
-    ],
+    "types": ["jest", "node"],
     // Necessary to import dependency uuid using CommonJS
     "allowJs": true
   },
-  "include": [
-    "jest.config.js",
-    "**/*.test.ts",
-    "**/*.d.ts"
-  ]
+  "include": ["jest.config.js", "**/*.test.ts", "**/*.d.ts"]
 }

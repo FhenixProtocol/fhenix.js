@@ -179,4 +179,15 @@ describe("token", () => {
       instance.unseal("0x000000000000000000000000000", sealed),
     ).toThrow(/Address 0x000000000000000000000000000 is not valid EVM address/);
   });
+
+  it("Checks with a real chain that we can create an instance and use it", async () => {
+    const provider = new JsonRpcProvider("http://localhost:8545");
+
+    const instance = new FhenixClient({
+      provider,
+      initSdk: false,
+    });
+
+    let x = await instance.encrypt(10);
+  });
 });

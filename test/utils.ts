@@ -8,7 +8,7 @@ const mnemonics = [
 ];
 
 export const fromHexString = (hexString: string): Uint8Array => {
-  const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);
+  const arr = hexString.replace(/^(0x)/, "").match(/.{1,2}/g);
   if (!arr) return new Uint8Array();
   return Uint8Array.from(arr.map((byte) => parseInt(byte, 16)));
 };
@@ -43,24 +43,27 @@ export class MockProvider {
 
   constructor(pk: any, chainId?: any) {
     this.publicKey = pk;
-    this.chainId = chainId || '0x10';
+    this.chainId = chainId || "0x10";
   }
-  async send(method: string, params: any[] | Record<string, any>): Promise<any> {
+  async send(
+    method: string,
+    params: any[] | Record<string, any>,
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
-      if (method === 'eth_chainId') {
+      if (method === "eth_chainId") {
         resolve(this.chainId);
-      } else if (method === 'eth_call') {
+      } else if (method === "eth_call") {
         //abi-encode public key as bytes:
-        if (typeof this.publicKey === 'string') {
+        if (typeof this.publicKey === "string") {
           const abiCoder = new AbiCoder();
           const buff = fromHexString(this.publicKey);
-          const encoded = abiCoder.encode(['bytes'], [buff]);
+          const encoded = abiCoder.encode(["bytes"], [buff]);
           resolve(encoded);
         } else {
           resolve(this.publicKey);
         }
       } else {
-        reject('method not implemented');
+        reject("method not implemented");
       }
     });
   }

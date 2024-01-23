@@ -13,7 +13,11 @@ export {
   SupportedProvider,
   EncryptionTypes,
   HardhatEthersProvider,
-  EthersProvider
+  EthersProvider,
+  EncryptedUint32,
+  EncryptedUint16,
+  EncryptedUint8,
+  EncryptedNumber
 } from './sdk/types';
 
 export * from "./extensions/access_control";

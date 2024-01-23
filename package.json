@@ -21,13 +21,14 @@
     "serve": "webpack serve",
     "test": "VITE_CJS_IGNORE_WARNING=true vitest",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
-    "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\""
+    "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\"",
+    "prettier-ci": "prettier --check \"**/*.{js,json,md,sol,ts,yml}\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FhenixProtocol/fhenix.js.git"
   },
-  "author": "",
+  "author": "FhenixProtocol",
   "license": "BSD-3-Clause-Clear",
   "bugs": {
     "url": "https://github.com/FhenixProtocol/fhenix.js/issues"

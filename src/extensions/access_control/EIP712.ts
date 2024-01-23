@@ -6,7 +6,7 @@ export type EIP712Domain = {
   name: string;
   verifyingContract: string;
   version: string;
-}
+};
 
 export type EIP712 = {
   domain: EIP712Domain;

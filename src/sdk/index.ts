@@ -6,6 +6,10 @@ import {
   InstanceParams,
   SupportedProvider,
   EncryptionTypes,
+  EncryptedUint8,
+  EncryptedUint16,
+  EncryptedUint32,
+  EncryptedNumber,
 } from "./types";
 import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
@@ -35,33 +39,24 @@ export class FhenixClient {
       params.provider = new JsonRpcProvider("http://localhost:8545");
     }
 
-    //@ts-expect-error make Typescript shut up
-    const isInTest = typeof global?.it === "function";
-    this.fhePublicKey = Promise.resolve(undefined); // make Typescript shut up
-
     const { provider } = params;
 
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)
     /// #if DEBUG
-    if (isInTest) {
-      this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider);
-    }
+    this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider);
     /// #else
-    if (!isInTest) {
-      const asyncInitFhevm: () => Promise<void> = async () => {
-        try {
-          if (params?.initSdk !== false) {
-            const { initFhevm } = await import("./init");
-            await initFhevm();
-          }
-        } catch (err) {
-          throw new Error(
-            `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
-          );
-        }
-      };
-
+    const asyncInitFhevm: () => Promise<void> = async () => {
+      try {
+        const { initFhevm } = await import("./init");
+        await initFhevm();
+      } catch (err) {
+        throw new Error(
+          `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
+        );
+      }
+    };
+    if (params?.initSdk !== false) {
       this.fhePublicKey = asyncInitFhevm().then(() =>
         FhenixClient.getFheKeyFromProvider(provider),
       );
@@ -74,9 +69,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint8 value using the stored public key.
    * @param {number} value - The Uint8 value to encrypt.
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint8(value: number): Promise<Uint8Array> {
+  async encrypt_uint8(value: number): Promise<EncryptedUint8> {
     isNumber(value);
 
     const fhePublicKey = await this.fhePublicKey;
@@ -90,9 +85,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint16 value using the stored public key.
    * @param {number} value - The Uint16 value to encrypt.
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint16(value: number): Promise<Uint8Array> {
+  async encrypt_uint16(value: number): Promise<EncryptedUint16> {
     isNumber(value);
 
     const fhePublicKey = await this.fhePublicKey;
@@ -106,9 +101,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint32 value using the stored public key.
    * @param {number} value - The Uint32 value to encrypt.
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint32(value: number) {
+  async encrypt_uint32(value: number): Promise<EncryptedUint32> {
     isNumber(value);
 
     const fhePublicKey = await this.fhePublicKey;
@@ -123,9 +118,12 @@ export class FhenixClient {
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
    * @param {number} value - The numeric value to encrypt.
    * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-   * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
+   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
    */
-  async encrypt(value: number, type?: EncryptionTypes): Promise<Uint8Array> {
+  async encrypt(
+    value: number,
+    type?: EncryptionTypes,
+  ): Promise<EncryptedNumber> {
     isNumber(value);
 
     let outputSize = type;
@@ -169,9 +167,9 @@ export class FhenixClient {
    * Unseals an encrypted message using the stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
    * @param {string} ciphertext - The encrypted message to unseal.
-   * @returns {any} - The unsealed message.
+   * @returns {bigint} - The unsealed message.
    */
-  unseal(contractAddress: string, ciphertext: string) {
+  unseal(contractAddress: string, ciphertext: string): bigint {
     isAddress(contractAddress);
     isString(ciphertext);
 
@@ -189,7 +187,7 @@ export class FhenixClient {
    * @param {string} contractAddress - The address of the contract.
    * @returns {Permit} - The permit associated with the contract address.
    */
-  getPermit(contractAddress: string) {
+  getPermit(contractAddress: string): Permit {
     if (!this.hasPermit(contractAddress)) {
       throw new Error(`Missing keypair for ${contractAddress}`);
     }

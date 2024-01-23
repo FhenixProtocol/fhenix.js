@@ -1,24 +1,34 @@
-import { Buffer } from 'buffer';
+import { Buffer } from "buffer";
 
-import { toBigInt as ethersToBigInt, toBeArray as ethersToBeArray, isAddress as ethersIsAddress } from 'ethers';
-import { isNumber } from './validation';
+import {
+  toBigInt as ethersToBigInt,
+  toBeArray as ethersToBeArray,
+  isAddress as ethersIsAddress,
+} from "ethers";
+import { isNumber } from "./validation";
 
-export const ValidateUintInRange = (value: number, max: number, min: number): void => {
+export const ValidateUintInRange = (
+  value: number,
+  max: number,
+  min: number,
+): void => {
   isNumber(value);
 
   if (value > max || value < min) {
-    throw new Error(`Value out of range: ${max} - ${min}, try a different uint type`);
+    throw new Error(
+      `Value out of range: ${max} - ${min}, try a different uint type`,
+    );
   }
-}
+};
 
 export const fromHexString = (hexString: string): Uint8Array => {
-  const arr = hexString.replace(/^(0x)/, '').match(/.{1,2}/g);
+  const arr = hexString.replace(/^(0x)/, "").match(/.{1,2}/g);
   if (!arr) return new Uint8Array();
   return Uint8Array.from(arr.map((byte) => parseInt(byte, 16)));
 };
 
 export const toHexString = (bytes: Uint8Array) =>
-  bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
+  bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "");
 
 export const numberToBytes = (uint32Value: number) => {
   const byteArrayLength = Math.ceil(Math.log2(uint32Value + 1) / 8);
@@ -46,7 +56,7 @@ export const bytesToNumber = function (byteArray: Uint8Array): number {
 };
 
 export function toBigInt(value: Uint8Array): bigint {
-    return ethersToBigInt(value);
+  return ethersToBigInt(value);
 }
 
 export function toBeArray(value: bigint | number): Uint8Array {
@@ -55,6 +65,6 @@ export function toBeArray(value: bigint | number): Uint8Array {
 
 export function isAddress(address: string) {
   if (!ethersIsAddress(address)) {
-    throw new Error(`Address ${address} is not valid EVM address`)
+    throw new Error(`Address ${address} is not valid EVM address`);
   }
 }

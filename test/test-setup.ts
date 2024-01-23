@@ -1,7 +1,7 @@
 import { waitForChainToStart } from "./utils";
-import { killDockerContainerAsync, runDockerContainerAsync } from './docker';
+import { killDockerContainerAsync, runDockerContainerAsync } from "./docker";
 
-const TEST_ENDPOINT_URL = process.env.TEST_ENDPOINT || "http://localhost:8545"
+const TEST_ENDPOINT_URL = process.env.TEST_ENDPOINT || "http://localhost:8545";
 
 export const setup = async () => {
   if (process.env.SKIP_LOCAL_ENV === "true") {
@@ -29,4 +29,3 @@ export const teardown = async () => {
 
   console.log("Stopped test container. Goodbye!");
 };
-

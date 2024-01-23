@@ -9,18 +9,14 @@ module.exports = [
     mode: "production",
     optimization: {
       minimize: true,
-      minimizer: [
-        new TerserPlugin(),
-      ],
+      minimizer: [new TerserPlugin()],
     },
-}),
+  }),
   merge(serverConfig, {
     mode: "production",
     optimization: {
       minimize: true,
-      minimizer: [
-        new TerserPlugin(),
-      ],
+      minimizer: [new TerserPlugin()],
     },
   }),
 ];

@@ -1,7 +1,7 @@
-import { fromHexString, toBeArray, toBigInt, toHexString } from './utils';
-import * as nacl from 'tweetnacl';
-import * as naclUtil from 'tweetnacl-util';
-import { isBigIntOrNumber, isString } from './validation';
+import { fromHexString, toBeArray, toBigInt, toHexString } from "./utils";
+import * as nacl from "tweetnacl";
+import * as naclUtil from "tweetnacl-util";
+import { isBigIntOrNumber, isString } from "./validation";
 
 const PRIVATE_KEY_LENGTH = 64;
 const PUBLIC_KEY_LENGTH = 64;
@@ -38,7 +38,6 @@ export class SealingKey {
    *         the required lengths for private and public keys.
    */
   constructor(privateKey: string, publicKey: string) {
-
     if (privateKey.length !== PRIVATE_KEY_LENGTH) {
       throw new Error(`Private key must be of length ${PRIVATE_KEY_LENGTH}`);
     }
@@ -60,20 +59,16 @@ export class SealingKey {
    */
   unseal = (ciphertext: string | Uint8Array): bigint => {
     const toDecrypt =
-      typeof ciphertext === 'string' ? fromHexString(ciphertext) : ciphertext;
+      typeof ciphertext === "string" ? fromHexString(ciphertext) : ciphertext;
 
     // decode json structure that gets returned from the chain
-    const jsonString = Buffer.from(toDecrypt).toString('utf8')
-    const parsedData: EthEncryptedData = JSON.parse(jsonString)
+    const jsonString = Buffer.from(toDecrypt).toString("utf8");
+    const parsedData: EthEncryptedData = JSON.parse(jsonString);
 
     // assemble decryption parameters
     const nonce = naclUtil.decodeBase64(parsedData.nonce);
-    const ephemPublicKey = naclUtil.decodeBase64(
-      parsedData.ephemPublicKey,
-    );
-    const dataToDecrypt = naclUtil.decodeBase64(
-      parsedData.ciphertext,
-    );
+    const ephemPublicKey = naclUtil.decodeBase64(parsedData.ephemPublicKey);
+    const dataToDecrypt = naclUtil.decodeBase64(parsedData.ciphertext);
     // call the nacl box function to decrypt the data
     const decryptedMessage = nacl.box.open(
       dataToDecrypt,
@@ -116,16 +111,15 @@ export class SealingKey {
 
     // handle encrypted data
     const output = {
-      version: 'x25519-xsalsa20-poly1305',
+      version: "x25519-xsalsa20-poly1305",
       nonce: naclUtil.encodeBase64(nonce),
       ephemPublicKey: naclUtil.encodeBase64(ephemeralKeyPair.publicKey),
       ciphertext: naclUtil.encodeBase64(encryptedMessage),
     };
 
     // mimicking encoding from the chain
-    return toHexString(Buffer.from(JSON.stringify(output)))
-  }
-
+    return toHexString(Buffer.from(JSON.stringify(output)));
+  };
 }
 
 /**
@@ -138,5 +132,7 @@ export const GenerateSealingKey = async (): Promise<SealingKey> => {
   const sodiumKeypair = nacl.box.keyPair();
 
   return new SealingKey(
-    toHexString(sodiumKeypair.secretKey), toHexString(sodiumKeypair.publicKey));
-}
+    toHexString(sodiumKeypair.secretKey),
+    toHexString(sodiumKeypair.publicKey),
+  );
+};

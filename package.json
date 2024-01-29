@@ -1,6 +1,6 @@
 {
   "name": "fhenixjs",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "description": "The JavaScript SDK for Fhenix",
   "types": "dist/types/index.d.ts",
   "main": "dist/index.node.js",

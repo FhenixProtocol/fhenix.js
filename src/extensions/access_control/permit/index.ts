@@ -112,7 +112,10 @@ interface SignerPublicSignedTypedData {
 interface SignerPrivateSignedTypedData {
   _signTypedData(domain: object, types: object, value: object): Promise<string>;
 }
-type PermitSigner = SignerPrivateSignedTypedData | SignerPublicSignedTypedData;
+
+export type PermitSigner =
+  | SignerPrivateSignedTypedData
+  | SignerPublicSignedTypedData;
 
 const sign = async (
   signer: PermitSigner,
@@ -137,6 +140,7 @@ const sign = async (
 export const generatePermit = async (
   contract: string,
   provider: SupportedProvider,
+  customSigner?: PermitSigner,
 ): Promise<Permit> => {
   if (!provider) {
     throw new Error("Provider is undefined");
@@ -144,8 +148,13 @@ export const generatePermit = async (
 
   const requestMethod = determineRequestMethod(provider);
 
-  const getSigner = determineRequestSigner(provider);
-  const signer = await getSigner(provider);
+  let signer: PermitSigner;
+  if (!customSigner) {
+    const getSigner = determineRequestSigner(provider);
+    signer = await getSigner(provider);
+  } else {
+    signer = customSigner;
+  }
 
   const chainId = await requestMethod(provider, "eth_chainId", []);
 

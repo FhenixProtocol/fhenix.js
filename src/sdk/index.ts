@@ -11,6 +11,14 @@ import {
   InstanceParams,
   SupportedProvider,
 } from "./types";
+
+import {
+  generatePermit,
+  Permission,
+  Permit,
+  PermitSigner,
+} from "../extensions/access_control";
+
 import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
 import {
@@ -20,11 +28,6 @@ import {
   MAX_UINT8,
   PUBLIC_KEY_LENGTH_MIN,
 } from "./consts";
-import {
-  getPermit as genPermit,
-  Permission,
-  Permit,
-} from "../extensions/access_control";
 import * as tfheEncrypt from "./encrypt";
 import { isNumber, isPlainObject, isString } from "./validation";
 
@@ -195,7 +198,7 @@ export class FhenixClient {
    * Unseals an encrypted message using the stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
    * @param {string} ciphertext - The encrypted message to unseal.
-   * @returns {bigint} - The unsealed message.
+   * @returns bigint - The unsealed message.
    */
   unseal(contractAddress: string, ciphertext: string): bigint {
     isAddress(contractAddress);
@@ -213,16 +216,25 @@ export class FhenixClient {
    * Creates a new permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
    * @param {SupportedProvider} provider - The provider from which to sign the permit - must container a signer.
-   * @returns {Permit} - The permit associated with the contract address.
+   * @param signer - the signer to use to sign the permit if provider does not support signing (e.g. hardhat)
+   * @returns Permit - The permit associated with the contract address.
    *
    * @throws {Error} - If the provider does not contain a signer, or if a provider is not set
    */
-  async createPermit(contractAddress: string, provider?: SupportedProvider) {
+  async generatePermit(
+    contractAddress: string,
+    provider?: SupportedProvider,
+    signer?: PermitSigner,
+  ) {
     if (!provider && this.provider === undefined) {
       throw new Error("error getting provider");
     }
 
-    const permit = await genPermit(contractAddress, provider || this.provider!);
+    const permit = await generatePermit(
+      contractAddress,
+      provider || this.provider!,
+      signer,
+    );
     this.storePermit(permit);
     return permit;
   }

@@ -1,5 +1,5 @@
-import { TfheCompactPublicKey } from 'node-tfhe';
-import { fromHexString, isAddress, ValidateUintInRange } from './utils';
+import { TfheCompactPublicKey } from "node-tfhe";
+import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
 import {
   ContractPermits,
   determineRequestMethod,
@@ -9,14 +9,24 @@ import {
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
-  SupportedProvider
-} from './types';
-import { AbiCoder, Interface, JsonRpcProvider } from 'ethers';
+  SupportedProvider,
+} from "./types";
+import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
-import { FheOpsAddress, MAX_UINT16, MAX_UINT32, MAX_UINT8, PUBLIC_KEY_LENGTH_MIN } from './consts';
-import { getPermit as genPermit, Permission, Permit } from '../extensions/access_control';
-import * as tfheEncrypt from './encrypt';
-import { isNumber, isPlainObject, isString } from './validation';
+import {
+  FheOpsAddress,
+  MAX_UINT16,
+  MAX_UINT32,
+  MAX_UINT8,
+  PUBLIC_KEY_LENGTH_MIN,
+} from "./consts";
+import {
+  getPermit as genPermit,
+  Permission,
+  Permit,
+} from "../extensions/access_control";
+import * as tfheEncrypt from "./encrypt";
+import { isNumber, isPlainObject, isString } from "./validation";
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -45,17 +55,18 @@ export class FhenixClient {
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)
 
-
     /// #if DEBUG
-      this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider).catch(
-        (err) => {
-          if (ignoreErrors) {
-            return undefined;
-          } else {
-            throw new Error(`Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`);
-          }
+    this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider).catch(
+      (err) => {
+        if (ignoreErrors) {
+          return undefined;
+        } else {
+          throw new Error(
+            `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+          );
         }
-      );
+      },
+    );
 
     /// #else
     const asyncInitFhevm: () => Promise<void> = async () => {
@@ -98,7 +109,7 @@ export class FhenixClient {
       this.fhePublicKey = FhenixClient.getFheKeyFromProvider(this.provider);
       fhePublicKey = await this.fhePublicKey;
       if (!fhePublicKey) {
-        throw new Error('Public key somehow not initialized');
+        throw new Error("Public key somehow not initialized");
       }
     }
     return fhePublicKey;
@@ -306,7 +317,6 @@ export class FhenixClient {
 
     const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
 
-
     const chainIdNum: number = parseInt(chainId, 16);
     if (isNaN(chainIdNum)) {
       throw new Error(
@@ -318,9 +328,11 @@ export class FhenixClient {
       throw new Error("Error using publicKey from provider: expected string");
     }
 
-  if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
-    throw new Error(`Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`);
-  }
+    if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
+      throw new Error(
+        `Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`,
+      );
+    }
 
     const abiCoder = AbiCoder.defaultAbiCoder();
     const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];

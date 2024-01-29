@@ -1,6 +1,8 @@
 import { Eip1193Provider, BrowserProvider } from "ethers";
 import { Permit } from "../extensions/access_control";
 
+export { PermitSigner } from "../extensions/access_control";
+
 /**
  * A type representing a mapping of contract addresses to their corresponding permits.
  * Each key is a string representing the contract's address, and each value is a Permit object.

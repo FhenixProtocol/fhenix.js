@@ -6,7 +6,6 @@ import {
 } from "../../../sdk/types";
 import { EIP712, EIP712Domain, EIP712Message, EIP712Types } from "../EIP712";
 import { GenerateSealingKey, SealingKey } from "../../../sdk/sealing";
-import { Signer } from "ethers";
 
 const PERMIT_PREFIX = "Fhenix_saved_permit_";
 
@@ -113,7 +112,10 @@ interface SignerPublicSignedTypedData {
 interface SignerPrivateSignedTypedData {
   _signTypedData(domain: object, types: object, value: object): Promise<string>;
 }
-type PermitSigner = SignerPrivateSignedTypedData | SignerPublicSignedTypedData;
+
+export type PermitSigner =
+  | SignerPrivateSignedTypedData
+  | SignerPublicSignedTypedData;
 
 const sign = async (
   signer: PermitSigner,
@@ -138,7 +140,7 @@ const sign = async (
 export const generatePermit = async (
   contract: string,
   provider: SupportedProvider,
-  customSigner?: Signer,
+  customSigner?: PermitSigner,
 ): Promise<Permit> => {
   if (!provider) {
     throw new Error("Provider is undefined");
@@ -146,7 +148,7 @@ export const generatePermit = async (
 
   const requestMethod = determineRequestMethod(provider);
 
-  let signer: Signer;
+  let signer: PermitSigner;
   if (!customSigner) {
     const getSigner = determineRequestSigner(provider);
     signer = await getSigner(provider);

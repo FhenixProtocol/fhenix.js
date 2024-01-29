@@ -34,6 +34,7 @@ export type PermitSignature = {
 export type InstanceParams = {
   provider?: SupportedProvider;
   initSdk?: boolean;
+  ignoreErrors?: boolean;
 };
 
 /**

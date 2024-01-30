@@ -38,7 +38,7 @@ import { isNumber, isPlainObject, isString } from "./validation";
 export class FhenixClient {
   private permits: ContractPermits = {};
   public fhePublicKey: Promise<TfheCompactPublicKey | undefined>;
-  private provider: SupportedProvider;
+  protected provider: SupportedProvider;
   /**
    * Creates an instance of FhenixClient.
    * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.

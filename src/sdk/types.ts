@@ -66,6 +66,16 @@ export interface HardhatEthersProvider {
 }
 
 /**
+ * An interface for a YetAnotherHardhatEthersProvider, similar to HardhatEthersProvider but for the latest @nomiclabs/hardhat-ethers version (v2.2.3).
+ */
+export interface YetAnotherHardhatEthersProvider {
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+  send(method: string, params: Array<any>): Promise<any>;
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+  getSigner(addressOrIndex?: string | number): Promise<any>;
+}
+
+/**
  * A type representing a supported provider.
  * Can be one of BrowserProvider, Eip1193Provider, EthersProvider, or HardhatEthersProvider.
  */
@@ -73,7 +83,8 @@ export type SupportedProvider =
   | BrowserProvider
   | Eip1193Provider
   | EthersProvider
-  | HardhatEthersProvider;
+  | HardhatEthersProvider
+  | YetAnotherHardhatEthersProvider;
 
 /**
  * Determines the request method for a given provider.

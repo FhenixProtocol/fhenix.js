@@ -13,11 +13,12 @@ import {
 } from "./types";
 
 import {
-  generatePermit, getPermitFromLocalstorage,
+  generatePermit,
+  getPermitFromLocalstorage,
   Permission,
   Permit,
-  PermitSigner
-} from '../extensions/access_control';
+  PermitSigner,
+} from "../extensions/access_control";
 
 import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
@@ -245,7 +246,6 @@ export class FhenixClient {
    * @returns {Permit} - The permit associated with the contract address.
    */
   getPermit(contractAddress: string): Permit | undefined {
-
     const fromLs = getPermitFromLocalstorage(contractAddress);
     if (fromLs) {
       this.permits[contractAddress] = fromLs;

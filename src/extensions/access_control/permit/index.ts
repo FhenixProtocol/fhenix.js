@@ -229,7 +229,9 @@ export const removePermit = (contract: string): void => {
   window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}`);
 };
 
-export const getPermitFromLocalstorage = (contract: string): Permit | undefined => {
+export const getPermitFromLocalstorage = (
+  contract: string,
+): Permit | undefined => {
   let savedPermit = undefined;
   if (typeof window !== "undefined" && window.localStorage) {
     savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
@@ -240,4 +242,4 @@ export const getPermitFromLocalstorage = (contract: string): Permit | undefined 
   }
 
   return parsePermit(savedPermit);
-}
+};

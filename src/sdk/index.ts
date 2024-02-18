@@ -13,11 +13,11 @@ import {
 } from "./types";
 
 import {
-  generatePermit,
+  generatePermit, getPermitFromLocalstorage,
   Permission,
   Permit,
-  PermitSigner,
-} from "../extensions/access_control";
+  PermitSigner
+} from '../extensions/access_control';
 
 import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
@@ -213,7 +213,7 @@ export class FhenixClient {
 
   // Permit Management Methods
   /**
-   * Creates a new permit for a specific contract address.
+   * Creates a new permit for a specific contract address. Also saves the permit to localstorage (if available)
    * @param {string} contractAddress - The address of the contract.
    * @param {SupportedProvider} provider - The provider from which to sign the permit - must container a signer.
    * @param signer - the signer to use to sign the permit if provider does not support signing (e.g. hardhat)
@@ -244,9 +244,16 @@ export class FhenixClient {
    * @param {string} contractAddress - The address of the contract.
    * @returns {Permit} - The permit associated with the contract address.
    */
-  getPermit(contractAddress: string): Permit {
+  getPermit(contractAddress: string): Permit | undefined {
+
+    const fromLs = getPermitFromLocalstorage(contractAddress);
+    if (fromLs) {
+      this.permits[contractAddress] = fromLs;
+      return fromLs;
+    }
+
     if (!this.hasPermit(contractAddress)) {
-      throw new Error(`Missing keypair for ${contractAddress}`);
+      return undefined;
     }
 
     return this.permits[contractAddress];

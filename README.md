@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.fhenix.io" target="_blank"><strong>Explore the Docs »</strong></a>
+  <a href="https://fhenixjs.fhenix.zone" target="_blank"><strong>Explore the Docs »</strong></a>
 </p>
 
 ## General
@@ -55,4 +55,4 @@ This project is based on [fhevmjs](https://github.com/zama-ai/fhevmjs) by Zama a
 
 #### Need support?
 
-Todo: discord link, telegram link, etc.
+Open an issue or Pull Request on Github! Or reach out to us on Discord or Telegram 

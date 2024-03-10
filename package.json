@@ -29,7 +29,7 @@
     "url": "git+https://github.com/FhenixProtocol/fhenix.js.git"
   },
   "author": "FhenixProtocol",
-  "license": "BSD-3-Clause-Clear",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/FhenixProtocol/fhenix.js/issues"
   },

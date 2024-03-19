@@ -8,11 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
 
     services:
-      secret:
-        image: ghcr.io/fhenixprotocol/fhenix-node-dev:v0.0.7-standalone
+      fhenix:
+        image: ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
         ports:
           - 8545:8547 # RPC
           - 5000:3000 # Faucet
@@ -33,7 +33,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Run Tests
-        run: pnpm test
+        # wait for localfhenix to start
+        run: sleep 5 && pnpm test
       - name: Run ESLint
         run: pnpm lint
       - name: Run prettier

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      secret:
+      fhenix:
         image: ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
         ports:
           - 8545:8547 # RPC
@@ -32,9 +32,11 @@ jobs:
           version: 8
       - name: Install Dependencies
         run: pnpm install
+      - name: test docker
+        run: docker run -it --rm ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
       - name: Run Tests
         # wait for localfhenix to start
-        run: sleep 20 && pnpm test
+        run: pnpm test
       - name: Run ESLint
         run: pnpm lint
       - name: Run prettier

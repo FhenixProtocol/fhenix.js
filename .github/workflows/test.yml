@@ -33,7 +33,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Run Tests
-        run: pnpm test
+        # wait for localfhenix to start
+        run: sleep 5 && pnpm test
       - name: Run ESLint
         run: pnpm lint
       - name: Run prettier

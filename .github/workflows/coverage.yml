@@ -9,7 +9,7 @@ jobs:
 
     services:
       secret:
-        image: ghcr.io/fhenixprotocol/fhenix-node-dev:v0.0.7-standalone
+        image: ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
         ports:
           - 8545:8547 # RPC
           - 5000:3000 # Faucet

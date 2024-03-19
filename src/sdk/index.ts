@@ -2,15 +2,16 @@ import { TfheCompactPublicKey } from "node-tfhe";
 import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
 import {
   ContractPermits,
-  determineRequestMethod, EncryptedBool,
+  determineRequestMethod,
+  EncryptedBool,
   EncryptedNumber,
   EncryptedUint16,
   EncryptedUint32,
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
-  SupportedProvider
-} from './types';
+  SupportedProvider,
+} from "./types";
 
 import {
   generatePermit,

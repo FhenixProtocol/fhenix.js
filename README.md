@@ -55,4 +55,4 @@ This project is based on [fhevmjs](https://github.com/zama-ai/fhevmjs) by Zama a
 
 #### Need support?
 
-Open an issue or Pull Request on Github! Or reach out to us on Discord or Telegram 
+Open an issue or Pull Request on Github! Or reach out to us on Discord or Telegram

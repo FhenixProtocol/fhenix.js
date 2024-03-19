@@ -32,11 +32,9 @@ jobs:
           version: 8
       - name: Install Dependencies
         run: pnpm install
-      - name: test docker
-        run: docker run ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
       - name: Run Tests
         # wait for localfhenix to start
-        run: pnpm test
+        run: sleep 5 && pnpm test
       - name: Run ESLint
         run: pnpm lint
       - name: Run prettier

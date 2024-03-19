@@ -33,7 +33,7 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: test docker
-        run: docker run -it --rm ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
+        run: docker run ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0
       - name: Run Tests
         # wait for localfhenix to start
         run: pnpm test

@@ -2,15 +2,15 @@ import { TfheCompactPublicKey } from "node-tfhe";
 import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
 import {
   ContractPermits,
-  determineRequestMethod,
+  determineRequestMethod, EncryptedBool,
   EncryptedNumber,
   EncryptedUint16,
   EncryptedUint32,
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
-  SupportedProvider,
-} from "./types";
+  SupportedProvider
+} from './types';
 
 import {
   generatePermit,
@@ -92,6 +92,15 @@ export class FhenixClient {
   }
 
   // Encryption Methods
+  /**
+   * Encrypts a Uint8 value using the stored public key.
+   * @param {number} value - The Uint8 value to encrypt.
+   * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
+   */
+  async encrypt_bool(value: boolean): Promise<EncryptedBool> {
+    const fhePublicKey = await this._getPublicKey();
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey);
+  }
 
   /**
    * Encrypts a Uint8 value using the stored public key.

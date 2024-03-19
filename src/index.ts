@@ -12,9 +12,13 @@ export {
   EncryptionTypes,
   HardhatEthersProvider,
   EthersProvider,
+  EncryptedUint64,
+  EncryptedUint128,
+  EncryptedUint256,
   EncryptedUint32,
   EncryptedUint16,
   EncryptedUint8,
+  EncryptedBool,
   EncryptedNumber,
 } from "./sdk/types";
 

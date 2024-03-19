@@ -14,9 +14,13 @@ export type ContractPermits = Record<string, Permit>;
  * uint8, uint16, and uint32 represent the different sizes of integers that can be encrypted.
  */
 export enum EncryptionTypes {
+  bool = "bool",
   uint8 = "uint8",
   uint16 = "uint16",
   uint32 = "uint32",
+  uint64 = "uint64",
+  uint128 = "uint128",
+  uint256 = "uint256",
 }
 
 /**
@@ -133,6 +137,10 @@ export interface EncryptedNumber {
   data: Uint8Array;
 }
 
+export interface EncryptedBool extends EncryptedNumber {}
 export interface EncryptedUint8 extends EncryptedNumber {}
 export interface EncryptedUint16 extends EncryptedNumber {}
 export interface EncryptedUint32 extends EncryptedNumber {}
+export interface EncryptedUint64 extends EncryptedNumber {}
+export interface EncryptedUint128 extends EncryptedNumber {}
+export interface EncryptedUint256 extends EncryptedNumber {}

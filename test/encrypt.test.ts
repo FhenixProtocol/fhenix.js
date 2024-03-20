@@ -16,8 +16,11 @@ import {
   encrypt_uint8,
   encrypt_uint16,
   encrypt_uint32,
-  encrypt, encrypt_uint64, encrypt_uint128, encrypt_uint256
-} from '../src/sdk/encrypt';
+  encrypt,
+  encrypt_uint64,
+  encrypt_uint128,
+  encrypt_uint256,
+} from "../src/sdk/encrypt";
 import { EncryptionTypes } from "../src/sdk/types";
 import { assert, expect, test, describe, it, beforeAll } from "vitest";
 
@@ -108,11 +111,16 @@ describe("encrypt_uint8", () => {
   });
 
   it("encrypt_uint256/decrypt 256bits", async () => {
-    const buffer = encrypt_uint256("2222222223333333333334444444444444444", publicKey);
+    const buffer = encrypt_uint256(
+      "2222222223333333333334444444444444444",
+      publicKey,
+    );
     const compactList = CompactFheUint256.deserialize(buffer.data);
     let encryptedList = compactList.expand();
     const decrypted = encryptedList.decrypt(clientKey);
-    expect(decrypted.toString(16)).toBe("2222222223333333333334444444444444444");
+    expect(decrypted.toString(16)).toBe(
+      "2222222223333333333334444444444444444",
+    );
   });
 
   it("encrypt/decrypt 0 8bits", async () => {

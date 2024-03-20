@@ -31,7 +31,12 @@ import {
   PUBLIC_KEY_LENGTH_MIN,
 } from "./consts";
 import * as tfheEncrypt from "./encrypt";
-import { isBigIntOrHexString, isNumber, isPlainObject, isString } from './validation';
+import {
+  isBigIntOrHexString,
+  isNumber,
+  isPlainObject,
+  isString,
+} from "./validation";
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.

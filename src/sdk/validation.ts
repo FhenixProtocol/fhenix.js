@@ -31,6 +31,12 @@ export function isPlainObject(value: unknown) {
   assertIs(is, "plain object", value);
 }
 
+export function isBigIntOrHexString(value: unknown) {
+  const is = typeof value === "bigint" || typeof value === "string";
+
+  assertIs(is, "bigint or hex string", value);
+}
+
 export function isNumber(value: unknown) {
   const is = typeof value === "number" && !Number.isNaN(value);
 

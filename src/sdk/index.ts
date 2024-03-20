@@ -2,15 +2,16 @@ import { TfheCompactPublicKey } from "node-tfhe";
 import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
 import {
   ContractPermits,
-  determineRequestMethod, EncryptedBool,
+  determineRequestMethod,
+  EncryptedBool,
   EncryptedNumber,
   EncryptedUint16,
   EncryptedUint32,
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
-  SupportedProvider
-} from './types';
+  SupportedProvider,
+} from "./types";
 
 import {
   generatePermit,
@@ -30,7 +31,7 @@ import {
   PUBLIC_KEY_LENGTH_MIN,
 } from "./consts";
 import * as tfheEncrypt from "./encrypt";
-import { isNumber, isPlainObject, isString } from "./validation";
+import { isBigIntOrHexString, isNumber, isPlainObject, isString } from './validation';
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -156,6 +157,48 @@ export class FhenixClient {
   }
 
   /**
+   * Encrypts a Uint64 value using the stored public key.
+   * @param {bigint | string} value - The Uint32 value to encrypt.
+   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
+   */
+  async encrypt_uint64(value: bigint | string): Promise<EncryptedUint32> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey();
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint64(value, fhePublicKey);
+  }
+
+  /**
+   * Encrypts a Uint64 value using the stored public key.
+   * @param {bigint | string} value - The Uint32 value to encrypt.
+   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
+   */
+  async encrypt_uint128(value: bigint | string): Promise<EncryptedUint32> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey();
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint128(value, fhePublicKey);
+  }
+
+  /**
+   * Encrypts a Uint64 value using the stored public key.
+   * @param {bigint | string} value - The Uint32 value to encrypt.
+   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
+   */
+  async encrypt_uint256(value: bigint | string): Promise<EncryptedUint32> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey();
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint256(value, fhePublicKey);
+  }
+
+  /**
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
    * @param {number} value - The numeric value to encrypt.
    * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
@@ -197,6 +240,7 @@ export class FhenixClient {
       case EncryptionTypes.uint32:
         ValidateUintInRange(value, MAX_UINT32, 0);
         break;
+      default:
     }
 
     return tfheEncrypt.encrypt(value, fhePublicKey, type);

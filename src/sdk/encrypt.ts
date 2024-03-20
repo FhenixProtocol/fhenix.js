@@ -19,7 +19,7 @@ import {
   EncryptedUint256,
   EncryptionTypes,
 } from "./types";
-import { fromHexString, toBigInt } from './utils';
+import { fromHexString, toBigInt } from "./utils";
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
@@ -39,7 +39,6 @@ export const encrypt_bool = (
     data: encrypted.serialize(),
   };
 };
-
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
@@ -111,13 +110,12 @@ export const encrypt_uint64 = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
 ): EncryptedUint64 => {
-
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
   } else {
     value = value as bigint;
   }
-
+  console.log(`value: ${value.toString(16)}`)
   const uint32Array = new BigUint64Array([value]);
   const encrypted = CompactFheUint64List.encrypt_with_compact_public_key(
     uint32Array,
@@ -138,13 +136,11 @@ export const encrypt_uint128 = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
 ): EncryptedUint128 => {
-
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
   } else {
     value = value as bigint;
   }
-
 
   const encrypted = CompactFheUint128.encrypt_with_compact_public_key(
     value,
@@ -165,13 +161,11 @@ export const encrypt_uint256 = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
 ): EncryptedUint256 => {
-
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
   } else {
     value = value as bigint;
   }
-
 
   const encrypted = CompactFheUint256.encrypt_with_compact_public_key(
     value,

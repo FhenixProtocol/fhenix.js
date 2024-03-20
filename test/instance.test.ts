@@ -154,19 +154,13 @@ describe("token", () => {
     ).rejects.toThrow(
       "Expected value which is `number`, received value of type `string`.",
     );
-    await expect(() =>
-      instance.encrypt_uint64(222 as any),
-    ).rejects.toThrow(
+    await expect(() => instance.encrypt_uint64(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
-    await expect(() =>
-      instance.encrypt_uint128(222 as any),
-    ).rejects.toThrow(
+    await expect(() => instance.encrypt_uint128(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
-    await expect(() =>
-      instance.encrypt_uint256(222 as any),
-    ).rejects.toThrow(
+    await expect(() => instance.encrypt_uint256(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
     await expect(() => instance.encrypt("wrong value" as any)).rejects.toThrow(

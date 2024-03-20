@@ -5,6 +5,9 @@ import {
   CompactFheUint8List,
   CompactFheUint16List,
   CompactFheUint32List,
+  CompactFheUint64,
+  CompactFheUint128,
+  CompactFheUint256,
   TfheCompactPublicKey,
   TfheClientKey,
 } from "node-tfhe";
@@ -14,6 +17,9 @@ import {
   encrypt_uint16,
   encrypt_uint32,
   encrypt,
+  encrypt_uint64,
+  encrypt_uint128,
+  encrypt_uint256,
 } from "../src/sdk/encrypt";
 import { EncryptionTypes } from "../src/sdk/types";
 import { assert, expect, test, describe, it, beforeAll } from "vitest";
@@ -86,6 +92,35 @@ describe("encrypt_uint8", () => {
       const decrypted = v.decrypt(clientKey);
       expect(decrypted).toBe(30210);
     });
+  });
+
+  it("encrypt_uint64/decrypt 64bits", async () => {
+    const buffer = encrypt_uint64("222222222", publicKey);
+    const compactList = CompactFheUint64.deserialize(buffer.data);
+    let encryptedList = compactList.expand();
+    const decrypted = encryptedList.decrypt(clientKey);
+    expect(decrypted.toString(16)).toBe("222222222");
+  });
+
+  it("encrypt_uint128/decrypt 128bits", async () => {
+    const buffer = encrypt_uint128("222222222333333333333", publicKey);
+    const compactList = CompactFheUint128.deserialize(buffer.data);
+    let encryptedList = compactList.expand();
+    const decrypted = encryptedList.decrypt(clientKey);
+    expect(decrypted.toString(16)).toBe("222222222333333333333");
+  });
+
+  it("encrypt_uint256/decrypt 256bits", async () => {
+    const buffer = encrypt_uint256(
+      "2222222223333333333334444444444444444",
+      publicKey,
+    );
+    const compactList = CompactFheUint256.deserialize(buffer.data);
+    let encryptedList = compactList.expand();
+    const decrypted = encryptedList.decrypt(clientKey);
+    expect(decrypted.toString(16)).toBe(
+      "2222222223333333333334444444444444444",
+    );
   });
 
   it("encrypt/decrypt 0 8bits", async () => {

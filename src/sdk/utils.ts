@@ -22,9 +22,10 @@ export const ValidateUintInRange = (
 };
 
 export const fromHexString = (hexString: string): Uint8Array => {
-  const arr = hexString.replace(/^(0x)/, "").match(/.{1,2}/g);
+  const cleanString = hexString.length % 2 === 1 ? `0${hexString}` : hexString;
+  const arr = cleanString.replace(/^0x/, "").match(/.{1,2}/g);
   if (!arr) return new Uint8Array();
-  return Uint8Array.from(arr.map((byte) => parseInt(byte, 16)));
+  return new Uint8Array(arr.map((byte) => parseInt(byte, 16)));
 };
 
 export const toHexString = (bytes: Uint8Array) =>

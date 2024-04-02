@@ -83,6 +83,13 @@ describe("Permit Tests", () => {
     expect(cleartext).toBe(BigInt(value));
   });
 
+  it("try to load permit without auto generating a new one", async () => {
+    const provider = new MockProvider(tfhePublicKey);
+
+    const permit = await getPermit(contractAddress, provider, false);
+    expect(permit).toBe(null);    
+  });
+
   it("generates a permit and loads it to the instance", async () => {
     const provider = new MockProvider(tfhePublicKey);
     await expect(getPermit(undefined as any, provider)).rejects.toThrow(

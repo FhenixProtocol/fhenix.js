@@ -35,6 +35,9 @@ export class MockSigner {
   async _signTypedData(domain: any, types: any, value: any): Promise<any> {
     return "0x123";
   }
+  async getAddress(): Promise<string> {
+    return "0x123456789";
+  }
 }
 
 export class MockProvider {

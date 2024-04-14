@@ -301,10 +301,11 @@ export class FhenixClient {
   /**
    * Retrieves the stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
+   * @param {string} account - The address of the user account.
    * @returns {Permit} - The permit associated with the contract address.
    */
-  getPermit(contractAddress: string): Permit | undefined {
-    const fromLs = getPermitFromLocalstorage(contractAddress);
+  getPermit(contractAddress: string, account: string): Permit | undefined {
+    const fromLs = getPermitFromLocalstorage(contractAddress, account);
     if (fromLs) {
       this.permits[contractAddress] = fromLs;
       return fromLs;

@@ -67,15 +67,25 @@ const parsePermit = (savedPermit: string): Permit => {
 export const getPermit = async (
   contract: string,
   provider: SupportedProvider,
-): Promise<Permit> => {
+  autoGenerate: boolean = true,
+): Promise<Permit | null> => {
   isAddress(contract);
   if (!provider) {
     throw new Error(`Missing provider`);
   }
 
+  const getSigner = determineRequestSigner(provider);
+  const signer = await getSigner(provider);
+
   let savedPermit = null;
   if (typeof window !== "undefined" && window.localStorage) {
-    savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
+    savedPermit = window.localStorage.getItem(
+      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
+    );
+    if (!savedPermit) {
+      // Backward compatibility
+      savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
+    }
   }
 
   if (savedPermit) {
@@ -85,7 +95,7 @@ export const getPermit = async (
       console.warn(err);
     }
   }
-  return generatePermit(contract, provider);
+  return autoGenerate ? generatePermit(contract, provider) : null;
 };
 
 export const getAllPermits = (): Map<string, Permit> => {
@@ -95,6 +105,17 @@ export const getAllPermits = (): Map<string, Permit> => {
     const key = window.localStorage.key(i);
     if (key && key.includes(PERMIT_PREFIX)) {
       const contract = key.replace(PERMIT_PREFIX, "");
+
+      // Not sure if needed, code placeholder:
+      // const noPrefixPermit = key.replace(PERMIT_PREFIX, "");
+      // let contract = "";
+      // if (noPrefixPermit.includes("_")) {
+      //   const tmp = noPrefixPermit.split("_");
+      //   contract = tmp[0];
+      // } else {
+      //   contract = noPrefixPermit;
+      // }
+
       try {
         const permit = parsePermit(window.localStorage.getItem(key)!);
         permits.set(contract, permit);
@@ -108,9 +129,11 @@ export const getAllPermits = (): Map<string, Permit> => {
 
 interface SignerPublicSignedTypedData {
   signTypedData(domain: object, types: object, value: object): Promise<string>;
+  getAddress(): Promise<string>;
 }
 interface SignerPrivateSignedTypedData {
   _signTypedData(domain: object, types: object, value: object): Promise<string>;
+  getAddress(): Promise<string>;
 }
 
 export type PermitSigner =
@@ -218,23 +241,39 @@ export const generatePermit = async (
     };
 
     window.localStorage.setItem(
-      `${PERMIT_PREFIX}${contract}`,
+      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
       JSON.stringify(serialized),
     );
   }
   return permit;
 };
 
-export const removePermit = (contract: string): void => {
-  window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}`);
+export const removePermit = (contract: string, account: string): void => {
+  if (!account) {
+    // Backward compatibility
+    window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}`);
+  } else {
+    window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}_${account}`);
+  }
 };
 
 export const getPermitFromLocalstorage = (
   contract: string,
+  account: string,
 ): Permit | undefined => {
   let savedPermit = undefined;
   if (typeof window !== "undefined" && window.localStorage) {
-    savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
+    savedPermit = window.localStorage.getItem(
+      `${PERMIT_PREFIX}${contract}_${account}`,
+    );
+    if (!account) {
+      // Backward compatibility
+      savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
+    } else {
+      savedPermit = window.localStorage.getItem(
+        `${PERMIT_PREFIX}${contract}_${account}`,
+      );
+    }
   }
 
   if (!savedPermit) {

@@ -67,7 +67,7 @@ const parsePermit = (savedPermit: string): Permit => {
 export const getPermit = async (
   contract: string,
   provider: SupportedProvider,
-  autoGenerate: boolean = true
+  autoGenerate: boolean = true,
 ): Promise<Permit | null> => {
   isAddress(contract);
   if (!provider) {
@@ -79,8 +79,11 @@ export const getPermit = async (
 
   let savedPermit = null;
   if (typeof window !== "undefined" && window.localStorage) {
-    savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`);
-    if (!savedPermit) { // Backward compatibility
+    savedPermit = window.localStorage.getItem(
+      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
+    );
+    if (!savedPermit) {
+      // Backward compatibility
       savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
     }
   }
@@ -102,7 +105,7 @@ export const getAllPermits = (): Map<string, Permit> => {
     const key = window.localStorage.key(i);
     if (key && key.includes(PERMIT_PREFIX)) {
       const contract = key.replace(PERMIT_PREFIX, "");
-      
+
       // Not sure if needed, code placeholder:
       // const noPrefixPermit = key.replace(PERMIT_PREFIX, "");
       // let contract = "";
@@ -112,7 +115,7 @@ export const getAllPermits = (): Map<string, Permit> => {
       // } else {
       //   contract = noPrefixPermit;
       // }
-      
+
       try {
         const permit = parsePermit(window.localStorage.getItem(key)!);
         permits.set(contract, permit);
@@ -246,7 +249,8 @@ export const generatePermit = async (
 };
 
 export const removePermit = (contract: string, account: string): void => {
-  if (!account) { // Backward compatibility
+  if (!account) {
+    // Backward compatibility
     window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}`);
   } else {
     window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}_${account}`);
@@ -255,15 +259,20 @@ export const removePermit = (contract: string, account: string): void => {
 
 export const getPermitFromLocalstorage = (
   contract: string,
-  account: string
+  account: string,
 ): Permit | undefined => {
   let savedPermit = undefined;
   if (typeof window !== "undefined" && window.localStorage) {
-    savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}_${account}`);
-    if (!account) { // Backward compatibility
+    savedPermit = window.localStorage.getItem(
+      `${PERMIT_PREFIX}${contract}_${account}`,
+    );
+    if (!account) {
+      // Backward compatibility
       savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
     } else {
-      savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}_${account}`);
+      savedPermit = window.localStorage.getItem(
+        `${PERMIT_PREFIX}${contract}_${account}`,
+      );
     }
   }
 

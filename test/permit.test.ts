@@ -87,7 +87,7 @@ describe("Permit Tests", () => {
     const provider = new MockProvider(tfhePublicKey);
 
     const permit = await getPermit(contractAddress, provider, false);
-    expect(permit).toBe(null);    
+    expect(permit).toBe(null);
   });
 
   it("generates a permit and loads it to the instance", async () => {

@@ -1,4 +1,4 @@
-lockfileVersion: '6.1'
+lockfileVersion: '6.0'
 
 settings:
   autoInstallPeers: true
@@ -9,11 +9,11 @@ dependencies:
     specifier: ^6.9.1
     version: 6.9.1
   node-tfhe:
-    specifier: ^0.5.3
-    version: 0.5.3
+    specifier: ^0.6.1
+    version: 0.6.1
   tfhe:
-    specifier: ^0.5.3
-    version: 0.5.3
+    specifier: ^0.6.1
+    version: 0.6.1
   tweetnacl:
     specifier: ^1.0.3
     version: 1.0.3
@@ -2565,8 +2565,8 @@ packages:
     resolution: {integrity: sha512-y10wOWt8yZpqXmOgRo77WaHEmhYQYGNA6y421PKsKYWEK8aW+cqAphborZDhqfyKrbZEN92CN1X2KbafY2s7Yw==}
     dev: true
 
-  /node-tfhe@0.5.3:
-    resolution: {integrity: sha512-72HFj9Lj9hC5PWaW5TH306uPAUUL6We2lAXLW6ibxwsLcSUgEL7NEVGz5MqAYa5PcwpVEvzLDZSHCFRz8glqaQ==}
+  /node-tfhe@0.6.1:
+    resolution: {integrity: sha512-p2BidmylEO+3v1Q4KqErNJC8z/Y2R+b+Yd42omweeII41AbgPM12RJCmvE9GMvr/ZbAn/H762JPijLH08oBUYQ==}
     dev: false
 
   /npm-run-path@5.2.0:
@@ -3234,8 +3234,8 @@ packages:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}
     dev: true
 
-  /tfhe@0.5.3:
-    resolution: {integrity: sha512-LrZXKPzI/YsLwJA+y41uYvQU+G1/JbXea30eQXXFdLSeYPPO45a9jCL5ZqvkWZkRFA9Ox2/7t86+1ysR/1DNyw==}
+  /tfhe@0.6.1:
+    resolution: {integrity: sha512-csHYfEbejbQl4LVb1/37LY9AxiR9RqvzXsHT1wENMtGqIjNmev3T1aXyljooGc/4HuZmG8VjlUkX6CYvG4U80g==}
     dev: false
 
   /timers-browserify@2.0.12:

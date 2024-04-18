@@ -68,13 +68,13 @@ export class SealingKey {
     }
     if (!parsedData) {
       const toDecrypt =
-      typeof ciphertext === "string" ? fromHexString(ciphertext) : ciphertext;
+        typeof ciphertext === "string" ? fromHexString(ciphertext) : ciphertext;
 
       // decode json structure that gets returned from the chain
       const jsonString = Buffer.from(toDecrypt).toString("utf8");
       parsedData = JSON.parse(jsonString);
     }
-    
+
     if (!parsedData) {
       throw new Error("Failed to parse sealed data");
     }

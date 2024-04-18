@@ -64,7 +64,7 @@ export class SealingKey {
         parsedData = JSON.parse(ciphertext);
       }
     } catch {
-      
+      // ignore errors
     }
     if (!parsedData) {
       const toDecrypt =

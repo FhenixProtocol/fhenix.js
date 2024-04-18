@@ -58,12 +58,26 @@ export class SealingKey {
    * @throws Will throw an error if the decryption process fails.
    */
   unseal = (ciphertext: string | Uint8Array): bigint => {
-    const toDecrypt =
-      typeof ciphertext === "string" ? fromHexString(ciphertext) : ciphertext;
+    let parsedData: EthEncryptedData | undefined = undefined;
+    try {
+      if (typeof ciphertext === "string") {
+        parsedData = JSON.parse(ciphertext);
+      }
+    } catch {
+      // ignore errors
+    }
+    if (!parsedData) {
+      const toDecrypt =
+        typeof ciphertext === "string" ? fromHexString(ciphertext) : ciphertext;
 
-    // decode json structure that gets returned from the chain
-    const jsonString = Buffer.from(toDecrypt).toString("utf8");
-    const parsedData: EthEncryptedData = JSON.parse(jsonString);
+      // decode json structure that gets returned from the chain
+      const jsonString = Buffer.from(toDecrypt).toString("utf8");
+      parsedData = JSON.parse(jsonString);
+    }
+
+    if (!parsedData) {
+      throw new Error("Failed to parse sealed data");
+    }
 
     // assemble decryption parameters
     const nonce = naclUtil.decodeBase64(parsedData.nonce);

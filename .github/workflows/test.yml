@@ -12,7 +12,7 @@ jobs:
 
     services:
       fhenix:
-        image: ghcr.io/fhenixprotocol/nitro/localfhenix:v0.2.2-alpha.0
+        image: ghcr.io/fhenixprotocol/localfhenix:v0.2.2-alpha.0
         ports:
           - 8545:8547 # RPC
           - 5000:3000 # Faucet

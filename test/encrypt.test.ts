@@ -20,7 +20,8 @@ import {
   encrypt,
   encrypt_uint64,
   encrypt_uint128,
-  encrypt_uint256, encrypt_address,
+  encrypt_uint256,
+  encrypt_address,
 } from "../src/sdk/encrypt";
 import { EncryptionTypes } from "../src/sdk/types";
 import { assert, expect, test, describe, it, beforeAll } from "vitest";

@@ -21,6 +21,7 @@ export enum EncryptionTypes {
   uint64 = "uint64",
   uint128 = "uint128",
   uint256 = "uint256",
+  address = "address",
 }
 
 /**
@@ -144,3 +145,4 @@ export interface EncryptedUint32 extends EncryptedNumber {}
 export interface EncryptedUint64 extends EncryptedNumber {}
 export interface EncryptedUint128 extends EncryptedNumber {}
 export interface EncryptedUint256 extends EncryptedNumber {}
+export interface EncryptedAddress extends EncryptedNumber {}

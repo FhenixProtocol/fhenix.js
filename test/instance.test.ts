@@ -27,6 +27,7 @@ describe("token", () => {
     expect(instance.encrypt_uint64).toBeDefined();
     expect(instance.encrypt_uint128).toBeDefined();
     expect(instance.encrypt_uint256).toBeDefined();
+    expect(instance.encrypt_address).toBeDefined();
     expect(instance.unseal).toBeDefined();
     expect(instance.storePermit).toBeDefined();
     expect(instance.encrypt).toBeDefined();
@@ -135,6 +136,11 @@ describe("token", () => {
     ).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `undefined`.",
     );
+    await expect(() =>
+      instance.encrypt_address(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
     await expect(() => instance.encrypt(undefined as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `undefined`.",
     );
@@ -161,6 +167,9 @@ describe("token", () => {
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
     await expect(() => instance.encrypt_uint256(222 as any)).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    await expect(() => instance.encrypt_address(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
     await expect(() => instance.encrypt("wrong value" as any)).rejects.toThrow(

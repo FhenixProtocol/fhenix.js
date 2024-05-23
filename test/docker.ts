@@ -5,7 +5,7 @@ export const CONTAINER_NAME = "fhenixjs-test-env";
 
 // Function to run a Docker container using the 'execPromise' function
 export async function runDockerContainerAsync() {
-  const imageName = "ghcr.io/fhenixprotocol/localfhenix:v0.2.0-beta0";
+  const imageName = "ghcr.io/fhenixprotocol/localfhenix:v0.2.3-rc.2";
 
   const ports = "-p 8545:8547 -p 5000:3000";
 

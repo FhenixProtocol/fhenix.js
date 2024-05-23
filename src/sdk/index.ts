@@ -3,10 +3,14 @@ import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
 import {
   ContractPermits,
   determineRequestMethod,
+  EncryptedAddress,
   EncryptedBool,
   EncryptedNumber,
+  EncryptedUint128,
   EncryptedUint16,
+  EncryptedUint256,
   EncryptedUint32,
+  EncryptedUint64,
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
@@ -164,9 +168,9 @@ export class FhenixClient {
   /**
    * Encrypts a Uint64 value using the stored public key.
    * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
+   * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint64(value: bigint | string): Promise<EncryptedUint32> {
+  async encrypt_uint64(value: bigint | string): Promise<EncryptedUint64> {
     isBigIntOrHexString(value);
 
     const fhePublicKey = await this._getPublicKey();
@@ -176,11 +180,11 @@ export class FhenixClient {
   }
 
   /**
-   * Encrypts a Uint64 value using the stored public key.
-   * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
+   * Encrypts a Uint128 value using the stored public key.
+   * @param {bigint | string} value - The Uint128 value to encrypt.
+   * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint128(value: bigint | string): Promise<EncryptedUint32> {
+  async encrypt_uint128(value: bigint | string): Promise<EncryptedUint128> {
     isBigIntOrHexString(value);
 
     const fhePublicKey = await this._getPublicKey();
@@ -190,11 +194,11 @@ export class FhenixClient {
   }
 
   /**
-   * Encrypts a Uint64 value using the stored public key.
-   * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
+   * Encrypts a Uint256 value using the stored public key.
+   * @param {bigint | string} value - The Uint256 value to encrypt.
+   * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint256(value: bigint | string): Promise<EncryptedUint32> {
+  async encrypt_uint256(value: bigint | string): Promise<EncryptedUint256> {
     isBigIntOrHexString(value);
 
     const fhePublicKey = await this._getPublicKey();
@@ -202,7 +206,19 @@ export class FhenixClient {
     // ValidateUintInRange(value, MAX_UINT64, 0);
     return tfheEncrypt.encrypt_uint256(value, fhePublicKey);
   }
+  /**
+   * Encrypts an Address (Uint160) value using the stored public key.
+   * @param {bigint | string} value - The Address (Uint160) value to encrypt.
+   * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
+   */
+  async encrypt_address(value: bigint | string): Promise<EncryptedAddress> {
+    isBigIntOrHexString(value);
 
+    const fhePublicKey = await this._getPublicKey();
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_address(value, fhePublicKey);
+  }
   /**
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
    * @param {number} value - The numeric value to encrypt.

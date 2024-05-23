@@ -20,6 +20,7 @@ export {
   EncryptedUint8,
   EncryptedBool,
   EncryptedNumber,
+  EncryptedAddress,
 } from "./sdk/types";
 
 export * from "./extensions/access_control";

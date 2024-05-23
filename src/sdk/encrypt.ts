@@ -6,6 +6,7 @@ import {
   CompactFheUint32List,
   CompactFheUint64List,
   CompactFheUint128,
+  CompactFheUint160,
   CompactFheUint256,
 } from "node-tfhe";
 import {
@@ -17,6 +18,7 @@ import {
   EncryptedUint64,
   EncryptedUint128,
   EncryptedUint256,
+  EncryptedAddress,
   EncryptionTypes,
 } from "./types";
 import { fromHexString, toBigInt } from "./utils";
@@ -101,8 +103,8 @@ export const encrypt_uint32 = (
 };
 
 /**
- * Encrypts a Uint32 value using TFHE.
- * @param {number} value - The Uint32 value to encrypt.
+ * Encrypts a Uint64 value using TFHE.
+ * @param {number} value - The Uint64 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @returns {EncryptedUint64} - The encrypted value serialized as Uint8Array.
  */
@@ -128,7 +130,7 @@ export const encrypt_uint64 = (
 
 /**
  * Encrypts a Uint128 value using TFHE.
- * @param {bigint} value - The Uint32 value to encrypt.
+ * @param {bigint} value - The Uint128 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @returns {EncryptedUint128} - The encrypted value serialized as Uint8Array.
  */
@@ -152,8 +154,8 @@ export const encrypt_uint128 = (
 };
 
 /**
- * Encrypts a Uint128 value using TFHE.
- * @param {bigint} value - The Uint32 value to encrypt.
+ * Encrypts a Uint256 value using TFHE.
+ * @param {bigint} value - The Uint256 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @returns {EncryptedUint256} - The encrypted value serialized as Uint8Array.
  */
@@ -175,7 +177,30 @@ export const encrypt_uint256 = (
     data: encrypted.serialize(),
   };
 };
+/**
+ * Encrypts a Address value using TFHE.
+ * @param {bigint} value - The Address (Uint160) value to encrypt.
+ * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @returns {EncryptedAddress} - The encrypted value serialized as Uint8Array.
+ */
+export const encrypt_address = (
+  value: bigint | string,
+  publicKey: TfheCompactPublicKey,
+): EncryptedAddress => {
+  if (typeof value === "string") {
+    value = toBigInt(fromHexString(value));
+  } else {
+    value = value as bigint;
+  }
 
+  const encrypted = CompactFheUint160.encrypt_with_compact_public_key(
+    value,
+    publicKey,
+  );
+  return {
+    data: encrypted.serialize(),
+  };
+};
 /**
  * Encrypts a numeric value using TFHE according to the specified encryption type.
  * @param {number} value - The numeric value to encrypt.
@@ -204,7 +229,8 @@ export const encrypt = (
       return encrypt_uint128(value.toString(16), publicKey);
     case EncryptionTypes.uint256:
       return encrypt_uint256(value.toString(16), publicKey);
-
+    case EncryptionTypes.address:
+      return encrypt_address(value.toString(16), publicKey);
     default:
       throw new Error("Invalid type");
   }

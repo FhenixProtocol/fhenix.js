@@ -7,6 +7,7 @@ import {
   CompactFheUint32List,
   CompactFheUint64,
   CompactFheUint128,
+  CompactFheUint160,
   CompactFheUint256,
   TfheCompactPublicKey,
   TfheClientKey,
@@ -20,6 +21,7 @@ import {
   encrypt_uint64,
   encrypt_uint128,
   encrypt_uint256,
+  encrypt_address,
 } from "../src/sdk/encrypt";
 import { EncryptionTypes } from "../src/sdk/types";
 import { assert, expect, test, describe, it, beforeAll } from "vitest";
@@ -120,6 +122,18 @@ describe("encrypt_uint8", () => {
     const decrypted = encryptedList.decrypt(clientKey);
     expect(decrypted.toString(16)).toBe(
       "2222222223333333333334444444444444444",
+    );
+  });
+  it("encrypt_address/decrypt address", async () => {
+    const buffer = encrypt_address(
+      "0x324234AF23a816AA9165de162b1b0d3D40eA1234",
+      publicKey,
+    );
+    const compactList = CompactFheUint160.deserialize(buffer.data);
+    let encryptedList = compactList.expand();
+    const decrypted = encryptedList.decrypt(clientKey);
+    expect(decrypted.toString(16).toUpperCase()).toBe(
+      "324234AF23a816AA9165de162b1b0d3D40eA1234".toUpperCase(),
     );
   });
 

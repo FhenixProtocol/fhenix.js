@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "lib": ["ES6", "DOM"],
-    "module": "NodeNext",
+    "module": "esnext",
     "outDir": "dist",
     "declaration": true,
     "declarationMap": true,

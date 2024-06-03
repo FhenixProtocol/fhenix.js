@@ -9,8 +9,9 @@
     <div id="output"></div>
   </body>
   <script>
+
     async function doFetch() {
-      const resp = new fhenixjs.FhenixClient({});
+      const resp = new fhenixjs.FhenixClient({initSdk: false});
 
       let x = await resp.encrypt_uint8(3);
 

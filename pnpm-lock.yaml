@@ -70,6 +70,9 @@ devDependencies:
   rollup:
     specifier: ^4.18.0
     version: 4.18.0
+  rollup-plugin-polyfill-node:
+    specifier: ^0.13.0
+    version: 0.13.0(rollup@4.18.0)
   ts-loader:
     specifier: ^9.5.1
     version: 9.5.1(typescript@5.3.3)(webpack@5.89.0)
@@ -548,6 +551,21 @@ packages:
       estree-walker: 2.0.2
       glob: 8.1.0
       is-reference: 1.2.1
+      magic-string: 0.30.5
+      rollup: 4.18.0
+    dev: true
+
+  /@rollup/plugin-inject@5.0.5(rollup@4.18.0):
+    resolution: {integrity: sha512-2+DEJbNBoPROPkgTDNe8/1YXWcqxbN5DTjASVIOx8HS+pITXushyNiBV56RB08zuptzz8gT3YfkqriTBVycepg==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+    dependencies:
+      '@rollup/pluginutils': 5.1.0(rollup@4.18.0)
+      estree-walker: 2.0.2
       magic-string: 0.30.5
       rollup: 4.18.0
     dev: true
@@ -3137,6 +3155,15 @@ packages:
     dependencies:
       hash-base: 3.1.0
       inherits: 2.0.4
+    dev: true
+
+  /rollup-plugin-polyfill-node@0.13.0(rollup@4.18.0):
+    resolution: {integrity: sha512-FYEvpCaD5jGtyBuBFcQImEGmTxDTPbiHjJdrYIp+mFIwgXiXabxvKUK7ZT9P31ozu2Tqm9llYQMRWsfvTMTAOw==}
+    peerDependencies:
+      rollup: ^1.20.0 || ^2.0.0 || ^3.0.0 || ^4.0.0
+    dependencies:
+      '@rollup/plugin-inject': 5.0.5(rollup@4.18.0)
+      rollup: 4.18.0
     dev: true
 
   /rollup@4.18.0:

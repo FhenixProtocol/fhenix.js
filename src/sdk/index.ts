@@ -41,6 +41,7 @@ import {
   isPlainObject,
   isString,
 } from "./validation";
+import { GetFhePublicKey } from './init/init.js';
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -69,9 +70,9 @@ export class FhenixClient {
     // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
     // case this should be called with initSdk = false (tests, for instance)
 
-    /// #if DEBUG
-    this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider).catch(
-      (err) => {
+    //provider
+    this.fhePublicKey = GetFhePublicKey(FhenixClient.getFheKeyFromProvider, provider).catch(
+      (err: any) => {
         if (ignoreErrors) {
           return undefined;
         } else {
@@ -81,36 +82,6 @@ export class FhenixClient {
         }
       },
     );
-
-    /// #else
-    const asyncInitFhevm: () => Promise<void> = async () => {
-      try {
-        const { initFhevm } = await import("./init.js");
-        await initFhevm();
-      } catch (err) {
-        throw new Error(
-          `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
-        );
-      }
-    };
-    if (params?.initSdk !== false) {
-      this.fhePublicKey = asyncInitFhevm().then(() =>
-        FhenixClient.getFheKeyFromProvider(provider),
-      );
-    } else {
-      this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider).catch(
-        (err) => {
-          if (ignoreErrors) {
-            return undefined;
-          } else {
-            throw new Error(
-              `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-            );
-          }
-        },
-      );
-    }
-    /// #endif
   }
 
   // Encryption Methods

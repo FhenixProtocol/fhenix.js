@@ -85,7 +85,7 @@ export class FhenixClient {
     /// #else
     const asyncInitFhevm: () => Promise<void> = async () => {
       try {
-        const { initFhevm } = await import("./init");
+        const { initFhevm } = await import("./init.js");
         await initFhevm();
       } catch (err) {
         throw new Error(
@@ -96,6 +96,18 @@ export class FhenixClient {
     if (params?.initSdk !== false) {
       this.fhePublicKey = asyncInitFhevm().then(() =>
         FhenixClient.getFheKeyFromProvider(provider),
+      );
+    } else {
+      this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider).catch(
+        (err) => {
+          if (ignoreErrors) {
+            return undefined;
+          } else {
+            throw new Error(
+              `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+            );
+          }
+        },
       );
     }
     /// #endif

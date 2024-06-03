@@ -29,6 +29,8 @@ export function isPlainObject(value: unknown) {
     !(Symbol.iterator in value);
 
   assertIs(is, "plain object", value);
+
+  return true;
 }
 
 export function isBigIntOrHexString(value: unknown) {

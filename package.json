@@ -2,19 +2,22 @@
   "name": "fhenixjs",
   "version": "0.2.0-beta.4",
   "description": "The JavaScript SDK for Fhenix",
-  "types": "dist/types/index.d.ts",
-  "main": "dist/index.node.js",
-  "browser": "dist/browser.js",
-  "files": [
-    "dist",
-    "src",
-    "licenses",
-    "package.json",
-    "package-lock.json",
-    "README.md",
-    "LICENSE"
-  ],
+  "main": "./lib.commonjs/index.js",
+  "module": "./lib.esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib.esm/index.js",
+      "default": "./lib.commonjs/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browser": "./lib.esm/browser.js",
   "scripts": {
+    "build-rollup": "rollup -c && uglifyjs ./dist/fhenixjs.js -o ./dist/fhenixjs.min.js && uglifyjs ./dist/fhenixjs.umd.js -o ./dist/fhenixjs.umd.min.js",
+    "dev-rollup": "rollup -c -w",
+    "build": "tsc --project tsconfig.esm.json",
     "lint": "eslint src/",
     "build:prod": "webpack --config webpack/webpack.production.js && tsc",
     "build:dev": "webpack --config webpack/webpack.development.js && tsc",
@@ -35,26 +38,34 @@
   },
   "homepage": "https://github.com/FhenixProtocol/fhenix.js#readme",
   "dependencies": {
+    "bufferutil": "^4.0.8",
     "ethers": "^6.9.1",
+    "node-tfhe": "^0.6.1",
+    "tfhe": "^0.6.1",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
-    "node-tfhe": "^0.6.1",
-    "tfhe": "^0.6.1"
+    "utf-8-validate": "^5.0.2"
   },
   "devDependencies": {
     "@esm-bundle/chai": "^4.3.4-fix.0",
+    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@rollup/plugin-wasm": "^6.2.2",
     "@types/node": "^18.11.3",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@vitest/coverage-v8": "^1.1.0",
     "compression-webpack-plugin": "^10.0.0",
-    "node-polyfill-webpack-plugin": "^3.0.0",
     "eslint": "^8.57.0",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "ifdef-loader": "^2.3.2",
+    "node-polyfill-webpack-plugin": "^3.0.0",
     "prettier": "^3.2.5",
+    "rollup": "^4.18.0",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "typedoc": "^0.25.4",
     "typedoc-plugin-extras": "^3.0.0",
-    "typescript": "^5.3.3",
+    "typescript": "^5.4.5",
     "url-loader": "^4.1.1",
     "vite": "^5.0.10",
     "vitest": "^1.1.0",
@@ -62,7 +73,6 @@
     "webpack-bundle-analyzer": "^4.10.1",
     "webpack-cli": "^5.1.4",
     "webpack-merge": "^5.10.0",
-    "webpack-node-externals": "^3.0.0",
-    "ifdef-loader": "^2.3.2"
+    "webpack-node-externals": "^3.0.0"
   }
 }

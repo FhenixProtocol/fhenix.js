@@ -21,6 +21,14 @@ let commonConfig = {
     asyncWebAssembly: true,
     topLevelAwait: true,
   },
+  optimization: {
+    mangleWasmImports: true,
+  }
+};
+
+const ifdefLoaderOptsClient = {
+  DEBUG: false,
+  version: 3,
 };
 
 let clientConfig = merge(commonConfig, {
@@ -30,7 +38,10 @@ let clientConfig = merge(commonConfig, {
       {
         test: /\.ts?$/,
         exclude: [/node_modules/],
-        use: [{ loader: "ts-loader" }],
+        use: [
+          { loader: "ts-loader" },
+          { loader: "ifdef-loader", options: ifdefLoaderOptsClient },
+        ],
       },
       {
         test: /\.wasm$/,
@@ -53,13 +64,12 @@ let clientConfig = merge(commonConfig, {
   plugins: [new NodePolyfillPlugin()],
 });
 
-const ifdefLoaderOpts = {
+const ifdefLoaderOptsServer = {
   DEBUG: true,
   version: 3,
 };
 
 let serverConfig = merge(commonConfig, {
-  target: "node",
   externalsPresets: { node: true },
   output: {
     filename: "index.node.js",
@@ -71,18 +81,28 @@ let serverConfig = merge(commonConfig, {
         exclude: [/node_modules/],
         use: [
           { loader: "ts-loader" },
-          { loader: "ifdef-loader", options: ifdefLoaderOpts },
-        ],
+          { loader: "ifdef-loader", options: ifdefLoaderOptsServer },
+        ]
       },
+      {
+        test: /\.wasm$/,
+        type: "asset/inline",
+      }
     ],
   },
-  externals: [
-    {
-      "utf-8-validate": "commonjs utf-8-validate",
-      bufferutil: "commonjs bufferutil",
-      "node-tfhe": "commonjs node-tfhe",
+  resolve: {
+    alias: {
+      "node-tfhe": "tfhe/tfhe",
     },
-  ],
+    fallback: {
+      "tfhe_bg.wasm": require.resolve("tfhe/tfhe_bg.wasm"),
+      "node-tfhe": require.resolve("tfhe/tfhe"),
+    },
+  },
+  // externals: [nodeExternals({
+  //   // this WILL include `jquery` and `webpack/hot/dev-server` in the bundle, as well as `lodash/*`
+  //   allowlist: ['node-tfhe', "tfhe", "*.wasm"]
+  // })],
 });
 
 module.exports = [clientConfig, serverConfig];

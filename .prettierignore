@@ -1,0 +1,9 @@
+dist/
+lib/
+README.md
+.github/
+.config/
+licenses/
+media/
+node_modules/
+docs/

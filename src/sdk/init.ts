@@ -1,12 +1,10 @@
-import { SupportedProvider } from './types';
-import { TfheCompactPublicKey, asyncInitFhevm } from './fhe/fhe.js';
+import { SupportedProvider } from "./types";
+import { TfheCompactPublicKey, asyncInitFhevm } from "./fhe/fhe.js";
 
 export const GetFhePublicKey = async (
   getKeyFn: (provider: SupportedProvider) => Promise<TfheCompactPublicKey>,
-  provider: SupportedProvider
+  provider: SupportedProvider,
 ): Promise<TfheCompactPublicKey> => {
   await asyncInitFhevm();
   return getKeyFn(provider);
-}
-
-
+};

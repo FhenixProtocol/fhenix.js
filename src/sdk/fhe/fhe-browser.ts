@@ -14,7 +14,7 @@ const initFhevm: InitFhevm = async () => {
 export const asyncInitFhevm: () => Promise<void> = async () => {
   try {
     // const { initFhevm } = await import("./init.js");
-    console.log('initFhevm');
+    console.log("initFhevm");
 
     await initFhevm();
   } catch (err) {

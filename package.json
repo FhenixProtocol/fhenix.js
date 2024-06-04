@@ -28,7 +28,7 @@
     "dev-rollup": "rollup -c -w",
     "lint": "eslint src/",
     "compile": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && tsc -p tsconfig.types.json",
-    "build": "pnpm compile && pnpm build-rollup && uglifyjs ./dist/fhenix.esm.js -o ./dist/fhenix.min.js && uglifyjs ./dist/fhenix.umd.js -o ./dist/fhenix.umd.min.js && uglifyjs ./dist/fhenix.cjs.js -o ./dist/fhenix.cjs.min.js",
+    "build": "pnpm compile && pnpm build-rollup && uglifyjs ./dist/fhenix.esm.js -o ./dist/fhenix.esm.min.js && uglifyjs ./dist/fhenix.umd.js -o ./dist/fhenix.umd.min.js && uglifyjs ./dist/fhenix.cjs.js -o ./dist/fhenix.cjs.min.js",
     "test": "VITE_CJS_IGNORE_WARNING=true vitest ",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
     "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\"",

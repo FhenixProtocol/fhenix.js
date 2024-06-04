@@ -41,7 +41,7 @@ import {
   isPlainObject,
   isString,
 } from "./validation";
-import { GetFhePublicKey } from './init.js';
+import { GetFhePublicKey } from "./init.js";
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -71,17 +71,18 @@ export class FhenixClient {
     // case this should be called with initSdk = false (tests, for instance)
 
     //provider
-    this.fhePublicKey = GetFhePublicKey(FhenixClient.getFheKeyFromProvider, provider).catch(
-      (err: unknown) => {
-        if (ignoreErrors) {
-          return undefined;
-        } else {
-          throw new Error(
-            `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-          );
-        }
-      },
-    );
+    this.fhePublicKey = GetFhePublicKey(
+      FhenixClient.getFheKeyFromProvider,
+      provider,
+    ).catch((err: unknown) => {
+      if (ignoreErrors) {
+        return undefined;
+      } else {
+        throw new Error(
+          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+        );
+      }
+    });
   }
 
   // Encryption Methods

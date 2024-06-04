@@ -8,7 +8,6 @@ import {
 import { toHexString } from "../utils";
 
 export const createTfheKeypair = () => {
-
   const block_params = new ShortintParameters(
     ShortintParametersName.PARAM_MESSAGE_2_CARRY_2_COMPACT_PK_PBS_KS,
   );
@@ -29,7 +28,7 @@ export const createTfhePublicKey = (): string => {
 export const asyncInitFhevm = async () => {
   // noop
   // fs.readFileSync(wasm);
-}
+};
 
 export { TfheCompactPublicKey } from "node-tfhe";
 export {

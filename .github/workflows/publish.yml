@@ -20,4 +20,4 @@ jobs:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
       - run: pnpm install
       - run: pnpm build:prod
-      - run: pnpm publish --no-git-checks --tag beta
+      - run: pnpm publish --no-git-checks

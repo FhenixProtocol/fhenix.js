@@ -72,7 +72,7 @@ export class FhenixClient {
 
     //provider
     this.fhePublicKey = GetFhePublicKey(FhenixClient.getFheKeyFromProvider, provider).catch(
-      (err: any) => {
+      (err: unknown) => {
         if (ignoreErrors) {
           return undefined;
         } else {

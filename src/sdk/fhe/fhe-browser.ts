@@ -6,7 +6,6 @@ export type InitFhevm = typeof initSDK;
 
 const initFhevm: InitFhevm = async () => {
   if (!initialized) {
-    //@ts-ignore
     initialized = await initSDK(wasm());
   }
   return initialized;

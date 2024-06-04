@@ -19,5 +19,5 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
       - run: pnpm install
-      - run: pnpm build:prod
+      - run: pnpm build
       - run: pnpm publish --no-git-checks --tag beta

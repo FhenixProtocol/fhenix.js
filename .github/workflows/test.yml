@@ -54,4 +54,4 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Test Build
-        run: pnpm build:dev
+        run: pnpm build

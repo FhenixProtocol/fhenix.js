@@ -12,7 +12,7 @@ import {
   TfheCompactPublicKey,
   TfheClientKey,
 } from "node-tfhe";
-import { createTfheKeypair } from "../src/sdk/tfhe/tfhe";
+import { createTfheKeypair } from "../src/sdk/fhe/fhe";
 import {
   encrypt_uint8,
   encrypt_uint16,

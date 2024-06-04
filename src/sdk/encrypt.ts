@@ -8,7 +8,7 @@ import {
   CompactFheUint128,
   CompactFheUint160,
   CompactFheUint256,
-} from "node-tfhe";
+} from "./fhe/fhe.js";
 import {
   EncryptedNumber,
   EncryptedUint16,
@@ -117,7 +117,7 @@ export const encrypt_uint64 = (
   } else {
     value = value as bigint;
   }
-  console.log(`value: ${value.toString(16)}`);
+  // console.log(`value: ${value.toString(16)}`);
   const uint32Array = new BigUint64Array([value]);
   const encrypted = CompactFheUint64List.encrypt_with_compact_public_key(
     uint32Array,

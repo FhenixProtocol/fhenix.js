@@ -7,7 +7,7 @@ import {
   Permit,
   SealingKey,
 } from "../src";
-import { createTfhePublicKey } from "../src/sdk/tfhe/tfhe";
+import { createTfhePublicKey } from "../src/sdk/fhe/fhe";
 import { MockProvider } from "./utils";
 
 describe("token", () => {

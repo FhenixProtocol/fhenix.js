@@ -1,4 +1,4 @@
-import { TfheCompactPublicKey } from "node-tfhe";
+import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
 import {
   ContractPermits,
@@ -23,7 +23,7 @@ import {
   Permission,
   Permit,
   PermitSigner,
-} from "../extensions/access_control";
+} from "../extensions/access_control/index.js";
 
 import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
@@ -41,7 +41,7 @@ import {
   isPlainObject,
   isString,
 } from "./validation";
-import { GetFhePublicKey } from './init/init.js';
+import { GetFhePublicKey } from './init.js';
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -60,7 +60,7 @@ export class FhenixClient {
     isPlainObject(params);
 
     if (params?.provider === undefined) {
-      params.provider = new JsonRpcProvider("http://localhost:8545");
+      params.provider = new JsonRpcProvider("http://localhost:42069");
     }
 
     const { provider, ignoreErrors } = params;
@@ -380,6 +380,11 @@ export class FhenixClient {
 
     const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
     const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
+
+    // todo: use this to remove ethers dependency
+    // const callData = "0x44e21dd2";
+    // console.log(`calldata: ${callData}`);
+
     const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
 
     const publicKeyP = requestMethod(provider, "eth_call", callParams).catch(

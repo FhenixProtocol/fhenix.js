@@ -1,5 +1,5 @@
-import * as fhenixjs from "./fhenixjs.js";
+import * as fhenixjs from "./fhenix.js";
 
 export { fhenixjs };
 
-export * from "./fhenixjs.js";
+export * from "./fhenix.js";

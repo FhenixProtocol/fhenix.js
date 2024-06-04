@@ -1,40 +1,26 @@
 import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
 import wasm from '@rollup/plugin-wasm';
 import resolve from '@rollup/plugin-node-resolve';
-
-// import pkg from './package.json';
 
 export default [
   // browser-friendly UMD build
   {
-    input: 'src/index.ts',
+    input: "./lib/esm/index.js",
     output: {
       banner: "const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 'undefined' ? window: typeof global !== 'undefined' ? global: typeof self !== 'undefined' ? self: {});",
-      inlineDynamicImports: true,
       name: 'fhenixjs',
-      file: 'dist/browser.js',
-      //file: pkg.browser,
-      // dir: 'dist',
-      // dir: pkg.browser,
+      file: 'dist/fhenix.umd.js',
       format: 'umd',
       sourcemap: true
-      // globals: {
-      //   http: 'http',
-      //
-      // }
     },
     plugins: [
       commonjs(),  // so Rollup can convert modules to an ES module
-      typescript(), // so Rollup can convert TypeScript to JavaScript
-      wasm(),
+      wasm({targetEnv: "auto-inline"}),
       resolve({
         browser: true,
-        // exportConditions,
-        // mainFields,
         exportConditions: ["import", "default"],
         mainFields: ["module", "main", "browser"],
-        modulesOnly: true,
+        modulesOnly: false,
         preferBuiltins: false,
       })
     ]
@@ -47,56 +33,40 @@ export default [
   // an array for the `output` option, where we can specify
   // `file` and `format` for each target)
   {
-    input: 'src/index.ts',
+    input: "./lib/esm/index.js",
+    plugins: [
+      commonjs(),
+
+      wasm({targetEnv: "auto-inline"}),
+      resolve({
+        browser: true,
+        extensions: ['.js', '.ts', '.wasm'],
+        exportConditions: ["import", "default"],
+        mainFields: ["module", "main"],
+        modulesOnly: false,
+        preferBuiltins: false,
+      })
+    ],
+    external: ['bufferutil', 'utf-8-validate', 'node-tfhe', 'tfhe'],
+    output: [
+      { file: 'dist/fhenix.esm.js', format: 'esm', sourcemap: true },
+    ]
+  },
+  //
+  {
+    input: "./lib/commonjs/index.js",
     plugins: [
       wasm(),
-      typescript({tsconfig: "tsconfig.esm.json"}), // so Rollup can convert TypeScript to JavaScript
       resolve({
-        // exportConditions,
-        // mainFields,
-        modulesOnly: true,
-        preferBuiltins: true
+        exportConditions: ["import", "default"],
+        mainFields: ["module", "main"],
+        modulesOnly: false,
+        preferBuiltins: false,
       })
     ],
     external: ['ethers', 'bufferutil', 'utf-8-validate', 'node-tfhe'],
     output: [
-
-      // { file: pkg.main, format: 'cjs' },
-      // { file: pkg.module, format: 'es' }
-      { file: 'dist/index.cjs.js', format: 'cjs', sourcemap: true },
-      { file: 'dist/index.esm.js', format: 'esm', sourcemap: true },
+      { file: 'dist/fhenix.cjs.js', format: 'cjs', sourcemap: true },
     ]
   }
-  //getConfig({ browser: true }),
-  //getConfig({ browser: true, suffix: ".umd", format: "umd", name: "fhenixjs" }),
 ];
-
-// function getConfig(opts) {
-//   if (opts == null) { opts = { }; }
-//
-//   const file = `./dist/fhenixjs${ (opts.suffix || "") }.js`;
-//   const exportConditions = [ "import", "default" ];
-//   const mainFields = [ "module", "main" ];
-//   if (opts.browser) { mainFields.unshift("browser"); }
-//
-//   return {
-//     input: "./lib.esm/index.js",
-//     output: {
-//       file,
-//       banner: "const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 'undefined' ? window: typeof global !== 'undefined' ? global: typeof self !== 'undefined' ? self: {});",
-//       name: (opts.name || undefined),
-//       format: (opts.format || "esm"),
-//       sourcemap: true
-//     },
-//     context: "__$G",
-//     treeshake: true,
-//     plugins: [
-//       nodeResolve({
-//         exportConditions,
-//         mainFields,
-//         modulesOnly: true,
-//         preferBuiltins: false
-//       })
-//     ],
-//   };
-// }

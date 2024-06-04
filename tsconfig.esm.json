@@ -1,29 +1,9 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES6",
-    "lib": ["ES6", "DOM"],
-    "module": "NodeNext",
-    "outDir": "dist",
-    "declaration": true,
-    "declarationMap": true,
-    "declarationDir": "./dist/types",
-    "sourceMap": true,
-    "baseUrl": "src",
+    "outDir": "./lib/esm",
     "esModuleInterop": true,
-    "useUnknownInCatchVariables": false,
-    "strict": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "module": "esnext"
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "test",
-    "**/*.wasm",
-    "test-browser",
-    "webpack",
-    "coverage",
-    "vite**"
-  ]
+  "include": ["src/**/*"]
 }

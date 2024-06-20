@@ -1,10 +1,15 @@
 /// <reference types="vitest" />
 
 import { defineConfig } from "vite";
-
+import wasm from "vite-plugin-wasm";
+import topLevelAwait from "vite-plugin-top-level-await";
 import { setup, teardown } from "./test/test-setup";
 
 export default defineConfig({
+  plugins: [
+    wasm(),
+    topLevelAwait()
+  ],
   test: {
     watch: false,
     include: [

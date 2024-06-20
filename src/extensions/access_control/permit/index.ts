@@ -1,11 +1,11 @@
-import { isAddress } from "../../../sdk/utils";
+import { isAddress } from "../../../sdk/utils.js";
 import {
   determineRequestMethod,
   determineRequestSigner,
   SupportedProvider,
-} from "../../../sdk/types";
-import { EIP712, EIP712Domain, EIP712Message, EIP712Types } from "../EIP712";
-import { GenerateSealingKey, SealingKey } from "../../../sdk/sealing";
+} from "../../../sdk/types.js";
+import { EIP712, EIP712Domain, EIP712Message, EIP712Types } from "../EIP712.js";
+import { GenerateSealingKey, SealingKey } from "../../../sdk/sealing.js";
 
 const PERMIT_PREFIX = "Fhenix_saved_permit_";
 

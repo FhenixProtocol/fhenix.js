@@ -5,8 +5,8 @@ import {
   getPermit,
   Permit,
   SealingKey,
-} from "../src";
-import { createTfhePublicKey } from "../src/sdk/fhe/fhe";
+} from "../lib/esm";
+import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 
 // @ts-ignore

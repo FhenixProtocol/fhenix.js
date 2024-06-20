@@ -52,3 +52,4 @@ export declare class SealingKey {
  * @returns {Promise<SealingKey>} - A promise that resolves to a new SealingKey object containing the hexadecimal strings of the public and private keys.
  */
 export declare const GenerateSealingKey: () => Promise<SealingKey>;
+//# sourceMappingURL=sealing.d.ts.map

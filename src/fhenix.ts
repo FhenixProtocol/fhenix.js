@@ -3,15 +3,13 @@
 //   global.BigInt = require("big-integer");
 // }
 
-export { FhenixClient } from "./sdk/index";
+export { FhenixClient } from "./sdk/index.js";
 
 export {
   ContractPermits,
   InstanceParams,
   SupportedProvider,
   EncryptionTypes,
-  HardhatEthersProvider,
-  EthersProvider,
   EncryptedUint64,
   EncryptedUint128,
   EncryptedUint256,
@@ -21,8 +19,8 @@ export {
   EncryptedBool,
   EncryptedNumber,
   EncryptedAddress,
-} from "./sdk/types";
+} from "./sdk/types.js";
 
 export * from "./extensions/access_control/index.js";
 
-export { SealingKey, GenerateSealingKey } from "./sdk/sealing";
+export { SealingKey, GenerateSealingKey } from "./sdk/sealing.js";

@@ -1,12 +1,18 @@
-import wasm from "tfhe/tfhe_bg.wasm";
-import initSDK, { InitOutput } from "tfhe";
+import wasm from "./tfhe_bg.wasm";
+//@ts-ignore
+import initSDK, { InitOutput } from "./tfhe.js";
 
 let initialized: InitOutput;
 export type InitFhevm = typeof initSDK;
 
 const initFhevm: InitFhevm = async () => {
   if (!initialized) {
-    initialized = await initSDK(wasm());
+    console.log(wasm);
+    try {
+      initialized = await initSDK(wasm);
+    } catch (_) {
+      initialized = await initSDK(wasm());
+    }
   }
   return initialized;
 };
@@ -19,19 +25,19 @@ export const asyncInitFhevm: () => Promise<void> = async () => {
     await initFhevm();
   } catch (err) {
     throw new Error(
-      `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
+      `Error initializing FhenixClient ${err}`,
     );
   }
 };
 
-export { TfheCompactPublicKey } from "tfhe";
+export { TfheCompactPublicKey } from "./tfhe.js";
 export {
-  CompactFheBoolList,
-  CompactFheUint8List,
-  CompactFheUint16List,
-  CompactFheUint32List,
-  CompactFheUint64List,
+  CompactFheBool,
+  CompactFheUint8,
+  CompactFheUint16,
+  CompactFheUint32,
+  CompactFheUint64,
   CompactFheUint128,
   CompactFheUint160,
   CompactFheUint256,
-} from "tfhe";
+} from "./tfhe.js";

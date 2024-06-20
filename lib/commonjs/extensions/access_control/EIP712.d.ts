@@ -16,3 +16,4 @@ export type EIP712 = {
     primaryType: string;
     types: EIP712Types;
 };
+//# sourceMappingURL=EIP712.d.ts.map

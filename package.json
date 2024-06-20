@@ -1,21 +1,18 @@
 {
   "name": "fhenixjs",
-  "version": "0.3.0-alpha.0",
+  "version": "0.3.0-alpha.1",
   "description": "The JavaScript SDK for Fhenix",
-  "types": "dist/types/index.d.ts",
-  "main": "dist/fhenix.cjs.js",
-  "module": "dist/fhenix.esm.js",
-  "browser": "dist/browser.js",
+  "main": "./lib/commonjs/index.js",
+  "module": "./lib/esm/index.js",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/fhenix.esm.js",
-      "require": "./dist/fhenix.cjs.js",
-      "default": "./dist/fhenix.cjs.js"
+      "import": "./lib/esm/index.js",
+      "default": "./lib/commonjs/index.js"
     }
   },
   "files": [
     "dist",
+    "lib",
     "src",
     "licenses",
     "package.json",
@@ -28,7 +25,7 @@
     "dev-rollup": "rollup -c -w",
     "lint": "eslint src/",
     "compile": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && tsc -p tsconfig.types.json",
-    "build": "pnpm compile && pnpm build-rollup && uglifyjs ./dist/fhenix.esm.js -o ./dist/fhenix.esm.min.js && uglifyjs ./dist/fhenix.umd.js -o ./dist/fhenix.umd.min.js && uglifyjs ./dist/fhenix.cjs.js -o ./dist/fhenix.cjs.min.js",
+    "build": "pnpm compile && pnpm build-rollup && uglifyjs ./dist/fhenix.esm.js -o ./dist/fhenix.esm.min.js && uglifyjs ./dist/fhenix.umd.js -o ./dist/fhenix.umd.min.js",
     "test": "VITE_CJS_IGNORE_WARNING=true vitest ",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
     "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\"",
@@ -45,30 +42,29 @@
   },
   "homepage": "https://github.com/FhenixProtocol/fhenix.js#readme",
   "dependencies": {
-    "bufferutil": "^4.0.8",
-    "ethers": "^6.9.1",
-    "node-tfhe": "^0.6.1",
-    "tfhe": "^0.6.1",
+    "@types/node": "18.15.13",
     "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1",
-    "utf-8-validate": "^5.0.2"
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.8",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-wasm": "^6.2.2",
-    "@types/node": "^18.11.3",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@vitest/coverage-v8": "^1.1.0",
-    "eslint": "^8.57.0",
-    "prettier": "^3.2.5",
-    "rollup": "^4.18.0",
-    "ts-node": "^10.9.2",
-    "typedoc": "^0.25.13",
-    "typedoc-plugin-extras": "^3.0.0",
-    "typescript": "^5.4.5",
-    "uglify-js": "^3.17.4",
-    "vite": "^5.0.10",
-    "vitest": "^1.6.0"
-  }
+    "@rollup/plugin-commonjs": "25.0.8",
+    "@rollup/plugin-node-resolve": "15.2.3",
+    "@rollup/plugin-wasm": "6.2.2",
+    "@typescript-eslint/eslint-plugin": "7.2.0",
+    "@vitest/coverage-v8": "1.1.0",
+    "eslint": "8.57.0",
+    "ethers": "6.13.1",
+    "prettier": "3.2.5",
+    "rollup": "4.18.0",
+    "ts-node": "10.9.2",
+    "typedoc": "0.25.13",
+    "typedoc-plugin-extras": "3.0.0",
+    "typescript": "5.4.5",
+    "uglify-js": "3.17.4",
+    "vite": "5.0.10",
+    "vite-plugin-wasm": "3.3.0",
+    "vite-plugin-top-level-await": "1.4.1",
+    "vitest": "1.6.0"
+  },
+  "sideEffects": false
 }

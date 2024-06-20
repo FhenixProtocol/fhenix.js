@@ -1,4 +1,4 @@
-import { SupportedProvider } from "./types";
+import { SupportedProvider } from "./types.js";
 import { TfheCompactPublicKey, asyncInitFhevm } from "./fhe/fhe.js";
 
 export const GetFhePublicKey = async (

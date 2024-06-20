@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="./media/fhnx_cover.svg#gh-light-mode-only" type="image/svg+xml" width="75%" class="light-logo" />
-  <img src="./media/fhnx_cover.svg#gh-dark-mode-only" type="image/svg+xml" width="75%" class="dark-logo" />
+  <img src="./media/fhnx_cover.svg#gh-light-mode-only" type="image/svg+xml" width="75%"/>
 </p>
 
 <p align="center">
@@ -23,10 +22,60 @@ fhenix.js includes easy helpers for encryption, unsealing and helpers to create 
 
 ## Installation
 
+### NodeJS
+
+(only node 20+ is supported until I fix this)
+
 ```bash
 # Using npm
 npm install fhenixjs
 ```
+
+### Browser Installation (or simpler bundling)
+
+For browsers or environments that don't want to mess with WASM bundling, we recommend installing the prepackaged versions directly
+which is available in the ./dist/ folder in this repo.
+
+You can also install from a CDN e.g.
+
+`https://cdn.jsdelivr.net/npm/fhenixjs@0.3.0-alpha.1/dist/fhenix.umd.min.js`
+
+#### ESM
+
+You can install as a module:
+
+```
+<script type="module">
+    import { fhenixjs } from "./dist/fhenix.esm.min.js";
+</script>
+```
+
+#### UMD
+
+Or from a UMD:
+
+```
+<script id="fhenixjs" src="./dist/fhenix.umd.min.js"></script>
+```
+
+#### NextJS WASM Bundling
+
+FhenixJS uses WASM for all the FHE goodness. If you're using the non-prepackaged version you'll need to configure next.js to properly use WASM via the `next.config.js` file. 
+
+Otherwise, you can use the prepackaged version above that avoids having to bundle WASM.
+
+`TBD add my working config`
+
+#### Other Bundlers/Frameworks
+
+If you have any problems with bundlers or frameworks, please open an issue in this repo and/or reach out on Discord/TG.
+
+Also, if you had to fiddle with a bundler or config to get it working, please share the config with us so we can add it as a reference for others!
+
+
+#### Mobile Support
+
+Completely untested. Maybe yes, maybe no, maybe both.
 
 ## Usage
 
@@ -44,6 +93,7 @@ let encrypted = await client.encrypt(5, EncryptionTypes.uint8);
 // to unseal data from a Fhenix contract
 const cleartext = client.unseal(contractAddress, sealed);
 ```
+
 
 ### Permits & Access Control
 

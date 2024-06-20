@@ -51,7 +51,7 @@ export interface SupportedProvider {
     }): Promise<unknown>;
     send?(method: string, params?: unknown[]): Promise<unknown>;
     getSigner?(): unknown;
-    getSigner?(addressOrIndex?: string | number): Promise<any>;
+    getSigner?(addressOrIndex?: string | number): Promise<unknown>;
 }
 /**
  * Determines the request method for a given provider.

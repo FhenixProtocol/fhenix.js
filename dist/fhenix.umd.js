@@ -5577,8 +5577,9 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           }
           return true;
       }
-      catch (error) { }
-      return false;
+      catch (error) {
+          return false;
+      }
   }
   const Nibbles = "0123456789abcdef";
   // IEEE 754 support 53-bits of mantissa
@@ -5644,6 +5645,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
                       return -BigInt(value.substring(1));
                   }
                   return BigInt(value);
+                  /* eslint-disable  @typescript-eslint/no-explicit-any */
               }
               catch (e) {
                   assertArgument(false, `invalid BigNumberish string: ${e.message}`);

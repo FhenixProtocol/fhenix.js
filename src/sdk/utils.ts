@@ -121,7 +121,8 @@ function getBigInt(value: BigNumberish): bigint {
           return -BigInt(value.substring(1));
         }
         return BigInt(value);
-      } catch(e) {
+        /* eslint-disable  @typescript-eslint/no-explicit-any */
+      } catch(e: any) {
         assertArgument(false, `invalid BigNumberish string: ${ e.message }`);
       }
   }

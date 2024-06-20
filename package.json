@@ -10,8 +10,8 @@
       "default": "./lib/commonjs/index.js"
     }
   },
-  "engines" : { 
-    "node" : ">=20.0.0"
+  "engines": {
+    "node": ">=20.0.0"
   },
   "files": [
     "dist",

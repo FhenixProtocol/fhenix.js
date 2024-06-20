@@ -46,8 +46,9 @@ function _isAddress(value: string): value is string {
       return false;
     }
       return true;
-  } catch (error) { }
-  return false;
+  } catch (error) {
+    return false;
+  }
 }
 
 // ********************* THE FOLLOWING CODE IS TAKEN FROM ETHERS.JS AND IS UNDER THEIR MIT LICENSE  ****************** //
@@ -120,7 +121,7 @@ function getBigInt(value: BigNumberish): bigint {
           return -BigInt(value.substring(1));
         }
         return BigInt(value);
-      } catch(e: any) {
+      } catch(e) {
         assertArgument(false, `invalid BigNumberish string: ${ e.message }`);
       }
   }

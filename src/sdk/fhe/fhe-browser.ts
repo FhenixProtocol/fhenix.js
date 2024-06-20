@@ -1,5 +1,5 @@
 import wasm from "./tfhe_bg.wasm";
-//@ts-ignore
+//@ts-expect-error imports from different wasm/js files are wonky
 import initSDK, { InitOutput } from "./tfhe.js";
 
 let initialized: InitOutput;

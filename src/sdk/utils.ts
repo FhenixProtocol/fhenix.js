@@ -45,7 +45,7 @@ function _isAddress(value: string): value is string {
     } else if (value.length !== 42) {
       return false;
     }
-      return true;
+    return true;
   } catch (error) {
     return false;
   }
@@ -79,10 +79,14 @@ function ethersToBigInt(value: BigNumberish | Uint8Array): bigint {
 function ethersToBeArray(_value: BigNumberish): Uint8Array {
   const value = getUint(_value);
 
-  if (value === BN_0) { return new Uint8Array([ ]); }
+  if (value === BN_0) {
+    return new Uint8Array([]);
+  }
 
   let hex = value.toString(16);
-  if (hex.length % 2) { hex = "0" + hex; }
+  if (hex.length % 2) {
+    hex = "0" + hex;
+  }
 
   const result = new Uint8Array(hex.length / 2);
   for (let i = 0; i < result.length; i++) {
@@ -108,22 +112,25 @@ function getUint(value: BigNumberish): bigint {
  *  a BigInt, then an ArgumentError will be thrown for %%name%%.
  */
 function getBigInt(value: BigNumberish): bigint {
-  switch (typeof(value)) {
-    case "bigint": return value;
+  switch (typeof value) {
+    case "bigint":
+      return value;
     case "number":
       assertArgument(Number.isInteger(value), "underflow");
       assertArgument(value >= -maxValue && value <= maxValue, "overflow");
       return BigInt(value);
     case "string":
       try {
-        if (value === "") { throw new Error("empty string"); }
+        if (value === "") {
+          throw new Error("empty string");
+        }
         if (value[0] === "-" && value[1] !== "-") {
           return -BigInt(value.substring(1));
         }
         return BigInt(value);
         // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-      } catch(e: any) {
-        assertArgument(false, `invalid BigNumberish string: ${ e.message }`);
+      } catch (e: any) {
+        assertArgument(false, `invalid BigNumberish string: ${e.message}`);
       }
   }
   assertArgument(false, "invalid BigNumberish value");
@@ -131,6 +138,6 @@ function getBigInt(value: BigNumberish): bigint {
 
 function assertArgument(check: unknown, message: string): asserts check {
   if (!check) {
-    throw new Error(message)
+    throw new Error(message);
   }
 }

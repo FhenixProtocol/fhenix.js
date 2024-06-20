@@ -1,4 +1,8 @@
-import {  TfheClientKey, TfheConfigBuilder, TfheCompactPublicKey } from "../lib/esm/sdk/fhe/tfhe";
+import {
+  TfheClientKey,
+  TfheConfigBuilder,
+  TfheCompactPublicKey,
+} from "../lib/esm/sdk/fhe/tfhe";
 
 export const createTfheKeypair = () => {
   // const block_params = new ShortintParameters(

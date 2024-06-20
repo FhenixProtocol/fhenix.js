@@ -14,4 +14,3 @@ export {
   CompactFheUint160,
   CompactFheUint256,
 } from "./tfhe.js";
-

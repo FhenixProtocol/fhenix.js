@@ -24,9 +24,7 @@ export const asyncInitFhevm: () => Promise<void> = async () => {
 
     await initFhevm();
   } catch (err) {
-    throw new Error(
-      `Error initializing FhenixClient ${err}`,
-    );
+    throw new Error(`Error initializing FhenixClient ${err}`);
   }
 };
 

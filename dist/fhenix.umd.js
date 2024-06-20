@@ -5645,7 +5645,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
                       return -BigInt(value.substring(1));
                   }
                   return BigInt(value);
-                  /* eslint-disable  @typescript-eslint/no-explicit-any */
+                  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
               }
               catch (e) {
                   assertArgument(false, `invalid BigNumberish string: ${e.message}`);

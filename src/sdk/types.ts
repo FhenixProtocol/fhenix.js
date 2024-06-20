@@ -51,7 +51,6 @@ export type ContractKeypair = {
   signature?: string | null;
 };
 
-
 // Define the SupportedProvider interface
 export interface SupportedProvider {
   request?(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -71,13 +70,24 @@ export interface SupportedProvider {
 export function determineRequestMethod(provider: SupportedProvider): Function {
   if ("request" in provider && typeof provider.request === "function") {
     return (p: SupportedProvider, method: string, params?: unknown[]) =>
-      (p.request as ({ method, params }: { method: string; params?: unknown[] }) => Promise<unknown>)({ method, params });
+      (
+        p.request as ({
+          method,
+          params,
+        }: {
+          method: string;
+          params?: unknown[];
+        }) => Promise<unknown>
+      )({ method, params });
   } else if ("send" in provider && typeof provider.send === "function") {
     return (p: SupportedProvider, method: string, params?: unknown[]) =>
-      (p.send as (method: string, params?: unknown[]) => Promise<unknown>)(method, params);
+      (p.send as (method: string, params?: unknown[]) => Promise<unknown>)(
+        method,
+        params,
+      );
   } else {
     throw new Error(
-      "Received unsupported provider. 'send' or 'request' method not found"
+      "Received unsupported provider. 'send' or 'request' method not found",
     );
   }
 }

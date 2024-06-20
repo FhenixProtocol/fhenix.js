@@ -12,9 +12,7 @@ import {
   CompactFheUint256,
   TfheClientKey,
 } from "../lib/esm/sdk/fhe/fhe";
-import {
-  createTfheKeypair
-} from "./keygen";
+import { createTfheKeypair } from "./keygen";
 import {
   encrypt_uint8,
   encrypt_uint16,

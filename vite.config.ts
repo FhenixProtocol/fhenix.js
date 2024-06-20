@@ -6,10 +6,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import { setup, teardown } from "./test/test-setup";
 
 export default defineConfig({
-  plugins: [
-    wasm(),
-    topLevelAwait()
-  ],
+  plugins: [wasm(), topLevelAwait()],
   test: {
     watch: false,
     include: [

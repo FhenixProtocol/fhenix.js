@@ -23,7 +23,7 @@ import {
   Permission,
   Permit,
   PermitSigner,
-} from '../extensions/access_control/index.js';
+} from "../extensions/access_control/index.js";
 
 import {
   FheOpsAddress,
@@ -66,7 +66,9 @@ export class FhenixClient {
     this.provider = provider;
 
     if (!this.provider) {
-      throw new Error("Failed to initialize Fhenix Client - must include a web3 provider");
+      throw new Error(
+        "Failed to initialize Fhenix Client - must include a web3 provider",
+      );
     }
 
     this.fhePublicKey = GetFhePublicKey(
@@ -421,9 +423,7 @@ export class FhenixClient {
     try {
       return TfheCompactPublicKey.deserialize(buff);
     } catch (err) {
-      throw new Error(
-        `Error deserializing public key ${err}`,
-      );
+      throw new Error(`Error deserializing public key ${err}`);
     }
   }
 }

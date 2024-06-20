@@ -4,8 +4,8 @@
     "outDir": "./lib/esm",
     "esModuleInterop": true,
     "module": "esnext"
-//    "module": "NodeNext",
-//    "moduleResolution": "NodeNext"
+    //    "module": "NodeNext",
+    //    "moduleResolution": "NodeNext"
   },
   "include": ["src/**/*"]
 }

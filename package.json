@@ -10,6 +10,9 @@
       "default": "./lib/commonjs/index.js"
     }
   },
+  "engines" : { 
+    "node" : ">=20.0.0"
+  },
   "files": [
     "dist",
     "lib",
@@ -42,7 +45,7 @@
   },
   "homepage": "https://github.com/FhenixProtocol/fhenix.js#readme",
   "dependencies": {
-    "@types/node": "18.15.13",
+    "@types/node": "^18.0.0",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1"
   },

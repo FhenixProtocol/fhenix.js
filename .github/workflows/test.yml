@@ -20,7 +20,7 @@ jobs:
       SKIP_LOCAL_ENV: "true"
     strategy:
       matrix:
-        node-version: [20.x, 18.x]
+        node-version: [20.x, 22.x]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}

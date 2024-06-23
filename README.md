@@ -64,7 +64,45 @@ FhenixJS uses WASM for all the FHE goodness. If you're using the non-prepackaged
 
 Otherwise, you can use the prepackaged version above that avoids having to bundle WASM.
 
-`TBD add my working config`
+Here's a working config I managed to conjure up from various Github and StackOverflow issues (please suggest improvements):
+
+```javascript
+/** @type {import('next').NextConfig} */
+
+module.exports = {
+  webpack: (config, { isServer }) => {
+    
+    patchWasmModuleImport(config, isServer);
+
+    if (!isServer) {
+      config.output.environment = { ...config.output.environment, asyncFunction: true };
+    }
+    return config
+    }
+}
+
+function patchWasmModuleImport(config, isServer) {
+  config.experiments = Object.assign(config.experiments || {}, {
+    asyncWebAssembly: true,
+    layers: true,
+    topLevelAwait: true
+  });
+
+  config.optimization.moduleIds = 'named';
+
+  config.module.rules.push({
+    test: /\.wasm$/,
+    type: 'asset/resource',
+  });
+
+  // TODO: improve this function -> track https://github.com/vercel/next.js/issues/25852
+  if (isServer) {
+    config.output.webassemblyModuleFilename = './../static/wasm/tfhe_bg.wasm';
+  } else {
+    config.output.webassemblyModuleFilename = 'static/wasm/tfhe_bg.wasm';
+  }
+}
+```
 
 #### Other Bundlers/Frameworks
 

@@ -71,6 +71,7 @@ export class FhenixClient {
     // case this should be called with initSdk = false (tests, for instance)
 
     /// #if DEBUG
+    this.fhePublicKeys = [];
     this.fhePublicKeys[this.defaultSecurityZone] = FhenixClient.getFheKeyFromProvider(this.provider).catch(
       (err) => {
         if (ignoreErrors) {

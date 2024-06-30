@@ -21,6 +21,7 @@ describe("token", () => {
   it("creates an instance", async () => {
     const provider = new MockProvider(tfhePublicKey);
     const instance = new FhenixClient({ provider, initSdk: false });
+    expect(instance.encrypt_bool).toBeDefined();
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
     expect(instance.encrypt_uint32).toBeDefined();
@@ -40,7 +41,7 @@ describe("token", () => {
     await provider.on("error", (_) => provider.destroy());
 
     await expect(
-      new FhenixClient({ provider, initSdk: false }).fhePublicKey,
+      new FhenixClient({ provider, initSdk: false }).fhePublicKeys,
     ).rejects.toThrow(/.*Error while requesting chainId from provider.*/i);
   });
 
@@ -53,7 +54,7 @@ describe("token", () => {
     Object.assign(provider, { send: undefined });
 
     await expect(
-      new FhenixClient({ provider, initSdk: false }).fhePublicKey,
+      new FhenixClient({ provider, initSdk: false }).fhePublicKeys,
     ).rejects.toThrow(
       "Received unsupported provider. 'send' or 'request' method not found",
     );
@@ -64,7 +65,7 @@ describe("token", () => {
       new FhenixClient({
         provider: new MockProvider(tfhePublicKey, "not a number"),
         initSdk: false,
-      }).fhePublicKey,
+      }).fhePublicKeys,
     ).rejects.toThrow(
       `received non-hex number from chainId request: "not a number"`,
     );
@@ -72,7 +73,7 @@ describe("token", () => {
     const secondProvider = new MockProvider(BigInt(10));
     await expect(
       new FhenixClient({ provider: secondProvider, initSdk: false })
-        .fhePublicKey,
+        .fhePublicKeys,
     ).rejects.toThrow("Error using publicKey from provider: expected string");
   });
 

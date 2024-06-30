@@ -185,6 +185,7 @@ export const encrypt_uint256 = (
 export const encrypt_address = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
+  securityZone: number = 0
 ): EncryptedAddress => {
   if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
@@ -197,7 +198,7 @@ export const encrypt_address = (
     publicKey,
   );
   return {
-    data: encrypted.serialize(),
+    data: Uint8Array.from([securityZone]), encrypted.serialize(),
   };
 };
 /**
@@ -212,24 +213,25 @@ export const encrypt = (
   value: number,
   publicKey: TfheCompactPublicKey,
   type: EncryptionTypes = EncryptionTypes.uint8,
+  securityZone: number = 0,
 ): EncryptedNumber => {
   switch (type) {
     case EncryptionTypes.bool:
-      return encrypt_bool(!!value, publicKey);
+      return encrypt_bool(!!value, publicKey, securityZone);
     case EncryptionTypes.uint8:
-      return encrypt_uint8(value, publicKey);
+      return encrypt_uint8(value, publicKey, securityZone);
     case EncryptionTypes.uint16:
-      return encrypt_uint16(value, publicKey);
+      return encrypt_uint16(value, publicKey, securityZone);
     case EncryptionTypes.uint32:
-      return encrypt_uint32(value, publicKey);
+      return encrypt_uint32(value, publicKey, securityZone);
     case EncryptionTypes.uint64:
-      return encrypt_uint64(value.toString(16), publicKey);
+      return encrypt_uint64(value.toString(16), publicKey, securityZone);
     case EncryptionTypes.uint128:
-      return encrypt_uint128(value.toString(16), publicKey);
+      return encrypt_uint128(value.toString(16), publicKey, securityZone);
     case EncryptionTypes.uint256:
-      return encrypt_uint256(value.toString(16), publicKey);
+      return encrypt_uint256(value.toString(16), publicKey, securityZone);
     case EncryptionTypes.address:
-      return encrypt_address(value.toString(16), publicKey);
+      return encrypt_address(value.toString(16), publicKey, securityZone);
     default:
       throw new Error("Invalid type");
   }

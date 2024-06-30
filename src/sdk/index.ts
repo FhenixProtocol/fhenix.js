@@ -111,7 +111,7 @@ export class FhenixClient {
    */
   async encrypt_bool(value: boolean, securityZone: number = 0): Promise<EncryptedBool> {
     const fhePublicKey = await this._getPublicKey(securityZone);
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey);
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -125,7 +125,7 @@ export class FhenixClient {
 
     const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT8, 0);
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
   }
 
   private async _getPublicKey(securityZone: number) {
@@ -151,7 +151,7 @@ export class FhenixClient {
 
     const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT16, 0);
-    return tfheEncrypt.encrypt_uint16(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -166,7 +166,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -181,7 +181,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint64(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -196,7 +196,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint128(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -211,7 +211,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint256(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
   }
   /**
    * Encrypts an Address (Uint160) value using the stored public key.
@@ -225,7 +225,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_address(value, fhePublicKey);
+    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
   }
   /**
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
@@ -271,7 +271,7 @@ export class FhenixClient {
       default:
     }
 
-    return tfheEncrypt.encrypt(value, fhePublicKey, type);
+    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 
   // Unsealing Method

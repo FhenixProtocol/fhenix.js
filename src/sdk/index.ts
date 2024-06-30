@@ -49,7 +49,7 @@ import {
 export class FhenixClient {
   private permits: ContractPermits = {};
   private defaultSecurityZone: number = 0;
-  public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>>;
+  public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
   protected provider: SupportedProvider;
   /**
    * Creates an instance of FhenixClient.
@@ -71,7 +71,6 @@ export class FhenixClient {
     // case this should be called with initSdk = false (tests, for instance)
 
     /// #if DEBUG
-    this.fhePublicKeys = [];
     this.fhePublicKeys[this.defaultSecurityZone] = FhenixClient.getFheKeyFromProvider(this.provider).catch(
       (err) => {
         if (ignoreErrors) {
@@ -132,7 +131,6 @@ export class FhenixClient {
   private async _getPublicKey(securityZone: number) {
     let fhePublicKey = await this.fhePublicKeys[securityZone];
     if (!fhePublicKey) {
-      // try again to get the public key - maybe the 1st time the chain wasn't up or something
       this.fhePublicKeys[securityZone] = FhenixClient.getFheKeyFromProvider(this.provider, securityZone);
       fhePublicKey = await this.fhePublicKeys[securityZone];
       if (!fhePublicKey) {
@@ -245,10 +243,7 @@ export class FhenixClient {
 
     let outputSize = type;
 
-    const fhePublicKey = await this.fhePublicKeys[securityZone];
-    if (!fhePublicKey) {
-      throw new Error(`Public key for security zone ${securityZone} somehow not initialized`);
-    }
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     // choose the most efficient ciphertext size if not selected
     if (!outputSize) {

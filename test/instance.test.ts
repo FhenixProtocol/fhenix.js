@@ -6,8 +6,8 @@ import {
   getPermit,
   Permit,
   SealingKey,
-} from "../src";
-import { createTfhePublicKey } from "../src/sdk/tfhe/tfhe";
+} from "../lib/esm";
+import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 
 describe("token", () => {

@@ -1,14 +1,14 @@
 import {
   TfheCompactPublicKey,
-  CompactFheBoolList,
-  CompactFheUint8List,
-  CompactFheUint16List,
-  CompactFheUint32List,
-  CompactFheUint64List,
+  CompactFheBool,
+  CompactFheUint8,
+  CompactFheUint16,
+  CompactFheUint32,
+  CompactFheUint64,
   CompactFheUint128,
   CompactFheUint160,
   CompactFheUint256,
-} from "node-tfhe";
+} from "./fhe/fhe.js";
 import {
   EncryptedNumber,
   EncryptedUint16,
@@ -20,8 +20,8 @@ import {
   EncryptedUint256,
   EncryptedAddress,
   EncryptionTypes,
-} from "./types";
-import { fromHexString, toBigInt } from "./utils";
+} from "./types.js";
+import { fromHexString, toBigInt } from "./utils.js";
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
@@ -35,8 +35,8 @@ export const encrypt_bool = (
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedBool => {
-  const encrypted = CompactFheBoolList.encrypt_with_compact_public_key(
-    [value],
+  const encrypted = CompactFheBool.encrypt_with_compact_public_key(
+    value,
     publicKey,
   );
   return {
@@ -56,9 +56,8 @@ export const encrypt_uint8 = (
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint8 => {
-  const uint8Array = new Uint8Array([value]);
-  const encrypted = CompactFheUint8List.encrypt_with_compact_public_key(
-    uint8Array,
+  const encrypted = CompactFheUint8.encrypt_with_compact_public_key(
+    value,
     publicKey,
   );
   return {
@@ -78,9 +77,8 @@ export const encrypt_uint16 = (
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint16 => {
-  const uint16Array = new Uint16Array([value]);
-  const encrypted = CompactFheUint16List.encrypt_with_compact_public_key(
-    uint16Array,
+  const encrypted = CompactFheUint16.encrypt_with_compact_public_key(
+    value,
     publicKey,
   );
   return {
@@ -100,9 +98,8 @@ export const encrypt_uint32 = (
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint32 => {
-  const uint32Array = new Uint32Array([value]);
-  const encrypted = CompactFheUint32List.encrypt_with_compact_public_key(
-    uint32Array,
+  const encrypted = CompactFheUint32.encrypt_with_compact_public_key(
+    value,
     publicKey,
   );
   return {
@@ -127,9 +124,9 @@ export const encrypt_uint64 = (
   } else {
     value = value as bigint;
   }
-  const uint32Array = new BigUint64Array([value]);
-  const encrypted = CompactFheUint64List.encrypt_with_compact_public_key(
-    uint32Array,
+
+  const encrypted = CompactFheUint64.encrypt_with_compact_public_key(
+    value,
     publicKey,
   );
   return {

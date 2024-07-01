@@ -1,11 +1,4 @@
-import { Buffer } from "buffer";
-
-import {
-  toBigInt as ethersToBigInt,
-  toBeArray as ethersToBeArray,
-  isAddress as ethersIsAddress,
-} from "ethers";
-import { isNumber } from "./validation";
+import { isNumber } from "./validation.js";
 
 export const ValidateUintInRange = (
   value: number,
@@ -31,31 +24,6 @@ export const fromHexString = (hexString: string): Uint8Array => {
 export const toHexString = (bytes: Uint8Array) =>
   bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "");
 
-export const numberToBytes = (uint32Value: number) => {
-  const byteArrayLength = Math.ceil(Math.log2(uint32Value + 1) / 8);
-  const byteArray = new Uint8Array(byteArrayLength);
-
-  for (let i = byteArrayLength - 1; i >= 0; i--) {
-    byteArray[i] = uint32Value & 0xff;
-    uint32Value >>= 8;
-  }
-
-  return byteArray;
-};
-
-export const bytesToNumber = function (byteArray: Uint8Array): number {
-  if (!byteArray || byteArray?.length === 0) {
-    return 0;
-  }
-
-  const length = byteArray.length;
-
-  const buffer = Buffer.from(byteArray);
-  const result = buffer.readUIntBE(0, length);
-
-  return result;
-};
-
 export function toBigInt(value: Uint8Array): bigint {
   return ethersToBigInt(value);
 }
@@ -65,7 +33,111 @@ export function toBeArray(value: bigint | number): Uint8Array {
 }
 
 export function isAddress(address: string) {
-  if (!ethersIsAddress(address)) {
+  if (!_isAddress(address)) {
     throw new Error(`Address ${address} is not valid EVM address`);
+  }
+}
+
+function _isAddress(value: string): value is string {
+  try {
+    if (!value.startsWith("0x")) {
+      return false;
+    } else if (value.length !== 42) {
+      return false;
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// ********************* THE FOLLOWING CODE IS TAKEN FROM ETHERS.JS AND IS UNDER THEIR MIT LICENSE  ****************** //
+// ********************* FOR A COPY OF THE LICENSE VISIT https://github.com/ethers-io/ethers.js/blob/main/LICENSE.md * //
+
+type BigNumberish = string | bigint | number;
+const Nibbles = "0123456789abcdef";
+// IEEE 754 support 53-bits of mantissa
+const maxValue = 0x1fffffffffffff;
+const BN_0 = BigInt(0);
+/*
+ * Converts %%value%% to a BigInt. If %%value%% is a Uint8Array, it
+ * is treated as Big Endian data.
+ */
+function ethersToBigInt(value: BigNumberish | Uint8Array): bigint {
+  if (value instanceof Uint8Array) {
+    let result = "0x0";
+    for (const v of value) {
+      result += Nibbles[v >> 4];
+      result += Nibbles[v & 0x0f];
+    }
+    return BigInt(result);
+  }
+
+  return getBigInt(value);
+}
+
+function ethersToBeArray(_value: BigNumberish): Uint8Array {
+  const value = getUint(_value);
+
+  if (value === BN_0) {
+    return new Uint8Array([]);
+  }
+
+  let hex = value.toString(16);
+  if (hex.length % 2) {
+    hex = "0" + hex;
+  }
+
+  const result = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < result.length; i++) {
+    const offset = i * 2;
+    result[i] = parseInt(hex.substring(offset, offset + 2), 16);
+  }
+
+  return result;
+}
+
+/**
+ *  Returns %%value%% as a bigint, validating it is valid as a bigint
+ *  value and that it is positive.
+ */
+function getUint(value: BigNumberish): bigint {
+  const result = getBigInt(value);
+  assertArgument(result >= BN_0, "unsigned value cannot be negative");
+  return result;
+}
+
+/**
+ *  Gets a BigInt from %%value%%. If it is an invalid value for
+ *  a BigInt, then an ArgumentError will be thrown for %%name%%.
+ */
+function getBigInt(value: BigNumberish): bigint {
+  switch (typeof value) {
+    case "bigint":
+      return value;
+    case "number":
+      assertArgument(Number.isInteger(value), "underflow");
+      assertArgument(value >= -maxValue && value <= maxValue, "overflow");
+      return BigInt(value);
+    case "string":
+      try {
+        if (value === "") {
+          throw new Error("empty string");
+        }
+        if (value[0] === "-" && value[1] !== "-") {
+          return -BigInt(value.substring(1));
+        }
+        return BigInt(value);
+        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+      } catch (e: any) {
+        assertArgument(false, `invalid BigNumberish string: ${e.message}`);
+      }
+  }
+  assertArgument(false, "invalid BigNumberish value");
+}
+
+function assertArgument(check: unknown, message: string): asserts check {
+  if (!check) {
+    throw new Error(message);
   }
 }

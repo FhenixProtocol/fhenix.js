@@ -20,7 +20,7 @@ jobs:
       SKIP_LOCAL_ENV: "true"
     strategy:
       matrix:
-        node-version: [20.x, 18.x]
+        node-version: [20.x, 22.x]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -32,9 +32,11 @@ jobs:
           version: 8
       - name: Install Dependencies
         run: pnpm install
+      - name: Build Package
+        run: pnpm build
       - name: Run Tests
         # wait for localfhenix to start
-        run: sleep 5 && pnpm test
+        run: sleep 10 && pnpm test
       - name: Run ESLint
         run: pnpm lint
       - name: Run prettier
@@ -42,6 +44,9 @@ jobs:
 
   test-build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -54,4 +59,4 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Test Build
-        run: pnpm build:dev
+        run: pnpm build

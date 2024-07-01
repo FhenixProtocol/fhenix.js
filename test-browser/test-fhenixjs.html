@@ -2,15 +2,18 @@
 <html>
   <head>
     <title></title>
-    <script id="fhenixjs" src="../dist/browser.js"></script>
+<!--    <script id="fhenixjs" src="../dist/fhenix.umd.min.js"></script>-->
   </head>
   <body>
     <button id="fetch">Fetch</button>
     <div id="output"></div>
   </body>
-  <script>
+  <script type="module">
+    import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+    import { fhenixjs } from "../dist/fhenix.esm.min.js";
     async function doFetch() {
-      const resp = new fhenixjs.FhenixClient({});
+      const provider = new ethers.JsonRpcProvider("http://localhost:8547");
+      const resp = new fhenixjs.FhenixClient({provider});
 
       let x = await resp.encrypt_uint8(3);
 

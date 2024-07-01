@@ -1,16 +1,10 @@
-/// #if DEBUG
-/// #else
-import initSDK, { InitOutput } from "tfhe";
-import wasm from "tfhe/tfhe_bg.wasm";
+import { SupportedProvider } from "./types.js";
+import { TfheCompactPublicKey, asyncInitFhevm } from "./fhe/fhe.js";
 
-let initialized: InitOutput;
-
-type InitFhevm = typeof initSDK;
-
-export const initFhevm: InitFhevm = async () => {
-  if (!initialized) {
-    initialized = await initSDK(wasm);
-  }
-  return initialized;
+export const GetFhePublicKey = async (
+  getKeyFn: (provider: SupportedProvider) => Promise<TfheCompactPublicKey>,
+  provider: SupportedProvider,
+): Promise<TfheCompactPublicKey> => {
+  await asyncInitFhevm();
+  return getKeyFn(provider);
 };
-/// #endif

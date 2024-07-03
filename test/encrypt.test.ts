@@ -24,10 +24,9 @@ import {
   encrypt_address,
 } from "../lib/esm/sdk/encrypt";
 import { EncryptionTypes } from "../lib/esm";
-import { assert, expect, test, describe, it, beforeAll } from "vitest";
+import { expect, describe, it, beforeAll } from "vitest";
 
-// todo (eshel) remove skip
-describe.skip("encrypt_uint8", () => {
+describe("encrypt_uint8", () => {
   let clientKey: TfheClientKey;
   let publicKey;
 

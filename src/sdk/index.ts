@@ -1,5 +1,5 @@
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
-import { fromHexString, isAddress, ValidateUintInRange } from "./utils.js";
+import { fromHexString, isAddress, ValidateUintInRange, toABIEncodedUint32 } from "./utils.js";
 import {
   ContractPermits,
   determineRequestMethod,
@@ -389,14 +389,8 @@ export class FhenixClient {
       },
     );
 
-    // const networkPkAbi = new Interface(["function getNetworkPublicKey(int32 securityZone)"]);
-    // const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey", [securityZone]);
-    // const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
-    // const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
-
-    // todo (eshel) - set up calldata with seczone param
-    const callData = "0x44e21dd2";
-    // console.log(`calldata: ${callData}`);
+    const funcSig = "0x1b1b484e" // cast sig "getNetworkPublicKey(int32)"
+    const callData = funcSig + toABIEncodedUint32(securityZone);
 
     const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
 

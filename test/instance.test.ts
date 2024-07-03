@@ -10,7 +10,7 @@ import {
 import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 
-describe("token", () => {
+describe("Instance", () => {
   let tfhePublicKey: string;
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
 
@@ -225,6 +225,17 @@ describe("token", () => {
       initSdk: false,
     });
 
-    let x = await instance.encrypt(10);
+    await instance.encrypt(10, undefined, 0);
+  });
+
+  it("encrypt with instance on second security zone", async () => {
+    const provider = new JsonRpcProvider("http://localhost:8545");
+
+    const instance = new FhenixClient({
+      provider,
+      initSdk: false,
+    });
+
+    await instance.encrypt(11, undefined, 1);
   });
 });

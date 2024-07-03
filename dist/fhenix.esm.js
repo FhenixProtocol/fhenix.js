@@ -8556,10 +8556,10 @@ const PUBLIC_KEY_LENGTH_MIN = 15000;
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedBool} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_bool = (value, publicKey, securityZone = 0) => {
+const encrypt_bool = (value, publicKey) => {
     const encrypted = CompactFheBool.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8569,10 +8569,10 @@ const encrypt_bool = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint8} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint8 = (value, publicKey, securityZone = 0) => {
+const encrypt_uint8 = (value, publicKey) => {
     const encrypted = CompactFheUint8.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8582,10 +8582,10 @@ const encrypt_uint8 = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint16} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint16 = (value, publicKey, securityZone = 0) => {
+const encrypt_uint16 = (value, publicKey) => {
     const encrypted = CompactFheUint16.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8595,10 +8595,10 @@ const encrypt_uint16 = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint32} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint32 = (value, publicKey, securityZone = 0) => {
+const encrypt_uint32 = (value, publicKey) => {
     const encrypted = CompactFheUint32.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8608,7 +8608,7 @@ const encrypt_uint32 = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint64} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint64 = (value, publicKey, securityZone = 0) => {
+const encrypt_uint64 = (value, publicKey) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8617,7 +8617,7 @@ const encrypt_uint64 = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = CompactFheUint64.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8627,7 +8627,7 @@ const encrypt_uint64 = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint128} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint128 = (value, publicKey, securityZone = 0) => {
+const encrypt_uint128 = (value, publicKey) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8636,7 +8636,7 @@ const encrypt_uint128 = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = CompactFheUint128.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8646,7 +8646,7 @@ const encrypt_uint128 = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint256} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint256 = (value, publicKey, securityZone = 0) => {
+const encrypt_uint256 = (value, publicKey) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8655,7 +8655,7 @@ const encrypt_uint256 = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = CompactFheUint256.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8665,7 +8665,7 @@ const encrypt_uint256 = (value, publicKey, securityZone = 0) => {
  * @param securityZone - The security zone to encrypt the address on.
  * @returns {EncryptedAddress} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_address = (value, publicKey, securityZone = 0) => {
+const encrypt_address = (value, publicKey) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8674,8 +8674,7 @@ const encrypt_address = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = CompactFheUint160.encrypt_with_compact_public_key(value, publicKey);
     return {
-        // insert security zone as first byte
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
     };
 };
 /**
@@ -8687,24 +8686,24 @@ const encrypt_address = (value, publicKey, securityZone = 0) => {
  * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
  * @throws {Error} - Throws an error if an invalid type is specified.
  */
-const encrypt = (value, publicKey, type = EncryptionTypes.uint8, securityZone = 0) => {
+const encrypt = (value, publicKey, type = EncryptionTypes.uint8) => {
     switch (type) {
         case EncryptionTypes.bool:
-            return encrypt_bool(!!value, publicKey, securityZone);
+            return encrypt_bool(!!value, publicKey);
         case EncryptionTypes.uint8:
-            return encrypt_uint8(value, publicKey, securityZone);
+            return encrypt_uint8(value, publicKey);
         case EncryptionTypes.uint16:
-            return encrypt_uint16(value, publicKey, securityZone);
+            return encrypt_uint16(value, publicKey);
         case EncryptionTypes.uint32:
-            return encrypt_uint32(value, publicKey, securityZone);
+            return encrypt_uint32(value, publicKey);
         case EncryptionTypes.uint64:
-            return encrypt_uint64(value.toString(16), publicKey, securityZone);
+            return encrypt_uint64(value.toString(16), publicKey);
         case EncryptionTypes.uint128:
-            return encrypt_uint128(value.toString(16), publicKey, securityZone);
+            return encrypt_uint128(value.toString(16), publicKey);
         case EncryptionTypes.uint256:
-            return encrypt_uint256(value.toString(16), publicKey, securityZone);
+            return encrypt_uint256(value.toString(16), publicKey);
         case EncryptionTypes.address:
-            return encrypt_address(value.toString(16), publicKey, securityZone);
+            return encrypt_address(value.toString(16), publicKey);
         default:
             throw new Error("Invalid type");
     }
@@ -8776,7 +8775,11 @@ class FhenixClient {
     encrypt_bool(value_1) {
         return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             const fhePublicKey = yield this._getPublicKey(securityZone);
-            return encrypt_bool(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_bool(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8790,7 +8793,11 @@ class FhenixClient {
             isNumber(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             ValidateUintInRange(value, MAX_UINT8, 0);
-            return encrypt_uint8(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_uint8(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     _getPublicKey(securityZone) {
@@ -8817,7 +8824,11 @@ class FhenixClient {
             isNumber(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             ValidateUintInRange(value, MAX_UINT16, 0);
-            return encrypt_uint16(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_uint16(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8831,7 +8842,11 @@ class FhenixClient {
             isNumber(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             ValidateUintInRange(value, MAX_UINT32, 0);
-            return encrypt_uint32(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_uint32(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8845,7 +8860,11 @@ class FhenixClient {
             isBigIntOrHexString(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_uint64(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_uint64(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8859,7 +8878,11 @@ class FhenixClient {
             isBigIntOrHexString(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_uint128(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_uint128(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8873,7 +8896,11 @@ class FhenixClient {
             isBigIntOrHexString(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_uint256(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_uint256(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8887,7 +8914,11 @@ class FhenixClient {
             isBigIntOrHexString(value);
             const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_address(value, fhePublicKey, securityZone);
+            const encrypted = encrypt_address(value, fhePublicKey).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     /**
@@ -8928,7 +8959,11 @@ class FhenixClient {
                     ValidateUintInRange(value, MAX_UINT32, 0);
                     break;
             }
-            return encrypt(value, fhePublicKey, type, securityZone);
+            const encrypted = encrypt(value, fhePublicKey, type).data;
+            return {
+                // insert security zone as fist byte
+                data: new Uint8Array([securityZone, ...encrypted]),
+            };
         });
     }
     // Unsealing Method

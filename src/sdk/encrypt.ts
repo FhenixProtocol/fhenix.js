@@ -33,14 +33,13 @@ import { fromHexString, toBigInt } from "./utils.js";
 export const encrypt_bool = (
   value: boolean,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedBool => {
   const encrypted = CompactFheBool.encrypt_with_compact_public_key(
     value,
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 
@@ -54,14 +53,13 @@ export const encrypt_bool = (
 export const encrypt_uint8 = (
   value: number,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedUint8 => {
   const encrypted = CompactFheUint8.encrypt_with_compact_public_key(
     value,
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 
@@ -75,14 +73,13 @@ export const encrypt_uint8 = (
 export const encrypt_uint16 = (
   value: number,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedUint16 => {
   const encrypted = CompactFheUint16.encrypt_with_compact_public_key(
     value,
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 
@@ -96,14 +93,13 @@ export const encrypt_uint16 = (
 export const encrypt_uint32 = (
   value: number,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedUint32 => {
   const encrypted = CompactFheUint32.encrypt_with_compact_public_key(
     value,
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 
@@ -117,7 +113,6 @@ export const encrypt_uint32 = (
 export const encrypt_uint64 = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedUint64 => {
   if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
@@ -130,7 +125,7 @@ export const encrypt_uint64 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 
@@ -144,7 +139,6 @@ export const encrypt_uint64 = (
 export const encrypt_uint128 = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedUint128 => {
   if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
@@ -157,7 +151,7 @@ export const encrypt_uint128 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 
@@ -171,7 +165,6 @@ export const encrypt_uint128 = (
 export const encrypt_uint256 = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0,
 ): EncryptedUint256 => {
   if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
@@ -184,7 +177,7 @@ export const encrypt_uint256 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 /**
@@ -197,7 +190,6 @@ export const encrypt_uint256 = (
 export const encrypt_address = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0
 ): EncryptedAddress => {
   if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
@@ -210,8 +202,7 @@ export const encrypt_address = (
     publicKey,
   );
   return {
-    // insert security zone as first byte
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
   };
 };
 /**
@@ -227,25 +218,24 @@ export const encrypt = (
   value: number,
   publicKey: TfheCompactPublicKey,
   type: EncryptionTypes = EncryptionTypes.uint8,
-  securityZone: number = 0,
 ): EncryptedNumber => {
   switch (type) {
     case EncryptionTypes.bool:
-      return encrypt_bool(!!value, publicKey, securityZone);
+      return encrypt_bool(!!value, publicKey);
     case EncryptionTypes.uint8:
-      return encrypt_uint8(value, publicKey, securityZone);
+      return encrypt_uint8(value, publicKey);
     case EncryptionTypes.uint16:
-      return encrypt_uint16(value, publicKey, securityZone);
+      return encrypt_uint16(value, publicKey);
     case EncryptionTypes.uint32:
-      return encrypt_uint32(value, publicKey, securityZone);
+      return encrypt_uint32(value, publicKey);
     case EncryptionTypes.uint64:
-      return encrypt_uint64(value.toString(16), publicKey, securityZone);
+      return encrypt_uint64(value.toString(16), publicKey);
     case EncryptionTypes.uint128:
-      return encrypt_uint128(value.toString(16), publicKey, securityZone);
+      return encrypt_uint128(value.toString(16), publicKey);
     case EncryptionTypes.uint256:
-      return encrypt_uint256(value.toString(16), publicKey, securityZone);
+      return encrypt_uint256(value.toString(16), publicKey);
     case EncryptionTypes.address:
-      return encrypt_address(value.toString(16), publicKey, securityZone);
+      return encrypt_address(value.toString(16), publicKey);
     default:
       throw new Error("Invalid type");
   }

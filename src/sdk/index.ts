@@ -125,6 +125,7 @@ export class FhenixClient {
 
     const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT8, 0);
+
     return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
   }
 

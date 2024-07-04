@@ -136,6 +136,7 @@ export function determineRequestSigner(provider: SupportedProvider): Function {
 
 export interface EncryptedNumber {
   data: Uint8Array;
+  securityZone: number;
 }
 
 export interface EncryptedBool extends EncryptedNumber {}

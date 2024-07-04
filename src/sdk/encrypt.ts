@@ -40,7 +40,8 @@ export const encrypt_bool = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 
@@ -62,7 +63,8 @@ export const encrypt_uint8 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 
@@ -84,7 +86,8 @@ export const encrypt_uint16 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 
@@ -106,7 +109,8 @@ export const encrypt_uint32 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 
@@ -133,7 +137,8 @@ export const encrypt_uint64 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 
@@ -160,7 +165,8 @@ export const encrypt_uint128 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 
@@ -173,7 +179,7 @@ export const encrypt_uint128 = (
  */
 export const encrypt_uint256 = (
   value: bigint | string,
-  publicKey: TfheCompactPublicKey,
+  publicKey: TfheCompactPublicKeymake,
   securityZone: number = 0,
 ): EncryptedUint256 => {
   if (typeof value === "string") {
@@ -187,7 +193,8 @@ export const encrypt_uint256 = (
     publicKey,
   );
   return {
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 /**
@@ -200,7 +207,7 @@ export const encrypt_uint256 = (
 export const encrypt_address = (
   value: bigint | string,
   publicKey: TfheCompactPublicKey,
-  securityZone: number = 0
+  securityZone: number = 0,
 ): EncryptedAddress => {
   if (typeof value === "string") {
     value = toBigInt(fromHexString(value));
@@ -213,8 +220,8 @@ export const encrypt_address = (
     publicKey,
   );
   return {
-    // insert security zone as first byte
-    data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+    data: encrypted.serialize(),
+    securityZone,
   };
 };
 /**

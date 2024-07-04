@@ -69,3 +69,13 @@ export function isAddress(address: string) {
     throw new Error(`Address ${address} is not valid EVM address`);
   }
 }
+
+export function toABIEncodedUint32(value: number) {
+  // Ensure the number is a valid unsigned 32-bit integer
+  if (value < 0 || value > 0xFFFFFFFF) {
+    throw new RangeError('Number must be between 0 and 2^32 - 1.');
+  }
+
+  // Convert the number to a hexadecimal string and pad it to 64 characters (32 bytes)
+  return value.toString(16).padStart(64, '0');
+}

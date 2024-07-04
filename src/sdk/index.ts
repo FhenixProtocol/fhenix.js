@@ -1,5 +1,5 @@
 import { TfheCompactPublicKey } from "node-tfhe";
-import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
+import {fromHexString, isAddress, toABIEncodedUint32, ValidateUintInRange} from "./utils";
 import {
   ContractPermits,
   determineRequestMethod,
@@ -24,8 +24,6 @@ import {
   Permit,
   PermitSigner,
 } from "../extensions/access_control";
-
-import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
 
 import {
   FheOpsAddress,
@@ -405,8 +403,8 @@ export class FhenixClient {
       },
     );
 
-    const networkPkAbi = new Interface(["function getNetworkPublicKey(int32 securityZone)"]);
-    const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey", [securityZone]);
+    const funcSig = "0x1b1b484e" // cast sig "getNetworkPublicKey(int32)"
+    const callData = funcSig + toABIEncodedUint32(securityZone);
     const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
 
     const publicKeyP = requestMethod(provider, "eth_call", callParams).catch(

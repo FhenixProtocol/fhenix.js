@@ -26,7 +26,7 @@ import {
 import { EncryptionTypes } from "../src/sdk/types";
 import { assert, expect, test, describe, it, beforeAll } from "vitest";
 
-describe.skip("encrypt_uint8", () => {
+describe("encrypt_uint8", () => {
   let clientKey: TfheClientKey;
   let publicKey: TfheCompactPublicKey;
 

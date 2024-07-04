@@ -96,12 +96,7 @@ export class FhenixClient {
    */
   async encrypt_bool(value: boolean, securityZone: number = 0): Promise<EncryptedBool> {
     const fhePublicKey = await this._getPublicKey(securityZone);
-    const encrypted = tfheEncrypt.encrypt_bool(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -116,12 +111,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT8, 0);
 
-    const encrypted = tfheEncrypt.encrypt_uint8(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
   }
 
   private async _getPublicKey(securityZone: number) {
@@ -147,12 +137,7 @@ export class FhenixClient {
 
     const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT16, 0);
-    const encrypted = tfheEncrypt.encrypt_uint16(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -167,12 +152,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     ValidateUintInRange(value, MAX_UINT32, 0);
-    const encrypted = tfheEncrypt.encrypt_uint32(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -187,12 +167,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    const encrypted = tfheEncrypt.encrypt_uint64(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -207,12 +182,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    const encrypted = tfheEncrypt.encrypt_uint128(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -227,12 +197,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    const encrypted = tfheEncrypt.encrypt_uint256(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
   }
   /**
    * Encrypts an Address (Uint160) value using the stored public key.
@@ -246,12 +211,7 @@ export class FhenixClient {
     const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    const encrypted = tfheEncrypt.encrypt_address(value, fhePublicKey).data;
-
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
   }
 
   /**
@@ -298,11 +258,7 @@ export class FhenixClient {
       default:
     }
 
-    const encrypted = tfheEncrypt.encrypt(value, fhePublicKey, type).data;
-    return {
-      // insert security zone as fist byte
-      data: new Uint8Array([securityZone, ...encrypted]),
-    };
+    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 
   // Unsealing Method

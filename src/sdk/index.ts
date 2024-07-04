@@ -438,9 +438,7 @@ export class FhenixClient {
       );
     }
 
-    const abiCoder = AbiCoder.defaultAbiCoder();
-    const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
-    const buff = fromHexString(publicKeyDecoded);
+    const buff = fromHexString(publicKey.slice(130));
 
     try {
       return TfheCompactPublicKey.deserialize(buff);

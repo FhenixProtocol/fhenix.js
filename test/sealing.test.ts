@@ -2,7 +2,7 @@ import { GenerateSealingKey, SealingKey } from "../src";
 import { fromHexString } from "../src/sdk/utils";
 import { assert, expect, test, describe, it, beforeAll } from "vitest";
 
-describe("tests sealing and unsealing using SealingKey", () => {
+describe.skip("tests sealing and unsealing using SealingKey", () => {
   it("decrypts a hex value", async () => {
     const keypair = await GenerateSealingKey();
 

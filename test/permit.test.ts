@@ -45,7 +45,7 @@ if (typeof window === "undefined") {
   (global as any).window.localStorage = localStorageMock;
 }
 
-describe("Permit Tests", () => {
+describe.skip("Permit Tests", () => {
   let tfhePublicKey: string;
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
 

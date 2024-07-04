@@ -20,6 +20,7 @@
     "build:dev": "webpack --config webpack/webpack.development.js && tsc",
     "serve": "webpack serve",
     "test": "VITE_CJS_IGNORE_WARNING=true vitest",
+    "test-no-localfhenix": "SKIP_LOCAL_ENV=true VITE_CJS_IGNORE_WARNING=true vitest",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
     "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\"",
     "prettier-ci": "prettier --check \"**/*.{js,json,md,sol,ts,yml}\""

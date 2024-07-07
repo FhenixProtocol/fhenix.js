@@ -60,7 +60,6 @@ export class FhenixClient {
     // if (params?.provider === undefined) {
     //   params.provider = new JsonRpcProvider("http://localhost:8545");
     // }
-
     const { provider, ignoreErrors } = params;
 
     this.provider = provider!;

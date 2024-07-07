@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isAddress = exports.toBeArray = exports.toBigInt = exports.bytesToNumber = exports.numberToBytes = exports.toHexString = exports.fromHexString = exports.ValidateUintInRange = void 0;
+exports.toABIEncodedUint32 = exports.isAddress = exports.toBeArray = exports.toBigInt = exports.bytesToNumber = exports.numberToBytes = exports.toHexString = exports.fromHexString = exports.ValidateUintInRange = void 0;
 const buffer_1 = require("buffer");
 const ethers_1 = require("ethers");
 const validation_1 = require("./validation");
@@ -55,4 +55,13 @@ function isAddress(address) {
     }
 }
 exports.isAddress = isAddress;
+function toABIEncodedUint32(value) {
+    // Ensure the number is a valid unsigned 32-bit integer
+    if (value < 0 || value > 0xFFFFFFFF) {
+        throw new RangeError('Number must be between 0 and 2^32 - 1.');
+    }
+    // Convert the number to a hexadecimal string and pad it to 64 characters (32 bytes)
+    return value.toString(16).padStart(64, '0');
+}
+exports.toABIEncodedUint32 = toABIEncodedUint32;
 //# sourceMappingURL=utils.js.map

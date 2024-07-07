@@ -37,7 +37,6 @@ const node_tfhe_1 = require("node-tfhe");
 const utils_1 = require("./utils");
 const types_1 = require("./types");
 const access_control_1 = require("../extensions/access_control");
-const ethers_1 = require("ethers");
 const consts_1 = require("./consts");
 const tfheEncrypt = __importStar(require("./encrypt"));
 const validation_1 = require("./validation");
@@ -56,9 +55,9 @@ class FhenixClient {
         this.defaultSecurityZone = 0;
         this.fhePublicKeys = [];
         (0, validation_1.isPlainObject)(params);
-        if ((params === null || params === void 0 ? void 0 : params.provider) === undefined) {
-            params.provider = new ethers_1.JsonRpcProvider("http://localhost:8545");
-        }
+        // if (params?.provider === undefined) {
+        //   params.provider = new JsonRpcProvider("http://localhost:8545");
+        // }
         const { provider, ignoreErrors } = params;
         this.provider = provider;
         // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
@@ -356,8 +355,8 @@ class FhenixClient {
             const chainIdP = requestMethod(provider, "eth_chainId").catch((err) => {
                 throw Error(`Error while requesting chainId from provider: ${err}`);
             });
-            const networkPkAbi = new ethers_1.Interface(["function getNetworkPublicKey(int32 securityZone)"]);
-            const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey", [securityZone]);
+            const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
+            const callData = funcSig + (0, utils_1.toABIEncodedUint32)(securityZone);
             const callParams = [{ to: consts_1.FheOpsAddress, data: callData }, "latest"];
             const publicKeyP = requestMethod(provider, "eth_call", callParams).catch((err) => {
                 throw Error(`Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(err)}`);
@@ -373,9 +372,7 @@ class FhenixClient {
             if (publicKey.length < consts_1.PUBLIC_KEY_LENGTH_MIN) {
                 throw new Error(`Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`);
             }
-            const abiCoder = ethers_1.AbiCoder.defaultAbiCoder();
-            const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
-            const buff = (0, utils_1.fromHexString)(publicKeyDecoded);
+            const buff = (0, utils_1.fromHexString)(publicKey.slice(130));
             try {
                 return node_tfhe_1.TfheCompactPublicKey.deserialize(buff);
             }

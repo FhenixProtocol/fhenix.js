@@ -14,7 +14,8 @@ const utils_1 = require("./utils");
 const encrypt_bool = (value, publicKey, securityZone = 0) => {
     const encrypted = node_tfhe_1.CompactFheBoolList.encrypt_with_compact_public_key([value], publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_bool = encrypt_bool;
@@ -29,7 +30,8 @@ const encrypt_uint8 = (value, publicKey, securityZone = 0) => {
     const uint8Array = new Uint8Array([value]);
     const encrypted = node_tfhe_1.CompactFheUint8List.encrypt_with_compact_public_key(uint8Array, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_uint8 = encrypt_uint8;
@@ -44,7 +46,8 @@ const encrypt_uint16 = (value, publicKey, securityZone = 0) => {
     const uint16Array = new Uint16Array([value]);
     const encrypted = node_tfhe_1.CompactFheUint16List.encrypt_with_compact_public_key(uint16Array, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_uint16 = encrypt_uint16;
@@ -59,7 +62,8 @@ const encrypt_uint32 = (value, publicKey, securityZone = 0) => {
     const uint32Array = new Uint32Array([value]);
     const encrypted = node_tfhe_1.CompactFheUint32List.encrypt_with_compact_public_key(uint32Array, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_uint32 = encrypt_uint32;
@@ -80,7 +84,8 @@ const encrypt_uint64 = (value, publicKey, securityZone = 0) => {
     const uint32Array = new BigUint64Array([value]);
     const encrypted = node_tfhe_1.CompactFheUint64List.encrypt_with_compact_public_key(uint32Array, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_uint64 = encrypt_uint64;
@@ -100,7 +105,8 @@ const encrypt_uint128 = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = node_tfhe_1.CompactFheUint128.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_uint128 = encrypt_uint128;
@@ -120,7 +126,8 @@ const encrypt_uint256 = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = node_tfhe_1.CompactFheUint256.encrypt_with_compact_public_key(value, publicKey);
     return {
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_uint256 = encrypt_uint256;
@@ -140,8 +147,8 @@ const encrypt_address = (value, publicKey, securityZone = 0) => {
     }
     const encrypted = node_tfhe_1.CompactFheUint160.encrypt_with_compact_public_key(value, publicKey);
     return {
-        // insert security zone as first byte
-        data: new Uint8Array([securityZone, ...encrypted.serialize()]),
+        data: encrypted.serialize(),
+        securityZone,
     };
 };
 exports.encrypt_address = encrypt_address;

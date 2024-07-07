@@ -6,4 +6,5 @@ export declare const bytesToNumber: (byteArray: Uint8Array) => number;
 export declare function toBigInt(value: Uint8Array): bigint;
 export declare function toBeArray(value: bigint | number): Uint8Array;
 export declare function isAddress(address: string): void;
+export declare function toABIEncodedUint32(value: number): string;
 //# sourceMappingURL=utils.d.ts.map

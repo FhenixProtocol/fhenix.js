@@ -179,7 +179,7 @@ export const encrypt_uint128 = (
  */
 export const encrypt_uint256 = (
   value: bigint | string,
-  publicKey: TfheCompactPublicKeymake,
+  publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint256 => {
   if (typeof value === "string") {

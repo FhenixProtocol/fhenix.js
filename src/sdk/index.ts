@@ -57,9 +57,9 @@ export class FhenixClient {
   public constructor(params: InstanceParams) {
     isPlainObject(params);
 
-    if (params?.provider === undefined) {
-      params.provider = new JsonRpcProvider("http://localhost:8545");
-    }
+    // if (params?.provider === undefined) {
+    //   params.provider = new JsonRpcProvider("http://localhost:8545");
+    // }
 
     const { provider, ignoreErrors } = params;
 

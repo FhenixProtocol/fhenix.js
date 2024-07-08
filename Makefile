@@ -9,16 +9,20 @@ clone-tfhe:
 		echo "Directory tfhe-rs already exists, skipping clone."; \
 	fi
 
-.PHONY: gen-tfhe-web-cjs
-gen-tfhe-web-cjs: clone-tfhe
+.PHONY: gen-tfhe-web
+gen-tfhe-web: clone-tfhe
 	cd tfhe-rs && make build_web_js_api
 	cp tfhe-rs/tfhe/pkg/tfhe.js lib/commonjs/sdk/fhe/tfhe-browser.js
 	cp tfhe-rs/tfhe/pkg/tfhe.d.ts lib/commonjs/sdk/fhe/tfhe-browser.d.ts
 	cp tfhe-rs/tfhe/pkg/tfhe_bg.wasm lib/commonjs/sdk/fhe/tfhe-browser_bg.wasm
 
-.PHONY: gen-tfhe-web-esm
+	cp tfhe-rs/tfhe/pkg/tfhe.js lib/esm/sdk/fhe/tfhe-browser.js
+	cp tfhe-rs/tfhe/pkg/tfhe.d.ts lib/esm/sdk/fhe/tfhe-browser.d.ts
+	cp tfhe-rs/tfhe/pkg/tfhe_bg.wasm lib/esm/sdk/fhe/tfhe-browser_bg.wasm
+
+.PHONY: gen-tfhe-node-cjs
 gen-tfhe-node-cjs: clone-tfhe
-	cd tfhe-rs && mmake build_node_js_api
+	cd tfhe-rs && make build_node_js_api
 	cp tfhe-rs/tfhe/pkg/tfhe.js lib/commonjs/sdk/fhe/tfhe.js
 	cp tfhe-rs/tfhe/pkg/tfhe.d.ts lib/commonjs/sdk/fhe/tfhe.d.ts
 	cp tfhe-rs/tfhe/pkg/tfhe_bg.wasm lib/commonjs/sdk/fhe/tfhe_bg.wasm
@@ -31,3 +35,11 @@ gen-tfhe-node-esm: clone-tfhe
 	cp tfhe-rs/tfhe/pkg/tfhe_bg.js lib/esm/sdk/fhe/tfhe_bg.js
 	cp tfhe-rs/tfhe/pkg/tfhe_bg.d.ts lib/esm/sdk/fhe/tfhe_bg.d.ts
 	cp tfhe-rs/tfhe/pkg/tfhe_bg.wasm lib/esm/sdk/fhe/tfhe_bg.wasm
+
+.PHONY: clean
+clean:
+	rm -rf tfhe-rs
+
+
+.PHONY: gen-all
+gen-all: gen-tfhe-web gen-tfhe-node-cjs gen-tfhe-node-esm

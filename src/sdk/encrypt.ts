@@ -114,7 +114,7 @@ export const encrypt_uint64 = (
   } else {
     value = value as bigint;
   }
-  
+
   const encrypted = CompactFheUint64.encrypt_with_compact_public_key(
     value,
     publicKey,

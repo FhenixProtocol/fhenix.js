@@ -9,5 +9,6 @@
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
-  "rules": {}
+  "rules": {},
+  "ignorePatterns": ["src/sdk/fhe/*.js"]
 }

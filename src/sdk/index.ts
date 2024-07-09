@@ -1,5 +1,5 @@
-import { TfheCompactPublicKey } from "node-tfhe";
-import { fromHexString, isAddress, ValidateUintInRange } from "./utils";
+import { TfheCompactPublicKey } from "./fhe/fhe.js";
+import { fromHexString, isAddress, ValidateUintInRange } from "./utils.js";
 import {
   ContractPermits,
   determineRequestMethod,
@@ -15,7 +15,7 @@ import {
   EncryptionTypes,
   InstanceParams,
   SupportedProvider,
-} from "./types";
+} from "./types.js";
 
 import {
   generatePermit,
@@ -23,9 +23,7 @@ import {
   Permission,
   Permit,
   PermitSigner,
-} from "../extensions/access_control";
-
-import { AbiCoder, Interface, JsonRpcProvider } from "ethers";
+} from "../extensions/access_control/index.js";
 
 import {
   FheOpsAddress,
@@ -33,14 +31,15 @@ import {
   MAX_UINT32,
   MAX_UINT8,
   PUBLIC_KEY_LENGTH_MIN,
-} from "./consts";
-import * as tfheEncrypt from "./encrypt";
+} from "./consts.js";
+import * as tfheEncrypt from "./encrypt.js";
 import {
   isBigIntOrHexString,
   isNumber,
   isPlainObject,
   isString,
-} from "./validation";
+} from "./validation.js";
+import { GetFhePublicKey } from "./init.js";
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -58,47 +57,32 @@ export class FhenixClient {
   public constructor(params: InstanceParams) {
     isPlainObject(params);
 
-    if (params?.provider === undefined) {
-      params.provider = new JsonRpcProvider("http://localhost:8545");
-    }
+    // if (params?.provider === undefined) {
+    //   params.provider = new JsonRpcProvider("http://localhost:42069");
+    // }
 
     const { provider, ignoreErrors } = params;
 
     this.provider = provider;
 
-    // in most cases we will want to init the fhevm library - except if this is used outside of the browser, in which
-    // case this should be called with initSdk = false (tests, for instance)
-
-    /// #if DEBUG
-    this.fhePublicKey = FhenixClient.getFheKeyFromProvider(provider).catch(
-      (err) => {
-        if (ignoreErrors) {
-          return undefined;
-        } else {
-          throw new Error(
-            `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-          );
-        }
-      },
-    );
-
-    /// #else
-    const asyncInitFhevm: () => Promise<void> = async () => {
-      try {
-        const { initFhevm } = await import("./init");
-        await initFhevm();
-      } catch (err) {
-        throw new Error(
-          `Error initializing FhenixClient - maybe try calling with initSdk: false. ${err}`,
-        );
-      }
-    };
-    if (params?.initSdk !== false) {
-      this.fhePublicKey = asyncInitFhevm().then(() =>
-        FhenixClient.getFheKeyFromProvider(provider),
+    if (!this.provider) {
+      throw new Error(
+        "Failed to initialize Fhenix Client - must include a web3 provider",
       );
     }
-    /// #endif
+
+    this.fhePublicKey = GetFhePublicKey(
+      FhenixClient.getFheKeyFromProvider,
+      provider,
+    ).catch((err: unknown) => {
+      if (ignoreErrors) {
+        return undefined;
+      } else {
+        throw new Error(
+          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+        );
+      }
+    });
   }
 
   // Encryption Methods
@@ -395,8 +379,13 @@ export class FhenixClient {
       },
     );
 
-    const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
-    const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
+    // const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
+    // const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
+
+    // todo: use this to remove ethers dependency
+    const callData = "0x44e21dd2";
+    // console.log(`calldata: ${callData}`);
+
     const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
 
     const publicKeyP = requestMethod(provider, "eth_call", callParams).catch(
@@ -428,16 +417,13 @@ export class FhenixClient {
       );
     }
 
-    const abiCoder = AbiCoder.defaultAbiCoder();
-    const publicKeyDecoded = abiCoder.decode(["bytes"], publicKey)[0];
-    const buff = fromHexString(publicKeyDecoded);
+    // magically know how to decode rlp or w/e returns from the evm json-rpc
+    const buff = fromHexString(publicKey.slice(130));
 
     try {
       return TfheCompactPublicKey.deserialize(buff);
     } catch (err) {
-      throw new Error(
-        `Error deserializing public key: did you initialize fhenix.js with "initFhevm()"? ${err}`,
-      );
+      throw new Error(`Error deserializing public key ${err}`);
     }
   }
 }

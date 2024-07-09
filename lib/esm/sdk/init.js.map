@@ -1,0 +1,1 @@
+{"version":3,"file":"init.js","sourceRoot":"","sources":["../../../src/sdk/init.ts"],"names":[],"mappings":";;;;;;;;;AACA,OAAO,EAAwB,cAAc,EAAE,MAAM,cAAc,CAAC;AAEpE,MAAM,CAAC,MAAM,eAAe,GAAG,CAC7B,QAAwE,EACxE,QAA2B,EACI,EAAE;IACjC,MAAM,cAAc,EAAE,CAAC;IACvB,OAAO,QAAQ,CAAC,QAAQ,CAAC,CAAC;AAC5B,CAAC,CAAA,CAAC"}

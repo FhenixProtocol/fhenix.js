@@ -1,2 +1,2 @@
-export * from "./permit";
-export * from "./EIP712";
+export * from "./permit/index.js";
+export * from "./EIP712.js";

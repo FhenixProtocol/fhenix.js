@@ -1,7 +1,7 @@
-import { fromHexString, toBeArray, toBigInt, toHexString } from "./utils";
+import { fromHexString, toBeArray, toBigInt, toHexString } from "./utils.js";
 import * as nacl from "tweetnacl";
 import * as naclUtil from "tweetnacl-util";
-import { isBigIntOrNumber, isString } from "./validation";
+import { isBigIntOrNumber, isString } from "./validation.js";
 
 const PRIVATE_KEY_LENGTH = 64;
 const PUBLIC_KEY_LENGTH = 64;

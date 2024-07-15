@@ -38,7 +38,7 @@ jobs:
           password: ${{ secrets.GH_PAT }}
       - name: Run localfhenix
         run: |
-          docker run -p 8545:8547 -p 8548:8548 -p 5000:3000 -e FHEOS_SECURITY_ZONES=2 ghcr.io/fhenixprotocol/nitro/localfhenix:v0.3.0-rc.0 &
+          docker run -p 8545:8547 -p 8548:8548 -p 5000:3000 -e FHEOS_SECURITY_ZONES=2 ghcr.io/fhenixprotocol/nitro/localfhenix:latest &
       - name: Run Tests
         # wait for localfhenix to start
         run: sleep 10 && pnpm test

@@ -11,9 +11,15 @@ jobs:
   test:
     runs-on: ubuntu-latest-m
 
+    services:
+      registry: ${{ env.REGISTRY }}
+      username: ${{ github.actor }}
+      password: ${{ secrets.GH_PAT }}
+
     env:
       SKIP_LOCAL_ENV: "true"
       REGISTRY: ghcr.io/fhenixprotocol/nitro
+      FHEOS_SECURITY_ZONES: 2
     strategy:
       matrix:
         node-version: [20.x, 22.x]
@@ -33,12 +39,6 @@ jobs:
       - name: Docker Login
         uses: docker/login-action@v3.0.0
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PAT }}
-      - name: Run localfhenix
-        run: |
-          docker run -p 8545:8547 -p 8548:8548 -p 5000:3000 -e FHEOS_SECURITY_ZONES=2 ghcr.io/fhenixprotocol/nitro/localfhenix:latest &
       - name: Run Tests
         # wait for localfhenix to start
         run: sleep 20 && pnpm test

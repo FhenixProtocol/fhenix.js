@@ -144,10 +144,10 @@ function assertArgument(check: unknown, message: string): asserts check {
 
 export function toABIEncodedUint32(value: number) {
   // Ensure the number is a valid unsigned 32-bit integer
-  if (value < 0 || value > 0xFFFFFFFF) {
-    throw new RangeError('Number must be between 0 and 2^32 - 1.');
+  if (value < 0 || value > 0xffffffff) {
+    throw new RangeError("Number must be between 0 and 2^32 - 1.");
   }
 
   // Convert the number to a hexadecimal string and pad it to 64 characters (32 bytes)
-  return value.toString(16).padStart(64, '0');
+  return value.toString(16).padStart(64, "0");
 }

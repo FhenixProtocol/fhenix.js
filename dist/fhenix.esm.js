@@ -57,7 +57,9 @@ function addHeapObject(obj) {
     heap[idx] = obj;
     return idx;
 }
-function getObject(idx) { return heap[idx]; }
+function getObject(idx) {
+    return heap[idx];
+}
 function dropObject(idx) {
     if (idx < 132)
         return;
@@ -69,8 +71,14 @@ function takeObject(idx) {
     dropObject(idx);
     return ret;
 }
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available'); } });
-if (typeof TextDecoder !== 'undefined') {
+const cachedTextDecoder = typeof TextDecoder !== "undefined"
+    ? new TextDecoder("utf-8", { ignoreBOM: true, fatal: true })
+    : {
+        decode: () => {
+            throw Error("TextDecoder not available");
+        },
+    };
+if (typeof TextDecoder !== "undefined") {
     cachedTextDecoder.decode();
 }
 let cachedUint8Memory0 = null;
@@ -89,7 +97,8 @@ function isLikeNone(x) {
 }
 let cachedBigInt64Memory0 = null;
 function getBigInt64Memory0() {
-    if (cachedBigInt64Memory0 === null || cachedBigInt64Memory0.byteLength === 0) {
+    if (cachedBigInt64Memory0 === null ||
+        cachedBigInt64Memory0.byteLength === 0) {
         cachedBigInt64Memory0 = new BigInt64Array(wasm.memory.buffer);
     }
     return cachedBigInt64Memory0;
@@ -104,41 +113,41 @@ function getInt32Memory0() {
 function debugString(val) {
     // primitive types
     const type = typeof val;
-    if (type == 'number' || type == 'boolean' || val == null) {
+    if (type == "number" || type == "boolean" || val == null) {
         return `${val}`;
     }
-    if (type == 'string') {
+    if (type == "string") {
         return `"${val}"`;
     }
-    if (type == 'symbol') {
+    if (type == "symbol") {
         const description = val.description;
         if (description == null) {
-            return 'Symbol';
+            return "Symbol";
         }
         else {
             return `Symbol(${description})`;
         }
     }
-    if (type == 'function') {
+    if (type == "function") {
         const name = val.name;
-        if (typeof name == 'string' && name.length > 0) {
+        if (typeof name == "string" && name.length > 0) {
             return `Function(${name})`;
         }
         else {
-            return 'Function';
+            return "Function";
         }
     }
     // objects
     if (Array.isArray(val)) {
         const length = val.length;
-        let debug = '[';
+        let debug = "[";
         if (length > 0) {
             debug += debugString(val[0]);
         }
         for (let i = 1; i < length; i++) {
-            debug += ', ' + debugString(val[i]);
+            debug += ", " + debugString(val[i]);
         }
-        debug += ']';
+        debug += "]";
         return debug;
     }
     // Test for built-in
@@ -151,15 +160,15 @@ function debugString(val) {
         // Failed to match the standard '[object ClassName]'
         return toString.call(val);
     }
-    if (className == 'Object') {
+    if (className == "Object") {
         // we're a user defined class or Object
         // JSON.stringify avoids problems with cycles, and is generally much
         // easier than looping through ownProperties of `val`.
         try {
-            return 'Object(' + JSON.stringify(val) + ')';
+            return "Object(" + JSON.stringify(val) + ")";
         }
         catch (_) {
-            return 'Object';
+            return "Object";
         }
     }
     // errors
@@ -170,8 +179,14 @@ function debugString(val) {
     return className;
 }
 let WASM_VECTOR_LEN = 0;
-const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available'); } });
-const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
+const cachedTextEncoder = typeof TextEncoder !== "undefined"
+    ? new TextEncoder("utf-8")
+    : {
+        encode: () => {
+            throw Error("TextEncoder not available");
+        },
+    };
+const encodeString = typeof cachedTextEncoder.encodeInto === "function"
     ? function (arg, view) {
         return cachedTextEncoder.encodeInto(arg, view);
     }
@@ -180,14 +195,16 @@ const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
         view.set(buf);
         return {
             read: arg.length,
-            written: buf.length
+            written: buf.length,
         };
-    });
+    };
 function passStringToWasm0(arg, malloc, realloc) {
     if (realloc === undefined) {
         const buf = cachedTextEncoder.encode(arg);
         const ptr = malloc(buf.length, 1) >>> 0;
-        getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);
+        getUint8Memory0()
+            .subarray(ptr, ptr + buf.length)
+            .set(buf);
         WASM_VECTOR_LEN = buf.length;
         return ptr;
     }
@@ -197,7 +214,7 @@ function passStringToWasm0(arg, malloc, realloc) {
     let offset = 0;
     for (; offset < len; offset++) {
         const code = arg.charCodeAt(offset);
-        if (code > 0x7F)
+        if (code > 0x7f)
             break;
         mem[ptr + offset] = code;
     }
@@ -205,7 +222,7 @@ function passStringToWasm0(arg, malloc, realloc) {
         if (offset !== 0) {
             arg = arg.slice(offset);
         }
-        ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
+        ptr = realloc(ptr, len, (len = offset + arg.length * 3), 1) >>> 0;
         const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
         const ret = encodeString(arg, view);
         offset += ret.written;
@@ -238,7 +255,7 @@ function handleError(f, args) {
     }
 }
 /**
-*/
+ */
 class CompactFheBool {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -256,10 +273,10 @@ class CompactFheBool {
         wasm.__wbg_compactfhebool_free(ptr);
     }
     /**
-    * @param {boolean} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheBool}
-    */
+     * @param {boolean} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheBool}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -278,8 +295,8 @@ class CompactFheBool {
         }
     }
     /**
-    * @returns {FheBool}
-    */
+     * @returns {FheBool}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -297,8 +314,8 @@ class CompactFheBool {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -319,9 +336,9 @@ class CompactFheBool {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheBool}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheBool}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -341,9 +358,9 @@ class CompactFheBool {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -364,10 +381,10 @@ class CompactFheBool {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheBool}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheBool}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -388,7 +405,7 @@ class CompactFheBool {
     }
 }
 /**
-*/
+ */
 class CompactFheUint128 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -406,10 +423,10 @@ class CompactFheUint128 {
         wasm.__wbg_compactfheuint128_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint128}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint128}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -428,8 +445,8 @@ class CompactFheUint128 {
         }
     }
     /**
-    * @returns {FheUint128}
-    */
+     * @returns {FheUint128}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -447,8 +464,8 @@ class CompactFheUint128 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -469,9 +486,9 @@ class CompactFheUint128 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint128}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint128}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -491,9 +508,9 @@ class CompactFheUint128 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -514,10 +531,10 @@ class CompactFheUint128 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint128}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint128}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -538,7 +555,7 @@ class CompactFheUint128 {
     }
 }
 /**
-*/
+ */
 class CompactFheUint16 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -556,10 +573,10 @@ class CompactFheUint16 {
         wasm.__wbg_compactfheuint16_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint16}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint16}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -578,8 +595,8 @@ class CompactFheUint16 {
         }
     }
     /**
-    * @returns {FheUint16}
-    */
+     * @returns {FheUint16}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -597,8 +614,8 @@ class CompactFheUint16 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -619,9 +636,9 @@ class CompactFheUint16 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint16}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint16}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -641,9 +658,9 @@ class CompactFheUint16 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -664,10 +681,10 @@ class CompactFheUint16 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint16}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint16}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -688,7 +705,7 @@ class CompactFheUint16 {
     }
 }
 /**
-*/
+ */
 class CompactFheUint160 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -706,10 +723,10 @@ class CompactFheUint160 {
         wasm.__wbg_compactfheuint160_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint160}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint160}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -728,8 +745,8 @@ class CompactFheUint160 {
         }
     }
     /**
-    * @returns {FheUint160}
-    */
+     * @returns {FheUint160}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -747,8 +764,8 @@ class CompactFheUint160 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -769,9 +786,9 @@ class CompactFheUint160 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint160}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint160}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -791,9 +808,9 @@ class CompactFheUint160 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -814,10 +831,10 @@ class CompactFheUint160 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint160}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint160}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -838,7 +855,7 @@ class CompactFheUint160 {
     }
 }
 /**
-*/
+ */
 class CompactFheUint256 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -856,10 +873,10 @@ class CompactFheUint256 {
         wasm.__wbg_compactfheuint256_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint256}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint256}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -878,8 +895,8 @@ class CompactFheUint256 {
         }
     }
     /**
-    * @returns {FheUint256}
-    */
+     * @returns {FheUint256}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -897,8 +914,8 @@ class CompactFheUint256 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -919,9 +936,9 @@ class CompactFheUint256 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint256}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint256}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -941,9 +958,9 @@ class CompactFheUint256 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -964,10 +981,10 @@ class CompactFheUint256 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint256}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint256}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -988,7 +1005,7 @@ class CompactFheUint256 {
     }
 }
 /**
-*/
+ */
 class CompactFheUint32 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -1006,10 +1023,10 @@ class CompactFheUint32 {
         wasm.__wbg_compactfheuint32_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint32}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint32}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1028,8 +1045,8 @@ class CompactFheUint32 {
         }
     }
     /**
-    * @returns {FheUint32}
-    */
+     * @returns {FheUint32}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1047,8 +1064,8 @@ class CompactFheUint32 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1069,9 +1086,9 @@ class CompactFheUint32 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint32}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint32}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1091,9 +1108,9 @@ class CompactFheUint32 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1114,10 +1131,10 @@ class CompactFheUint32 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint32}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint32}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1138,7 +1155,7 @@ class CompactFheUint32 {
     }
 }
 /**
-*/
+ */
 class CompactFheUint64 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -1156,10 +1173,10 @@ class CompactFheUint64 {
         wasm.__wbg_compactfheuint64_free(ptr);
     }
     /**
-    * @param {bigint} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint64}
-    */
+     * @param {bigint} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint64}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1178,8 +1195,8 @@ class CompactFheUint64 {
         }
     }
     /**
-    * @returns {FheUint64}
-    */
+     * @returns {FheUint64}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1197,8 +1214,8 @@ class CompactFheUint64 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1219,9 +1236,9 @@ class CompactFheUint64 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint64}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint64}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1241,9 +1258,9 @@ class CompactFheUint64 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1264,10 +1281,10 @@ class CompactFheUint64 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint64}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint64}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1288,7 +1305,7 @@ class CompactFheUint64 {
     }
 }
 /**
-*/
+ */
 class CompactFheUint8 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -1306,10 +1323,10 @@ class CompactFheUint8 {
         wasm.__wbg_compactfheuint8_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} client_key
-    * @returns {CompactFheUint8}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} client_key
+     * @returns {CompactFheUint8}
+     */
     static encrypt_with_compact_public_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1328,8 +1345,8 @@ class CompactFheUint8 {
         }
     }
     /**
-    * @returns {FheUint8}
-    */
+     * @returns {FheUint8}
+     */
     expand() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1347,8 +1364,8 @@ class CompactFheUint8 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1369,9 +1386,9 @@ class CompactFheUint8 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {CompactFheUint8}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {CompactFheUint8}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1391,9 +1408,9 @@ class CompactFheUint8 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1414,10 +1431,10 @@ class CompactFheUint8 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {CompactFheUint8}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {CompactFheUint8}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1438,7 +1455,7 @@ class CompactFheUint8 {
     }
 }
 /**
-*/
+ */
 class FheBool {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -1456,10 +1473,10 @@ class FheBool {
         wasm.__wbg_fhebool_free(ptr);
     }
     /**
-    * @param {boolean} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheBool}
-    */
+     * @param {boolean} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheBool}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1478,10 +1495,10 @@ class FheBool {
         }
     }
     /**
-    * @param {boolean} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheBool}
-    */
+     * @param {boolean} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheBool}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1500,10 +1517,10 @@ class FheBool {
         }
     }
     /**
-    * @param {boolean} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheBool}
-    */
+     * @param {boolean} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheBool}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1522,10 +1539,10 @@ class FheBool {
         }
     }
     /**
-    * @param {boolean} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheBool}
-    */
+     * @param {boolean} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheBool}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1544,9 +1561,9 @@ class FheBool {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {boolean}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {boolean}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1565,8 +1582,8 @@ class FheBool {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1587,9 +1604,9 @@ class FheBool {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheBool}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheBool}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1609,9 +1626,9 @@ class FheBool {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1632,10 +1649,10 @@ class FheBool {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheBool}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheBool}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1656,7 +1673,7 @@ class FheBool {
     }
 }
 /**
-*/
+ */
 class FheInt128 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -1674,10 +1691,10 @@ class FheInt128 {
         wasm.__wbg_fheint128_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt128}
-    */
+     * @param {any} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt128}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1696,10 +1713,10 @@ class FheInt128 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt128}
-    */
+     * @param {any} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt128}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1718,10 +1735,10 @@ class FheInt128 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt128}
-    */
+     * @param {any} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt128}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1740,10 +1757,10 @@ class FheInt128 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt128}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt128}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1762,9 +1779,9 @@ class FheInt128 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {any}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {any}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1783,8 +1800,8 @@ class FheInt128 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1805,9 +1822,9 @@ class FheInt128 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt128}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt128}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1827,9 +1844,9 @@ class FheInt128 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1850,10 +1867,10 @@ class FheInt128 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt128}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt128}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1874,7 +1891,7 @@ class FheInt128 {
     }
 }
 /**
-*/
+ */
 class FheInt16 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -1892,10 +1909,10 @@ class FheInt16 {
         wasm.__wbg_fheint16_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt16}
-    */
+     * @param {number} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt16}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1914,10 +1931,10 @@ class FheInt16 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt16}
-    */
+     * @param {number} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt16}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1936,10 +1953,10 @@ class FheInt16 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt16}
-    */
+     * @param {number} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt16}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1958,10 +1975,10 @@ class FheInt16 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt16}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt16}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -1980,9 +1997,9 @@ class FheInt16 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {number}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {number}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2001,8 +2018,8 @@ class FheInt16 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2023,9 +2040,9 @@ class FheInt16 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt16}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt16}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2045,9 +2062,9 @@ class FheInt16 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2068,10 +2085,10 @@ class FheInt16 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt16}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt16}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2092,7 +2109,7 @@ class FheInt16 {
     }
 }
 /**
-*/
+ */
 class FheInt160 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -2110,10 +2127,10 @@ class FheInt160 {
         wasm.__wbg_fheint160_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt160}
-    */
+     * @param {any} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt160}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2132,10 +2149,10 @@ class FheInt160 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt160}
-    */
+     * @param {any} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt160}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2154,10 +2171,10 @@ class FheInt160 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt160}
-    */
+     * @param {any} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt160}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2176,10 +2193,10 @@ class FheInt160 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt160}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt160}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2198,9 +2215,9 @@ class FheInt160 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {any}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {any}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2219,8 +2236,8 @@ class FheInt160 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2241,9 +2258,9 @@ class FheInt160 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt160}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt160}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2263,9 +2280,9 @@ class FheInt160 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2286,10 +2303,10 @@ class FheInt160 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt160}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt160}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2310,7 +2327,7 @@ class FheInt160 {
     }
 }
 /**
-*/
+ */
 class FheInt256 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -2328,10 +2345,10 @@ class FheInt256 {
         wasm.__wbg_fheint256_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt256}
-    */
+     * @param {any} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt256}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2350,10 +2367,10 @@ class FheInt256 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt256}
-    */
+     * @param {any} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt256}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2372,10 +2389,10 @@ class FheInt256 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt256}
-    */
+     * @param {any} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt256}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2394,10 +2411,10 @@ class FheInt256 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt256}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt256}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2416,9 +2433,9 @@ class FheInt256 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {any}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {any}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2437,8 +2454,8 @@ class FheInt256 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2459,9 +2476,9 @@ class FheInt256 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt256}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt256}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2481,9 +2498,9 @@ class FheInt256 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2504,10 +2521,10 @@ class FheInt256 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt256}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt256}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2528,7 +2545,7 @@ class FheInt256 {
     }
 }
 /**
-*/
+ */
 class FheInt32 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -2546,10 +2563,10 @@ class FheInt32 {
         wasm.__wbg_fheint32_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt32}
-    */
+     * @param {number} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt32}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2568,10 +2585,10 @@ class FheInt32 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt32}
-    */
+     * @param {number} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt32}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2590,10 +2607,10 @@ class FheInt32 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt32}
-    */
+     * @param {number} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt32}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2612,10 +2629,10 @@ class FheInt32 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt32}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt32}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2634,9 +2651,9 @@ class FheInt32 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {number}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {number}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2655,8 +2672,8 @@ class FheInt32 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2677,9 +2694,9 @@ class FheInt32 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt32}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt32}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2699,9 +2716,9 @@ class FheInt32 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2722,10 +2739,10 @@ class FheInt32 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt32}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt32}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2746,7 +2763,7 @@ class FheInt32 {
     }
 }
 /**
-*/
+ */
 class FheInt64 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -2764,10 +2781,10 @@ class FheInt64 {
         wasm.__wbg_fheint64_free(ptr);
     }
     /**
-    * @param {bigint} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt64}
-    */
+     * @param {bigint} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt64}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2786,10 +2803,10 @@ class FheInt64 {
         }
     }
     /**
-    * @param {bigint} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt64}
-    */
+     * @param {bigint} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt64}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2808,10 +2825,10 @@ class FheInt64 {
         }
     }
     /**
-    * @param {bigint} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt64}
-    */
+     * @param {bigint} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt64}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2830,10 +2847,10 @@ class FheInt64 {
         }
     }
     /**
-    * @param {bigint} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt64}
-    */
+     * @param {bigint} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt64}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2852,9 +2869,9 @@ class FheInt64 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {bigint}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {bigint}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2873,8 +2890,8 @@ class FheInt64 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2895,9 +2912,9 @@ class FheInt64 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt64}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt64}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2917,9 +2934,9 @@ class FheInt64 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2940,10 +2957,10 @@ class FheInt64 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt64}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt64}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -2964,7 +2981,7 @@ class FheInt64 {
     }
 }
 /**
-*/
+ */
 class FheInt8 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -2982,10 +2999,10 @@ class FheInt8 {
         wasm.__wbg_fheint8_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheInt8}
-    */
+     * @param {number} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheInt8}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3004,10 +3021,10 @@ class FheInt8 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheInt8}
-    */
+     * @param {number} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheInt8}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3026,10 +3043,10 @@ class FheInt8 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheInt8}
-    */
+     * @param {number} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheInt8}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3048,10 +3065,10 @@ class FheInt8 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheInt8}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheInt8}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3070,9 +3087,9 @@ class FheInt8 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {number}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {number}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3091,8 +3108,8 @@ class FheInt8 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3113,9 +3130,9 @@ class FheInt8 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheInt8}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheInt8}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3135,9 +3152,9 @@ class FheInt8 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3158,10 +3175,10 @@ class FheInt8 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheInt8}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheInt8}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3182,7 +3199,7 @@ class FheInt8 {
     }
 }
 /**
-*/
+ */
 class FheUint128 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -3200,10 +3217,10 @@ class FheUint128 {
         wasm.__wbg_fheuint128_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint128}
-    */
+     * @param {any} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint128}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3222,10 +3239,10 @@ class FheUint128 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint128}
-    */
+     * @param {any} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint128}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3244,10 +3261,10 @@ class FheUint128 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint128}
-    */
+     * @param {any} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint128}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3266,10 +3283,10 @@ class FheUint128 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint128}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint128}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3288,9 +3305,9 @@ class FheUint128 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {any}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {any}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3309,8 +3326,8 @@ class FheUint128 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3331,9 +3348,9 @@ class FheUint128 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint128}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint128}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3353,9 +3370,9 @@ class FheUint128 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3376,10 +3393,10 @@ class FheUint128 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint128}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint128}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3400,7 +3417,7 @@ class FheUint128 {
     }
 }
 /**
-*/
+ */
 class FheUint16 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -3418,10 +3435,10 @@ class FheUint16 {
         wasm.__wbg_fheuint16_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint16}
-    */
+     * @param {number} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint16}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3440,10 +3457,10 @@ class FheUint16 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint16}
-    */
+     * @param {number} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint16}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3462,10 +3479,10 @@ class FheUint16 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint16}
-    */
+     * @param {number} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint16}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3484,10 +3501,10 @@ class FheUint16 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint16}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint16}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3506,9 +3523,9 @@ class FheUint16 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {number}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {number}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3527,8 +3544,8 @@ class FheUint16 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3549,9 +3566,9 @@ class FheUint16 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint16}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint16}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3571,9 +3588,9 @@ class FheUint16 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3594,10 +3611,10 @@ class FheUint16 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint16}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint16}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3618,7 +3635,7 @@ class FheUint16 {
     }
 }
 /**
-*/
+ */
 class FheUint160 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -3636,10 +3653,10 @@ class FheUint160 {
         wasm.__wbg_fheuint160_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint160}
-    */
+     * @param {any} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint160}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3658,10 +3675,10 @@ class FheUint160 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint160}
-    */
+     * @param {any} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint160}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3680,10 +3697,10 @@ class FheUint160 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint160}
-    */
+     * @param {any} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint160}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3702,10 +3719,10 @@ class FheUint160 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint160}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint160}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3724,9 +3741,9 @@ class FheUint160 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {any}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {any}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3745,8 +3762,8 @@ class FheUint160 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3767,9 +3784,9 @@ class FheUint160 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint160}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint160}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3789,9 +3806,9 @@ class FheUint160 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3812,10 +3829,10 @@ class FheUint160 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint160}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint160}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3836,7 +3853,7 @@ class FheUint160 {
     }
 }
 /**
-*/
+ */
 class FheUint256 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -3854,10 +3871,10 @@ class FheUint256 {
         wasm.__wbg_fheuint256_free(ptr);
     }
     /**
-    * @param {any} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint256}
-    */
+     * @param {any} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint256}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3876,10 +3893,10 @@ class FheUint256 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint256}
-    */
+     * @param {any} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint256}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3898,10 +3915,10 @@ class FheUint256 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint256}
-    */
+     * @param {any} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint256}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3920,10 +3937,10 @@ class FheUint256 {
         }
     }
     /**
-    * @param {any} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint256}
-    */
+     * @param {any} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint256}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3942,9 +3959,9 @@ class FheUint256 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {any}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {any}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3963,8 +3980,8 @@ class FheUint256 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -3985,9 +4002,9 @@ class FheUint256 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint256}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint256}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4007,9 +4024,9 @@ class FheUint256 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4030,10 +4047,10 @@ class FheUint256 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint256}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint256}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4054,7 +4071,7 @@ class FheUint256 {
     }
 }
 /**
-*/
+ */
 class FheUint32 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -4072,10 +4089,10 @@ class FheUint32 {
         wasm.__wbg_fheuint32_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint32}
-    */
+     * @param {number} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint32}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4094,10 +4111,10 @@ class FheUint32 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint32}
-    */
+     * @param {number} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint32}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4116,10 +4133,10 @@ class FheUint32 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint32}
-    */
+     * @param {number} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint32}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4138,10 +4155,10 @@ class FheUint32 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint32}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint32}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4160,9 +4177,9 @@ class FheUint32 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {number}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {number}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4181,8 +4198,8 @@ class FheUint32 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4203,9 +4220,9 @@ class FheUint32 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint32}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint32}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4225,9 +4242,9 @@ class FheUint32 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4248,10 +4265,10 @@ class FheUint32 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint32}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint32}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4272,7 +4289,7 @@ class FheUint32 {
     }
 }
 /**
-*/
+ */
 class FheUint64 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -4290,10 +4307,10 @@ class FheUint64 {
         wasm.__wbg_fheuint64_free(ptr);
     }
     /**
-    * @param {bigint} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint64}
-    */
+     * @param {bigint} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint64}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4312,10 +4329,10 @@ class FheUint64 {
         }
     }
     /**
-    * @param {bigint} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint64}
-    */
+     * @param {bigint} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint64}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4334,10 +4351,10 @@ class FheUint64 {
         }
     }
     /**
-    * @param {bigint} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint64}
-    */
+     * @param {bigint} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint64}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4356,10 +4373,10 @@ class FheUint64 {
         }
     }
     /**
-    * @param {bigint} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint64}
-    */
+     * @param {bigint} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint64}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4378,9 +4395,9 @@ class FheUint64 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {bigint}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {bigint}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4399,8 +4416,8 @@ class FheUint64 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4421,9 +4438,9 @@ class FheUint64 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint64}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint64}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4443,9 +4460,9 @@ class FheUint64 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4466,10 +4483,10 @@ class FheUint64 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint64}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint64}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4490,7 +4507,7 @@ class FheUint64 {
     }
 }
 /**
-*/
+ */
 class FheUint8 {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -4508,10 +4525,10 @@ class FheUint8 {
         wasm.__wbg_fheuint8_free(ptr);
     }
     /**
-    * @param {number} value
-    * @param {TfheClientKey} client_key
-    * @returns {FheUint8}
-    */
+     * @param {number} value
+     * @param {TfheClientKey} client_key
+     * @returns {FheUint8}
+     */
     static encrypt_with_client_key(value, client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4530,10 +4547,10 @@ class FheUint8 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfhePublicKey} public_key
-    * @returns {FheUint8}
-    */
+     * @param {number} value
+     * @param {TfhePublicKey} public_key
+     * @returns {FheUint8}
+     */
     static encrypt_with_public_key(value, public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4552,10 +4569,10 @@ class FheUint8 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompressedPublicKey} compressed_public_key
-    * @returns {FheUint8}
-    */
+     * @param {number} value
+     * @param {TfheCompressedPublicKey} compressed_public_key
+     * @returns {FheUint8}
+     */
     static encrypt_with_compressed_public_key(value, compressed_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4574,10 +4591,10 @@ class FheUint8 {
         }
     }
     /**
-    * @param {number} value
-    * @param {TfheCompactPublicKey} compact_public_key
-    * @returns {FheUint8}
-    */
+     * @param {number} value
+     * @param {TfheCompactPublicKey} compact_public_key
+     * @returns {FheUint8}
+     */
     static encrypt_with_compact_public_key(value, compact_public_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4596,9 +4613,9 @@ class FheUint8 {
         }
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {number}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {number}
+     */
     decrypt(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4617,8 +4634,8 @@ class FheUint8 {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4639,9 +4656,9 @@ class FheUint8 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {FheUint8}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {FheUint8}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4661,9 +4678,9 @@ class FheUint8 {
         }
     }
     /**
-    * @param {bigint} serialized_size_limit
-    * @returns {Uint8Array}
-    */
+     * @param {bigint} serialized_size_limit
+     * @returns {Uint8Array}
+     */
     safe_serialize(serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4684,10 +4701,10 @@ class FheUint8 {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @param {bigint} serialized_size_limit
-    * @returns {FheUint8}
-    */
+     * @param {Uint8Array} buffer
+     * @param {bigint} serialized_size_limit
+     * @returns {FheUint8}
+     */
     static safe_deserialize(buffer, serialized_size_limit) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4708,7 +4725,7 @@ class FheUint8 {
     }
 }
 /**
-*/
+ */
 class TfheClientKey {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -4726,9 +4743,9 @@ class TfheClientKey {
         wasm.__wbg_tfheclientkey_free(ptr);
     }
     /**
-    * @param {TfheConfig} config
-    * @returns {TfheClientKey}
-    */
+     * @param {TfheConfig} config
+     * @returns {TfheClientKey}
+     */
     static generate(config) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4747,10 +4764,10 @@ class TfheClientKey {
         }
     }
     /**
-    * @param {TfheConfig} config
-    * @param {any} seed
-    * @returns {TfheClientKey}
-    */
+     * @param {TfheConfig} config
+     * @param {any} seed
+     * @returns {TfheClientKey}
+     */
     static generate_with_seed(config, seed) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4769,8 +4786,8 @@ class TfheClientKey {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4791,9 +4808,9 @@ class TfheClientKey {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {TfheClientKey}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {TfheClientKey}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4814,7 +4831,7 @@ class TfheClientKey {
     }
 }
 /**
-*/
+ */
 class TfheCompactPublicKey {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -4832,9 +4849,9 @@ class TfheCompactPublicKey {
         wasm.__wbg_tfhecompactpublickey_free(ptr);
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {TfheCompactPublicKey}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {TfheCompactPublicKey}
+     */
     static new(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4853,8 +4870,8 @@ class TfheCompactPublicKey {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4875,9 +4892,9 @@ class TfheCompactPublicKey {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {TfheCompactPublicKey}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {TfheCompactPublicKey}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4898,7 +4915,7 @@ class TfheCompactPublicKey {
     }
 }
 /**
-*/
+ */
 class TfheCompressedPublicKey {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -4916,9 +4933,9 @@ class TfheCompressedPublicKey {
         wasm.__wbg_tfhecompressedpublickey_free(ptr);
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {TfheCompressedPublicKey}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {TfheCompressedPublicKey}
+     */
     static new(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4937,8 +4954,8 @@ class TfheCompressedPublicKey {
         }
     }
     /**
-    * @returns {TfhePublicKey}
-    */
+     * @returns {TfhePublicKey}
+     */
     decompress() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4956,8 +4973,8 @@ class TfheCompressedPublicKey {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -4978,9 +4995,9 @@ class TfheCompressedPublicKey {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {TfheCompressedPublicKey}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {TfheCompressedPublicKey}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -5001,7 +5018,7 @@ class TfheCompressedPublicKey {
     }
 }
 /**
-*/
+ */
 class TfheConfig {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -5020,7 +5037,7 @@ class TfheConfig {
     }
 }
 /**
-*/
+ */
 class TfhePublicKey {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -5038,9 +5055,9 @@ class TfhePublicKey {
         wasm.__wbg_tfhepublickey_free(ptr);
     }
     /**
-    * @param {TfheClientKey} client_key
-    * @returns {TfhePublicKey}
-    */
+     * @param {TfheClientKey} client_key
+     * @returns {TfhePublicKey}
+     */
     static new(client_key) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -5059,8 +5076,8 @@ class TfhePublicKey {
         }
     }
     /**
-    * @returns {Uint8Array}
-    */
+     * @returns {Uint8Array}
+     */
     serialize() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -5081,9 +5098,9 @@ class TfhePublicKey {
         }
     }
     /**
-    * @param {Uint8Array} buffer
-    * @returns {TfhePublicKey}
-    */
+     * @param {Uint8Array} buffer
+     * @returns {TfhePublicKey}
+     */
     static deserialize(buffer) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -5105,13 +5122,13 @@ class TfhePublicKey {
 }
 function __wbg_load(module, imports) {
     return __awaiter$5(this, void 0, void 0, function* () {
-        if (typeof Response === 'function' && module instanceof Response) {
-            if (typeof WebAssembly.instantiateStreaming === 'function') {
+        if (typeof Response === "function" && module instanceof Response) {
+            if (typeof WebAssembly.instantiateStreaming === "function") {
                 try {
                     return yield WebAssembly.instantiateStreaming(module, imports);
                 }
                 catch (e) {
-                    if (module.headers.get('Content-Type') != 'application/wasm') {
+                    if (module.headers.get("Content-Type") != "application/wasm") {
                         console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
                     }
                     else {
@@ -5160,11 +5177,11 @@ function __wbg_get_imports() {
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_bigint_from_i128 = function (arg0, arg1) {
-        const ret = arg0 << BigInt(64) | BigInt.asUintN(64, arg1);
+        const ret = (arg0 << BigInt(64)) | BigInt.asUintN(64, arg1);
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_bigint_from_u128 = function (arg0, arg1) {
-        const ret = BigInt.asUintN(64, arg0) << BigInt(64) | BigInt.asUintN(64, arg1);
+        const ret = (BigInt.asUintN(64, arg0) << BigInt(64)) | BigInt.asUintN(64, arg1);
         return addHeapObject(ret);
     };
     imports.wbg.__wbg_fheuint16_new = function (arg0) {
@@ -5229,7 +5246,7 @@ function __wbg_get_imports() {
     };
     imports.wbg.__wbindgen_boolean_get = function (arg0) {
         const v = getObject(arg0);
-        const ret = typeof (v) === 'boolean' ? (v ? 1 : 0) : 2;
+        const ret = typeof v === "boolean" ? (v ? 1 : 0) : 2;
         return ret;
     };
     imports.wbg.__wbindgen_bigint_from_str = function (arg0, arg1) {
@@ -5293,7 +5310,7 @@ function __wbg_get_imports() {
     };
     imports.wbg.__wbindgen_is_object = function (arg0) {
         const val = getObject(arg0);
-        const ret = typeof (val) === 'object' && val !== null;
+        const ret = typeof val === "object" && val !== null;
         return ret;
     };
     imports.wbg.__wbg_process_dd1577445152112e = function (arg0) {
@@ -5309,7 +5326,7 @@ function __wbg_get_imports() {
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_is_string = function (arg0) {
-        const ret = typeof (getObject(arg0)) === 'string';
+        const ret = typeof getObject(arg0) === "string";
         return ret;
     };
     imports.wbg.__wbg_require_f05d779769764e82 = function () {
@@ -5337,7 +5354,7 @@ function __wbg_get_imports() {
         }, arguments);
     };
     imports.wbg.__wbindgen_is_function = function (arg0) {
-        const ret = typeof (getObject(arg0)) === 'function';
+        const ret = typeof getObject(arg0) === "function";
         return ret;
     };
     imports.wbg.__wbg_newnoargs_e643855c6572a4a8 = function (arg0, arg1) {
@@ -5413,7 +5430,7 @@ function __wbg_get_imports() {
     };
     imports.wbg.__wbindgen_bigint_get_as_i64 = function (arg0, arg1) {
         const v = getObject(arg1);
-        const ret = typeof (v) === 'bigint' ? v : undefined;
+        const ret = typeof v === "bigint" ? v : undefined;
         getBigInt64Memory0()[arg0 / 8 + 1] = isLikeNone(ret) ? BigInt(0) : ret;
         getInt32Memory0()[arg0 / 4 + 0] = !isLikeNone(ret);
     };
@@ -5450,7 +5467,9 @@ function __wbg_init(input) {
         //     input = new URL('tfhe_bg.wasm', import.meta.url);
         // }
         const imports = __wbg_get_imports();
-        if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {
+        if (typeof input === "string" ||
+            (typeof Request === "function" && input instanceof Request) ||
+            (typeof URL === "function" && input instanceof URL)) {
             input = fetch(input);
         }
         const { instance, module } = yield __wbg_load(yield input, imports);
@@ -5623,8 +5642,9 @@ function getUint(value) {
  *  a BigInt, then an ArgumentError will be thrown for %%name%%.
  */
 function getBigInt(value) {
-    switch (typeof (value)) {
-        case "bigint": return value;
+    switch (typeof value) {
+        case "bigint":
+            return value;
         case "number":
             assertArgument(Number.isInteger(value), "underflow");
             assertArgument(value >= -maxValue && value <= maxValue, "overflow");
@@ -5650,6 +5670,14 @@ function assertArgument(check, message) {
     if (!check) {
         throw new Error(message);
     }
+}
+function toABIEncodedUint32(value) {
+    // Ensure the number is a valid unsigned 32-bit integer
+    if (value < 0 || value > 0xFFFFFFFF) {
+        throw new RangeError('Number must be between 0 and 2^32 - 1.');
+    }
+    // Convert the number to a hexadecimal string and pad it to 64 characters (32 bytes)
+    return value.toString(16).padStart(64, '0');
 }
 
 /**
@@ -8525,57 +8553,66 @@ const PUBLIC_KEY_LENGTH_MIN = 15000;
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
  * @param {boolean} value - The Boolean value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedBool} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_bool = (value, publicKey) => {
+const encrypt_bool = (value, publicKey, securityZone = 0) => {
     const encrypted = CompactFheBool.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
  * @param {number} value - The Uint8 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint8} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint8 = (value, publicKey) => {
+const encrypt_uint8 = (value, publicKey, securityZone = 0) => {
     const encrypted = CompactFheUint8.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Uint16 value using TFHE.
  * @param {number} value - The Uint16 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint16} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint16 = (value, publicKey) => {
+const encrypt_uint16 = (value, publicKey, securityZone = 0) => {
     const encrypted = CompactFheUint16.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Uint32 value using TFHE.
  * @param {number} value - The Uint32 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint32} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint32 = (value, publicKey) => {
+const encrypt_uint32 = (value, publicKey, securityZone = 0) => {
     const encrypted = CompactFheUint32.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Uint64 value using TFHE.
  * @param {number} value - The Uint64 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint64} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint64 = (value, publicKey) => {
+const encrypt_uint64 = (value, publicKey, securityZone = 0) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8585,15 +8622,17 @@ const encrypt_uint64 = (value, publicKey) => {
     const encrypted = CompactFheUint64.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Uint128 value using TFHE.
  * @param {bigint} value - The Uint128 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint128} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint128 = (value, publicKey) => {
+const encrypt_uint128 = (value, publicKey, securityZone = 0) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8603,15 +8642,17 @@ const encrypt_uint128 = (value, publicKey) => {
     const encrypted = CompactFheUint128.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Uint256 value using TFHE.
  * @param {bigint} value - The Uint256 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint256} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_uint256 = (value, publicKey) => {
+const encrypt_uint256 = (value, publicKey, securityZone = 0) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8621,15 +8662,17 @@ const encrypt_uint256 = (value, publicKey) => {
     const encrypted = CompactFheUint256.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
  * Encrypts a Address value using TFHE.
  * @param {bigint} value - The Address (Uint160) value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
+ * @param securityZone - The security zone to encrypt the address on.
  * @returns {EncryptedAddress} - The encrypted value serialized as Uint8Array.
  */
-const encrypt_address = (value, publicKey) => {
+const encrypt_address = (value, publicKey, securityZone = 0) => {
     if (typeof value === "string") {
         value = toBigInt(fromHexString(value));
     }
@@ -8639,6 +8682,7 @@ const encrypt_address = (value, publicKey) => {
     const encrypted = CompactFheUint160.encrypt_with_compact_public_key(value, publicKey);
     return {
         data: encrypted.serialize(),
+        securityZone,
     };
 };
 /**
@@ -8646,27 +8690,28 @@ const encrypt_address = (value, publicKey) => {
  * @param {number} value - The numeric value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param {EncryptionTypes} type - The encryption type (uint8, uint16, uint32).
+ * @param securityZone - The security zone to encrypt the value on.
  * @returns {Uint8Array} - The encrypted value serialized as Uint8Array.
  * @throws {Error} - Throws an error if an invalid type is specified.
  */
-const encrypt = (value, publicKey, type = EncryptionTypes.uint8) => {
+const encrypt = (value, publicKey, type = EncryptionTypes.uint8, securityZone = 0) => {
     switch (type) {
         case EncryptionTypes.bool:
-            return encrypt_bool(!!value, publicKey);
+            return encrypt_bool(!!value, publicKey, securityZone);
         case EncryptionTypes.uint8:
-            return encrypt_uint8(value, publicKey);
+            return encrypt_uint8(value, publicKey, securityZone);
         case EncryptionTypes.uint16:
-            return encrypt_uint16(value, publicKey);
+            return encrypt_uint16(value, publicKey, securityZone);
         case EncryptionTypes.uint32:
-            return encrypt_uint32(value, publicKey);
+            return encrypt_uint32(value, publicKey, securityZone);
         case EncryptionTypes.uint64:
-            return encrypt_uint64(value.toString(16), publicKey);
+            return encrypt_uint64(value.toString(16), publicKey, securityZone);
         case EncryptionTypes.uint128:
-            return encrypt_uint128(value.toString(16), publicKey);
+            return encrypt_uint128(value.toString(16), publicKey, securityZone);
         case EncryptionTypes.uint256:
-            return encrypt_uint256(value.toString(16), publicKey);
+            return encrypt_uint256(value.toString(16), publicKey, securityZone);
         case EncryptionTypes.address:
-            return encrypt_address(value.toString(16), publicKey);
+            return encrypt_address(value.toString(16), publicKey, securityZone);
         default:
             throw new Error("Invalid type");
     }
@@ -8707,6 +8752,8 @@ class FhenixClient {
      */
     constructor(params) {
         this.permits = {};
+        this.defaultSecurityZone = 0;
+        this.fhePublicKeys = [];
         isPlainObject(params);
         // if (params?.provider === undefined) {
         //   params.provider = new JsonRpcProvider("http://localhost:42069");
@@ -8716,7 +8763,8 @@ class FhenixClient {
         if (!this.provider) {
             throw new Error("Failed to initialize Fhenix Client - must include a web3 provider");
         }
-        this.fhePublicKey = GetFhePublicKey(FhenixClient.getFheKeyFromProvider, provider).catch((err) => {
+        // todo (eshel) probably add securityZone here?
+        this.fhePublicKeys[this.defaultSecurityZone] = GetFhePublicKey(FhenixClient.getFheKeyFromProvider, provider).catch((err) => {
             if (ignoreErrors) {
                 return undefined;
             }
@@ -8729,36 +8777,37 @@ class FhenixClient {
     /**
      * Encrypts a Uint8 value using the stored public key.
      * @param {number} value - The Uint8 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
      */
-    encrypt_bool(value) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const fhePublicKey = yield this._getPublicKey();
-            return encrypt_bool(value, fhePublicKey);
+    encrypt_bool(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+            const fhePublicKey = yield this._getPublicKey(securityZone);
+            return encrypt_bool(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts a Uint8 value using the stored public key.
      * @param {number} value - The Uint8 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
      */
-    encrypt_uint8(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_uint8(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isNumber(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             ValidateUintInRange(value, MAX_UINT8, 0);
-            return encrypt_uint8(value, fhePublicKey);
+            return encrypt_uint8(value, fhePublicKey, securityZone);
         });
     }
-    _getPublicKey() {
+    _getPublicKey(securityZone) {
         return __awaiter(this, void 0, void 0, function* () {
-            let fhePublicKey = yield this.fhePublicKey;
+            let fhePublicKey = yield this.fhePublicKeys[securityZone];
             if (!fhePublicKey) {
-                // try again to get the public key - maybe the 1st time the chain wasn't up or something
-                this.fhePublicKey = FhenixClient.getFheKeyFromProvider(this.provider);
-                fhePublicKey = yield this.fhePublicKey;
+                this.fhePublicKeys[securityZone] = FhenixClient.getFheKeyFromProvider(this.provider, securityZone);
+                fhePublicKey = yield this.fhePublicKeys[securityZone];
                 if (!fhePublicKey) {
-                    throw new Error("Public key somehow not initialized");
+                    throw new Error(`Public key for security zone ${securityZone} somehow not initialized`);
                 }
             }
             return fhePublicKey;
@@ -8767,95 +8816,99 @@ class FhenixClient {
     /**
      * Encrypts a Uint16 value using the stored public key.
      * @param {number} value - The Uint16 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
      */
-    encrypt_uint16(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_uint16(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isNumber(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             ValidateUintInRange(value, MAX_UINT16, 0);
-            return encrypt_uint16(value, fhePublicKey);
+            return encrypt_uint16(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts a Uint32 value using the stored public key.
      * @param {number} value - The Uint32 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
      */
-    encrypt_uint32(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_uint32(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isNumber(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             ValidateUintInRange(value, MAX_UINT32, 0);
-            return encrypt_uint32(value, fhePublicKey);
+            return encrypt_uint32(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts a Uint64 value using the stored public key.
      * @param {bigint | string} value - The Uint32 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
      */
-    encrypt_uint64(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_uint64(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isBigIntOrHexString(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_uint64(value, fhePublicKey);
+            return encrypt_uint64(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts a Uint128 value using the stored public key.
      * @param {bigint | string} value - The Uint128 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
      */
-    encrypt_uint128(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_uint128(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isBigIntOrHexString(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_uint128(value, fhePublicKey);
+            return encrypt_uint128(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts a Uint256 value using the stored public key.
      * @param {bigint | string} value - The Uint256 value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
      */
-    encrypt_uint256(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_uint256(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isBigIntOrHexString(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_uint256(value, fhePublicKey);
+            return encrypt_uint256(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts an Address (Uint160) value using the stored public key.
      * @param {bigint | string} value - The Address (Uint160) value to encrypt.
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
      */
-    encrypt_address(value) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt_address(value_1) {
+        return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
             isBigIntOrHexString(value);
-            const fhePublicKey = yield this._getPublicKey();
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             // ValidateUintInRange(value, MAX_UINT64, 0);
-            return encrypt_address(value, fhePublicKey);
+            return encrypt_address(value, fhePublicKey, securityZone);
         });
     }
     /**
      * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
      * @param {number} value - The numeric value to encrypt.
      * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
+     * @param securityZone - The security zone for which to encrypt the value (default 0).
      * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
      */
-    encrypt(value, type) {
-        return __awaiter(this, void 0, void 0, function* () {
+    encrypt(value_1, type_1) {
+        return __awaiter(this, arguments, void 0, function* (value, type, securityZone = 0) {
             isNumber(value);
             let outputSize = type;
-            const fhePublicKey = yield this.fhePublicKey;
-            if (!fhePublicKey) {
-                throw new Error("Public key somehow not initialized");
-            }
+            const fhePublicKey = yield this._getPublicKey(securityZone);
             // choose the most efficient ciphertext size if not selected
             if (!outputSize) {
                 if (value < MAX_UINT8) {
@@ -8882,7 +8935,7 @@ class FhenixClient {
                     ValidateUintInRange(value, MAX_UINT32, 0);
                     break;
             }
-            return encrypt(value, fhePublicKey, type);
+            return encrypt(value, fhePublicKey, type, securityZone);
         });
     }
     // Unsealing Method
@@ -8979,22 +9032,20 @@ class FhenixClient {
     /**
      * Retrieves the FHE public key from the provider.
      * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+     * @param securityZone - The security zone for which to retrieve the key (default 0).
      * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
      */
-    static getFheKeyFromProvider(provider) {
-        return __awaiter(this, void 0, void 0, function* () {
+    static getFheKeyFromProvider(provider_1) {
+        return __awaiter(this, arguments, void 0, function* (provider, securityZone = 0) {
             const requestMethod = determineRequestMethod(provider);
             const chainIdP = requestMethod(provider, "eth_chainId").catch((err) => {
                 throw Error(`Error while requesting chainId from provider: ${err}`);
             });
-            // const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
-            // const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
-            // todo: use this to remove ethers dependency
-            const callData = "0x44e21dd2";
-            // console.log(`calldata: ${callData}`);
+            const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
+            const callData = funcSig + toABIEncodedUint32(securityZone);
             const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
             const publicKeyP = requestMethod(provider, "eth_call", callParams).catch((err) => {
-                throw Error(`Error while requesting network public key from provider: ${JSON.stringify(err)}`);
+                throw Error(`Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(err)}`);
             });
             const [chainId, publicKey] = yield Promise.all([chainIdP, publicKeyP]);
             const chainIdNum = parseInt(chainId, 16);
@@ -9007,6 +9058,7 @@ class FhenixClient {
             if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
                 throw new Error(`Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`);
             }
+            // todo (eshel) verify this
             // magically know how to decode rlp or w/e returns from the evm json-rpc
             const buff = fromHexString(publicKey.slice(130));
             try {

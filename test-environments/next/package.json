@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "NODE_OPTIONS=--experimental-wasm-modules next dev",
+    "start": "next start"
+  },
+  "dependencies": {
+    "ethers": "^6.13.1",
+    "fhenixjs": "0.3.0",
+    "next": "latest",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

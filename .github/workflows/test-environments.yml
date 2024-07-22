@@ -1,0 +1,42 @@
+name: Environments CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    services:
+      fhenix:
+        image: ghcr.io/fhenixprotocol/nitro/localfhenix:latest
+        ports:
+          - 8545:8547 # RPC
+          - 5000:3000 # Faucet
+        env:
+          FHEOS_SECURITY_ZONES: 2
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }}
+
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environments: [next]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 20
+      - run: pnpm install
+      - name: Build Environment
+        run: |
+          cd test-environments/${{ matrix.environments }}
+          pnpm install
+          pnpm dev &
+      - name: Wait for Environment to Start
+        run: sleep 10
+      - name: Run test
+        run: node test-environments/test-encrypt.js

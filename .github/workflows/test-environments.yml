@@ -25,8 +25,7 @@ jobs:
         environments: [next]
 
     steps:
-      - name: Start selenoid
-        uses: Xotabu4/selenoid-github-action@v2
+      - uses: browser-actions/setup-chrome@v1
       - uses: actions/checkout@v2
       - name: Use Node.js 20.x
         uses: actions/setup-node@v2

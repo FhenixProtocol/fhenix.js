@@ -10,7 +10,7 @@ import {
 import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 
-describe("token", () => {
+describe("Instance", () => {
   let tfhePublicKey: string;
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
 
@@ -21,6 +21,7 @@ describe("token", () => {
   it("creates an instance", async () => {
     const provider = new MockProvider(tfhePublicKey);
     const instance = new FhenixClient({ provider, initSdk: false });
+    expect(instance.encrypt_bool).toBeDefined();
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
     expect(instance.encrypt_uint32).toBeDefined();
@@ -40,7 +41,7 @@ describe("token", () => {
     await provider.on("error", (_) => provider.destroy());
 
     await expect(
-      new FhenixClient({ provider, initSdk: false }).fhePublicKey,
+      new FhenixClient({ provider, initSdk: false }).fhePublicKeys[0],
     ).rejects.toThrow(/.*Error while requesting chainId from provider.*/i);
   });
 
@@ -53,7 +54,7 @@ describe("token", () => {
     Object.assign(provider, { send: undefined });
 
     await expect(
-      new FhenixClient({ provider, initSdk: false }).fhePublicKey,
+      new FhenixClient({ provider, initSdk: false }).fhePublicKeys[0],
     ).rejects.toThrow(
       "Received unsupported provider. 'send' or 'request' method not found",
     );
@@ -64,7 +65,7 @@ describe("token", () => {
       new FhenixClient({
         provider: new MockProvider(tfhePublicKey, "not a number"),
         initSdk: false,
-      }).fhePublicKey,
+      }).fhePublicKeys[0],
     ).rejects.toThrow(
       `received non-hex number from chainId request: "not a number"`,
     );
@@ -72,7 +73,7 @@ describe("token", () => {
     const secondProvider = new MockProvider(BigInt(10));
     await expect(
       new FhenixClient({ provider: secondProvider, initSdk: false })
-        .fhePublicKey,
+        .fhePublicKeys[0],
     ).rejects.toThrow("Error using publicKey from provider: expected string");
   });
 
@@ -224,6 +225,17 @@ describe("token", () => {
       initSdk: false,
     });
 
-    let x = await instance.encrypt(10);
+    await instance.encrypt(10, undefined, 0);
+  });
+
+  it("encrypt with instance on second security zone", async () => {
+    const provider = new JsonRpcProvider("http://localhost:8545");
+
+    const instance = new FhenixClient({
+      provider,
+      initSdk: false,
+    });
+
+    await instance.encrypt(11, undefined, 1);
   });
 });

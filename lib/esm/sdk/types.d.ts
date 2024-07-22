@@ -71,6 +71,7 @@ export declare function determineRequestMethod(provider: SupportedProvider): Fun
 export declare function determineRequestSigner(provider: SupportedProvider): Function;
 export interface EncryptedNumber {
     data: Uint8Array;
+    securityZone: number;
 }
 export interface EncryptedBool extends EncryptedNumber {
 }

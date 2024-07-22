@@ -1,5 +1,10 @@
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
-import { fromHexString, isAddress, ValidateUintInRange } from "./utils.js";
+import {
+  fromHexString,
+  isAddress,
+  ValidateUintInRange,
+  toABIEncodedUint32,
+} from "./utils.js";
 import {
   ContractPermits,
   determineRequestMethod,
@@ -47,7 +52,8 @@ import { GetFhePublicKey } from "./init.js";
  */
 export class FhenixClient {
   private permits: ContractPermits = {};
-  public fhePublicKey: Promise<TfheCompactPublicKey | undefined>;
+  private defaultSecurityZone: number = 0;
+  public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
   protected provider: SupportedProvider;
   /**
    * Creates an instance of FhenixClient.
@@ -71,7 +77,8 @@ export class FhenixClient {
       );
     }
 
-    this.fhePublicKey = GetFhePublicKey(
+    // todo (eshel) probably add securityZone here?
+    this.fhePublicKeys[this.defaultSecurityZone] = GetFhePublicKey(
       FhenixClient.getFheKeyFromProvider,
       provider,
     ).catch((err: unknown) => {
@@ -89,34 +96,47 @@ export class FhenixClient {
   /**
    * Encrypts a Uint8 value using the stored public key.
    * @param {number} value - The Uint8 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
    */
-  async encrypt_bool(value: boolean): Promise<EncryptedBool> {
-    const fhePublicKey = await this._getPublicKey();
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey);
+  async encrypt_bool(
+    value: boolean,
+    securityZone: number = 0,
+  ): Promise<EncryptedBool> {
+    const fhePublicKey = await this._getPublicKey(securityZone);
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
   }
 
   /**
    * Encrypts a Uint8 value using the stored public key.
    * @param {number} value - The Uint8 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint8(value: number): Promise<EncryptedUint8> {
+  async encrypt_uint8(
+    value: number,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint8> {
     isNumber(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT8, 0);
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey);
+
+    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
   }
 
-  private async _getPublicKey() {
-    let fhePublicKey = await this.fhePublicKey;
+  private async _getPublicKey(securityZone: number) {
+    let fhePublicKey = await this.fhePublicKeys[securityZone];
     if (!fhePublicKey) {
-      // try again to get the public key - maybe the 1st time the chain wasn't up or something
-      this.fhePublicKey = FhenixClient.getFheKeyFromProvider(this.provider);
-      fhePublicKey = await this.fhePublicKey;
+      this.fhePublicKeys[securityZone] = FhenixClient.getFheKeyFromProvider(
+        this.provider,
+        securityZone,
+      );
+      fhePublicKey = await this.fhePublicKeys[securityZone];
       if (!fhePublicKey) {
-        throw new Error("Public key somehow not initialized");
+        throw new Error(
+          `Public key for security zone ${securityZone} somehow not initialized`,
+        );
       }
     }
     return fhePublicKey;
@@ -125,102 +145,126 @@ export class FhenixClient {
   /**
    * Encrypts a Uint16 value using the stored public key.
    * @param {number} value - The Uint16 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint16(value: number): Promise<EncryptedUint16> {
+  async encrypt_uint16(
+    value: number,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint16> {
     isNumber(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
     ValidateUintInRange(value, MAX_UINT16, 0);
-    return tfheEncrypt.encrypt_uint16(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
   }
 
   /**
    * Encrypts a Uint32 value using the stored public key.
    * @param {number} value - The Uint32 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint32(value: number): Promise<EncryptedUint32> {
+  async encrypt_uint32(
+    value: number,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint32> {
     isNumber(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
   }
 
   /**
    * Encrypts a Uint64 value using the stored public key.
    * @param {bigint | string} value - The Uint32 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint64(value: bigint | string): Promise<EncryptedUint64> {
+  async encrypt_uint64(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint64> {
     isBigIntOrHexString(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint64(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
   }
 
   /**
    * Encrypts a Uint128 value using the stored public key.
    * @param {bigint | string} value - The Uint128 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint128(value: bigint | string): Promise<EncryptedUint128> {
+  async encrypt_uint128(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint128> {
     isBigIntOrHexString(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint128(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
   }
 
   /**
    * Encrypts a Uint256 value using the stored public key.
    * @param {bigint | string} value - The Uint256 value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint256(value: bigint | string): Promise<EncryptedUint256> {
+  async encrypt_uint256(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint256> {
     isBigIntOrHexString(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint256(value, fhePublicKey);
+    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
   }
   /**
    * Encrypts an Address (Uint160) value using the stored public key.
    * @param {bigint | string} value - The Address (Uint160) value to encrypt.
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
    */
-  async encrypt_address(value: bigint | string): Promise<EncryptedAddress> {
+  async encrypt_address(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedAddress> {
     isBigIntOrHexString(value);
 
-    const fhePublicKey = await this._getPublicKey();
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_address(value, fhePublicKey);
+    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
   }
+
   /**
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
    * @param {number} value - The numeric value to encrypt.
    * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
    */
   async encrypt(
     value: number,
     type?: EncryptionTypes,
+    securityZone: number = 0,
   ): Promise<EncryptedNumber> {
     isNumber(value);
 
     let outputSize = type;
 
-    const fhePublicKey = await this.fhePublicKey;
-    if (!fhePublicKey) {
-      throw new Error("Public key somehow not initialized");
-    }
+    const fhePublicKey = await this._getPublicKey(securityZone);
 
     // choose the most efficient ciphertext size if not selected
     if (!outputSize) {
@@ -248,7 +292,7 @@ export class FhenixClient {
       default:
     }
 
-    return tfheEncrypt.encrypt(value, fhePublicKey, type);
+    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 
   // Unsealing Method
@@ -366,10 +410,12 @@ export class FhenixClient {
   /**
    * Retrieves the FHE public key from the provider.
    * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+   * @param securityZone - The security zone for which to retrieve the key (default 0).
    * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
    */
   private static async getFheKeyFromProvider(
     provider: SupportedProvider,
+    securityZone: number = 0,
   ): Promise<TfheCompactPublicKey> {
     const requestMethod = determineRequestMethod(provider);
 
@@ -379,19 +425,15 @@ export class FhenixClient {
       },
     );
 
-    // const networkPkAbi = new Interface(["function getNetworkPublicKey()"]);
-    // const callData = networkPkAbi.encodeFunctionData("getNetworkPublicKey");
-
-    // todo: use this to remove ethers dependency
-    const callData = "0x44e21dd2";
-    // console.log(`calldata: ${callData}`);
+    const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
+    const callData = funcSig + toABIEncodedUint32(securityZone);
 
     const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
 
     const publicKeyP = requestMethod(provider, "eth_call", callParams).catch(
       (err: Error) => {
         throw Error(
-          `Error while requesting network public key from provider: ${JSON.stringify(
+          `Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(
             err,
           )}`,
         );
@@ -417,6 +459,7 @@ export class FhenixClient {
       );
     }
 
+    // todo (eshel) verify this
     // magically know how to decode rlp or w/e returns from the evm json-rpc
     const buff = fromHexString(publicKey.slice(130));
 

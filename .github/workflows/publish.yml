@@ -18,6 +18,7 @@ jobs:
         run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-      - run: pnpm install
-      - run: pnpm build
-      - run: pnpm publish --no-git-checks --tag beta
+      # Temporarily disable building before publish
+      # - run: pnpm install
+      # - run: pnpm build:prod
+      - run: pnpm publish --no-git-checks

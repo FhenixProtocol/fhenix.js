@@ -34,4 +34,4 @@ jobs:
       # Temporarily disable building before publish
       # - run: pnpm install
       # - run: pnpm build:prod
-      - run: pnpm publish --no-git-checks --dry-run ${{ env.PRERELEASE }}
+      - run: pnpm publish --no-git-checks ${{ env.PRERELEASE }}

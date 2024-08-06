@@ -18,7 +18,20 @@ jobs:
         run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - name: Read package version
+        id: package_version
+        run: echo "VERSION=$(jq -r .version < package.json)" >> $GITHUB_ENV
+
+      - name: Determine prerelease tag
+        id: prerelease_check
+        run: |
+          if [[ "${{ env.VERSION }}" =~ \.(alpha|beta)\.[0-9]+$ ]]; then
+            echo "PRERELEASE=--tag beta" >> $GITHUB_ENV
+          else
+            echo "PRERELEASE=" >> $GITHUB_ENV
+          fi
+
       # Temporarily disable building before publish
       # - run: pnpm install
       # - run: pnpm build:prod
-      - run: pnpm publish --no-git-checks
+      - run: pnpm publish --no-git-checks ${{ env.PRERELEASE }}

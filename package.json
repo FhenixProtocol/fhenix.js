@@ -1,6 +1,6 @@
 {
   "name": "fhenixjs",
-  "version": "0.3.0-alpha.2",
+  "version": "0.4.0-alpha.0",
   "description": "The JavaScript SDK for Fhenix",
   "main": "./lib/commonjs/index.js",
   "module": "./lib/esm/index.js",
@@ -48,7 +48,7 @@
   },
   "homepage": "https://github.com/FhenixProtocol/fhenix.js#readme",
   "dependencies": {
-    "@types/node": "^18.0.0",
+    "@types/node": "^20.0.0",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1"
   },

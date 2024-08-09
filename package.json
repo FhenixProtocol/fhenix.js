@@ -4,6 +4,7 @@
   "description": "The JavaScript SDK for Fhenix",
   "main": "./lib/commonjs/index.js",
   "module": "./lib/esm/index.js",
+  "types": "./lib/types/index.d.ts",
   "exports": {
     ".": {
       "import": "./lib/esm/index.js",

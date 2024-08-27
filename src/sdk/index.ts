@@ -46,10 +46,6 @@ import {
 } from "./validation.js";
 import { GetFhePublicKey } from "./init.js";
 
-/**
- * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
- * It includes methods for encryption, unsealing, and managing permits.
- */
 const defaultSecurityZone = 0;
 
 abstract class FhenixClientBase {
@@ -357,6 +353,10 @@ abstract class FhenixClientBase {
   }
 }
 
+/**
+ * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+ * It includes methods for encryption, unsealing, and managing permits.
+ */
 export class FhenixClient extends FhenixClientBase {
   public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
 
@@ -402,12 +402,6 @@ export class FhenixClient extends FhenixClientBase {
     return fhePublicKey;
   }
 
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
   async encrypt_bool(
     value: boolean,
     securityZone: number = 0,
@@ -416,12 +410,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
   async encrypt_uint8(
     value: number,
     securityZone: number = 0,
@@ -434,12 +422,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint16 value using the stored public key.
-   * @param {number} value - The Uint16 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
-   */
   async encrypt_uint16(
     value: number,
     securityZone: number = 0,
@@ -451,12 +433,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint32 value using the stored public key.
-   * @param {number} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
-   */
   async encrypt_uint32(
     value: number,
     securityZone: number = 0,
@@ -469,12 +445,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint64 value using the stored public key.
-   * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
-   */
   async encrypt_uint64(
     value: bigint | string,
     securityZone: number = 0,
@@ -487,12 +457,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint128 value using the stored public key.
-   * @param {bigint | string} value - The Uint128 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
-   */
   async encrypt_uint128(
     value: bigint | string,
     securityZone: number = 0,
@@ -505,12 +469,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint256 value using the stored public key.
-   * @param {bigint | string} value - The Uint256 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
-   */
   async encrypt_uint256(
     value: bigint | string,
     securityZone: number = 0,
@@ -522,12 +480,7 @@ export class FhenixClient extends FhenixClientBase {
     // ValidateUintInRange(value, MAX_UINT64, 0);
     return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
   }
-  /**
-   * Encrypts an Address (Uint160) value using the stored public key.
-   * @param {bigint | string} value - The Address (Uint160) value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
-   */
+
   async encrypt_address(
     value: bigint | string,
     securityZone: number = 0,
@@ -540,13 +493,6 @@ export class FhenixClient extends FhenixClientBase {
     return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
-   * @param {number} value - The numeric value to encrypt.
-   * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
-   */
   async encrypt(
     value: number,
     type?: EncryptionTypes,
@@ -588,6 +534,14 @@ export class FhenixClient extends FhenixClientBase {
   }
 }
 
+/**
+ * The FhenixClientSync class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+ * It includes methods for encryption, unsealing, and managing permits.
+ *
+ * The Sync FhenixClient allows the `client.encrypt_<xxxx>()` functions to be performed synchronously
+ *
+ * @Note The Sync FhenixClient must be created using `await FhenixClientSync.create({provider})` instead of `new FhenixClient({provider})`
+ */
 export class FhenixClientSync extends FhenixClientBase {
   public fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
 
@@ -628,31 +582,6 @@ export class FhenixClientSync extends FhenixClientBase {
   }
 
   // Encryption Methods
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
-  encrypt_bool(value: boolean, securityZone: number = 0): EncryptedBool {
-    const fhePublicKey = this._getPublicKey(securityZone);
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint8(value: number, securityZone: number = 0): EncryptedUint8 {
-    isNumber(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT8, 0);
-
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
-  }
 
   private _getPublicKey(securityZone: number) {
     const fhePublicKey = this.fhePublicKeys[securityZone];
@@ -666,12 +595,20 @@ export class FhenixClientSync extends FhenixClientBase {
     return fhePublicKey;
   }
 
-  /**
-   * Encrypts a Uint16 value using the stored public key.
-   * @param {number} value - The Uint16 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
-   */
+  encrypt_bool(value: boolean, securityZone: number = 0): EncryptedBool {
+    const fhePublicKey = this._getPublicKey(securityZone);
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint8(value: number, securityZone: number = 0): EncryptedUint8 {
+    isNumber(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+    ValidateUintInRange(value, MAX_UINT8, 0);
+
+    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
+  }
+
   encrypt_uint16(value: number, securityZone: number = 0): EncryptedUint16 {
     isNumber(value);
 
@@ -680,12 +617,6 @@ export class FhenixClientSync extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint32 value using the stored public key.
-   * @param {number} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
-   */
   encrypt_uint32(value: number, securityZone: number = 0): EncryptedUint32 {
     isNumber(value);
 
@@ -695,12 +626,6 @@ export class FhenixClientSync extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint64 value using the stored public key.
-   * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
-   */
   encrypt_uint64(
     value: bigint | string,
     securityZone: number = 0,
@@ -713,12 +638,6 @@ export class FhenixClientSync extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint128 value using the stored public key.
-   * @param {bigint | string} value - The Uint128 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
-   */
   encrypt_uint128(
     value: bigint | string,
     securityZone: number = 0,
@@ -731,12 +650,6 @@ export class FhenixClientSync extends FhenixClientBase {
     return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a Uint256 value using the stored public key.
-   * @param {bigint | string} value - The Uint256 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
-   */
   encrypt_uint256(
     value: bigint | string,
     securityZone: number = 0,
@@ -748,12 +661,7 @@ export class FhenixClientSync extends FhenixClientBase {
     // ValidateUintInRange(value, MAX_UINT64, 0);
     return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
   }
-  /**
-   * Encrypts an Address (Uint160) value using the stored public key.
-   * @param {bigint | string} value - The Address (Uint160) value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
-   */
+
   encrypt_address(
     value: bigint | string,
     securityZone: number = 0,
@@ -766,13 +674,6 @@ export class FhenixClientSync extends FhenixClientBase {
     return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
   }
 
-  /**
-   * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
-   * @param {number} value - The numeric value to encrypt.
-   * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
-   */
   encrypt(
     value: number,
     type?: EncryptionTypes,

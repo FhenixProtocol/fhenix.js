@@ -122,10 +122,10 @@ Completely untested. Maybe yes, maybe no, maybe both.
 const provider = new JsonRpcProvider("http://localhost:8545");
 
 // initialize Fhenix Client
-const client = new FhenixClient({ provider });
+const client = await FhenixClient.create({ provider });
 
 // to encrypt data for a Fhenix contract
-let encrypted = await client.encrypt(5, EncryptionTypes.uint8);
+let encrypted = client.encrypt(5, EncryptionTypes.uint8);
 // ... call contract with `encrypted`
 
 // to unseal data from a Fhenix contract

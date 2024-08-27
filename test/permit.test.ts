@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   FhenixClient,
@@ -9,7 +10,6 @@ import {
 import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 
-// @ts-ignore
 const localStorageMock: Storage = (() => {
   let store: Record<string, string> = {};
 
@@ -39,7 +39,6 @@ const localStorageMock: Storage = (() => {
 })();
 
 // Assign the localStorage mock to global scope if window is not defined
-// @ts-ignore
 if (typeof window === "undefined") {
   (global as any).window = {};
   (global as any).window.localStorage = localStorageMock;
@@ -56,7 +55,8 @@ describe("Permit Tests", () => {
 
   it("creates an instance", async () => {
     const provider = new MockProvider(tfhePublicKey);
-    const instance = new FhenixClient({ provider, initSdk: false });
+    const instance = await FhenixClient.create({ provider });
+    expect(instance).to.not.be.null;
   });
 
   it("creates an instance with a permit", async () => {
@@ -69,9 +69,8 @@ describe("Permit Tests", () => {
       signature: "",
     };
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
     instance.storePermit(permit);
@@ -103,15 +102,14 @@ describe("Permit Tests", () => {
     );
 
     const permit = await getPermit(contractAddress, provider);
-    expect(permit.contractAddress).toBe(contractAddress);
-    expect(permit.signature).toBe("0x123");
+    expect(permit!.contractAddress).toBe(contractAddress);
+    expect(permit!.signature).toBe("0x123");
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
-    instance.storePermit(permit);
+    instance.storePermit(permit!);
     expect(instance.hasPermit(contractAddress)).toBeTruthy();
   });
 
@@ -126,18 +124,17 @@ describe("Permit Tests", () => {
   it("decrypts data using the sealing key from the permit", async () => {
     const provider = new MockProvider(tfhePublicKey);
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
     const permit = await getPermit(contractAddress, provider);
 
-    instance.storePermit(permit);
+    instance.storePermit(permit!);
 
     const value = 89290;
-    const ciphertext = SealingKey.seal(value, permit.publicKey);
-    const cleartext = permit.sealingKey.unseal(ciphertext);
+    const ciphertext = SealingKey.seal(value, permit!.publicKey);
+    const cleartext = permit!.sealingKey.unseal(ciphertext);
     expect(cleartext).toBe(BigInt(value));
   });
 });

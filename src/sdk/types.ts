@@ -1,5 +1,5 @@
+import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { Permit } from "../extensions/access_control/index.js";
-
 export { PermitSigner } from "../extensions/access_control/index.js";
 
 /**
@@ -40,6 +40,7 @@ export type PermitSignature = {
 export type InstanceParams = {
   provider: SupportedProvider;
   ignoreErrors?: boolean;
+  fhePublicKeys: Array<TfheCompactPublicKey | undefined>
 };
 
 /**

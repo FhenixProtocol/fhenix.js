@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { JsonRpcProvider } from "ethers";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
@@ -20,7 +22,7 @@ describe("Instance", () => {
 
   it("creates an instance", async () => {
     const provider = new MockProvider(tfhePublicKey);
-    const instance = new FhenixClient({ provider, initSdk: false });
+    const instance = await FhenixClient.create({ provider });
     expect(instance.encrypt_bool).toBeDefined();
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();
@@ -36,44 +38,40 @@ describe("Instance", () => {
   });
 
   it("creates an instance with ethers provider - unreachable endpoint", async () => {
-    const provider = new JsonRpcProvider("http://localhost:1234");
+    const provider = new JsonRpcProvider("http://localhost:1234") as any;
     // prevent endless fetching
     await provider.on("error", (_) => provider.destroy());
 
-    await expect(
-      new FhenixClient({ provider, initSdk: false }).fhePublicKeys[0],
-    ).rejects.toThrow(/.*Error while requesting chainId from provider.*/i);
+    await expect(await FhenixClient.create({ provider })).rejects.toThrow(
+      /.*Error while requesting chainId from provider.*/i,
+    );
   });
 
   it("creates an unsupported provider", async () => {
-    const provider = new JsonRpcProvider("http://localhost:1234");
+    const provider = new JsonRpcProvider("http://localhost:1234") as any;
     // prevent endless fetching
     await provider.on("error", (_) => provider.destroy());
 
     // destroy send method
     Object.assign(provider, { send: undefined });
 
-    await expect(
-      new FhenixClient({ provider, initSdk: false }).fhePublicKeys[0],
-    ).rejects.toThrow(
+    await expect(await FhenixClient.create({ provider })).rejects.toThrow(
       "Received unsupported provider. 'send' or 'request' method not found",
     );
   });
 
   it("fails to create an instance", async () => {
     await expect(
-      new FhenixClient({
+      await FhenixClient.create({
         provider: new MockProvider(tfhePublicKey, "not a number"),
-        initSdk: false,
-      }).fhePublicKeys[0],
+      }),
     ).rejects.toThrow(
       `received non-hex number from chainId request: "not a number"`,
     );
 
     const secondProvider = new MockProvider(BigInt(10));
     await expect(
-      new FhenixClient({ provider: secondProvider, initSdk: false })
-        .fhePublicKeys[0],
+      FhenixClient.create({ provider: secondProvider }),
     ).rejects.toThrow("Error using publicKey from provider: expected string");
   });
 
@@ -81,16 +79,15 @@ describe("Instance", () => {
     const keypair = await GenerateSealingKey();
     const value = 937387;
 
-    let permit: Permit = {
+    const permit: Permit = {
       contractAddress,
       publicKey: keypair.publicKey,
       sealingKey: keypair,
       signature: "",
     };
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
     instance.storePermit(permit);
@@ -102,78 +99,57 @@ describe("Instance", () => {
   });
 
   it("checks that encrypting a malformed input throws the correct error", async () => {
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
-    await expect(() =>
-      instance.encrypt_uint8(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint8(undefined as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `undefined`.",
     );
-    await expect(() =>
-      instance.encrypt_uint16(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint16(undefined as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `undefined`.",
     );
-    await expect(() =>
-      instance.encrypt_uint32(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint32(undefined as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `undefined`.",
     );
-    await expect(() =>
-      instance.encrypt_uint64(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint64(undefined as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `undefined`.",
     );
-    await expect(() =>
-      instance.encrypt_uint128(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint128(undefined as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `undefined`.",
     );
-    await expect(() =>
-      instance.encrypt_uint256(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint256(undefined as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `undefined`.",
     );
-    await expect(() =>
-      instance.encrypt_address(undefined as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_address(undefined as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `undefined`.",
     );
-    await expect(() => instance.encrypt(undefined as any)).rejects.toThrow(
+    expect(() => instance.encrypt(undefined as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `undefined`.",
     );
 
-    await expect(() =>
-      instance.encrypt_uint8("wrong value" as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint8("wrong value" as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `string`.",
     );
-    await expect(() =>
-      instance.encrypt_uint16("wrong value" as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint16("wrong value" as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `string`.",
     );
-    await expect(() =>
-      instance.encrypt_uint32("wrong value" as any),
-    ).rejects.toThrow(
+    expect(() => instance.encrypt_uint32("wrong value" as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `string`.",
     );
-    await expect(() => instance.encrypt_uint64(222 as any)).rejects.toThrow(
+    expect(() => instance.encrypt_uint64(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
-    await expect(() => instance.encrypt_uint128(222 as any)).rejects.toThrow(
+    expect(() => instance.encrypt_uint128(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
-    await expect(() => instance.encrypt_uint256(222 as any)).rejects.toThrow(
+    expect(() => instance.encrypt_uint256(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
-    await expect(() => instance.encrypt_address(222 as any)).rejects.toThrow(
+    expect(() => instance.encrypt_address(222 as any)).rejects.toThrow(
       "Expected value which is `bigint or hex string`, received value of type `number`.",
     );
-    await expect(() => instance.encrypt("wrong value" as any)).rejects.toThrow(
+    expect(() => instance.encrypt("wrong value" as any)).rejects.toThrow(
       "Expected value which is `number`, received value of type `string`.",
     );
   });
@@ -182,16 +158,15 @@ describe("Instance", () => {
     const provider = new MockProvider(tfhePublicKey);
     const value = 100;
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
     const permit = await getPermit(contractAddress, provider);
 
-    let sealed = SealingKey.seal(value, permit.sealingKey.publicKey);
+    const sealed = SealingKey.seal(value, permit!.sealingKey.publicKey);
 
-    instance.storePermit(permit);
+    instance.storePermit(permit!);
 
     const cleartext = instance.unseal(contractAddress, sealed);
     expect(cleartext).toBe(BigInt(value));
@@ -201,16 +176,15 @@ describe("Instance", () => {
     const provider = new MockProvider(tfhePublicKey);
     const value = 100;
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider: new MockProvider(tfhePublicKey),
-      initSdk: false,
     });
 
     const permit = await getPermit(contractAddress, provider);
 
-    let sealed = SealingKey.seal(value, permit.sealingKey.publicKey);
+    const sealed = SealingKey.seal(value, permit!.sealingKey.publicKey);
 
-    instance.storePermit(permit);
+    instance.storePermit(permit!);
 
     expect(() =>
       instance.unseal("0x000000000000000000000000000", sealed),
@@ -218,22 +192,20 @@ describe("Instance", () => {
   });
 
   it("Checks with a real chain that we can create an instance and use it", async () => {
-    const provider = new JsonRpcProvider("http://localhost:8545");
+    const provider = new JsonRpcProvider("http://localhost:8545") as any;
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider,
-      initSdk: false,
     });
 
     await instance.encrypt(10, undefined, 0);
   });
 
   it("encrypt with instance on second security zone", async () => {
-    const provider = new JsonRpcProvider("http://localhost:8545");
+    const provider = new JsonRpcProvider("http://localhost:8545") as any;
 
-    const instance = new FhenixClient({
+    const instance = await FhenixClient.create({
       provider,
-      initSdk: false,
     });
 
     await instance.encrypt(11, undefined, 1);

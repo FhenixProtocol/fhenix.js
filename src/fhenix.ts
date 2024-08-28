@@ -3,7 +3,7 @@
 //   global.BigInt = require("big-integer");
 // }
 
-export { FhenixClient } from "./sdk/index.js";
+export { FhenixClient, FhenixClientSync } from "./sdk/index.js";
 
 export {
   ContractPermits,

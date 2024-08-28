@@ -35,12 +35,12 @@ export type PermitSignature = {
 /**
  * A type representing the parameters to initialize an instance.
  * provider is an optional SupportedProvider for blockchain interactions.
- * initSdk is an optional boolean indicating whether to initialize the SDK.
+ * fhePublicKeys are omitted when creating a FhenixClient, but are generated internally when creating a FhenixClientSync
  */
 export type InstanceParams = {
   provider: SupportedProvider;
   ignoreErrors?: boolean;
-  fhePublicKeys: Array<TfheCompactPublicKey | undefined>
+  fhePublicKeys: Array<TfheCompactPublicKey | undefined>;
 };
 
 /**

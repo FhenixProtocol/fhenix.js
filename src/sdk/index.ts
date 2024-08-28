@@ -46,8 +46,6 @@ import {
 } from "./validation.js";
 import { GetFhePublicKey } from "./init.js";
 
-const defaultSecurityZone = 0;
-
 abstract class FhenixClientBase {
   private permits: ContractPermits = {};
   abstract fhePublicKeys:
@@ -358,6 +356,7 @@ abstract class FhenixClientBase {
  * It includes methods for encryption, unsealing, and managing permits.
  */
 export class FhenixClient extends FhenixClientBase {
+  private defaultSecurityZone = 0;
   public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
 
   /**
@@ -369,7 +368,7 @@ export class FhenixClient extends FhenixClientBase {
     super(params);
 
     // todo (eshel) probably add securityZone here?
-    this.fhePublicKeys[defaultSecurityZone] = GetFhePublicKey(
+    this.fhePublicKeys[this.defaultSecurityZone] = GetFhePublicKey(
       FhenixClientBase.getFheKeyFromProvider,
       params.provider,
     ).catch((err: unknown) => {
@@ -565,6 +564,8 @@ export class FhenixClientSync extends FhenixClientBase {
     }
 
     const fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
+    const defaultSecurityZone = 0;
+
     fhePublicKeys[defaultSecurityZone] = await GetFhePublicKey(
       FhenixClient.getFheKeyFromProvider,
       params.provider,

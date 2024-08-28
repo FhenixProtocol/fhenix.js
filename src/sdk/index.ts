@@ -45,7 +45,7 @@ import {
   isPlainObject,
   isString,
 } from "./validation.js";
-import { GetFhePublicKey } from "./init.js";
+import { InitFhevm } from "./init.js";
 
 abstract class FhenixClientBase {
   private permits: ContractPermits = {};
@@ -368,11 +368,7 @@ export class FhenixClient extends FhenixClientBase {
   public constructor(params: InstanceParams) {
     super(params);
 
-    // todo (eshel) probably add securityZone here?
-    this.fhePublicKeys[this.defaultSecurityZone] = GetFhePublicKey(
-      FhenixClientBase.getFheKeyFromProvider,
-      params.provider,
-    ).catch((err: unknown) => {
+    InitFhevm().catch((err: unknown) => {
       if (params.ignoreErrors) {
         return undefined;
       } else {
@@ -381,6 +377,12 @@ export class FhenixClient extends FhenixClientBase {
         );
       }
     });
+
+    // In the future the default array can be updated to include additional security zones
+    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption
+    this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
+      FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+    );
   }
 
   private async _getPublicKey(
@@ -388,7 +390,7 @@ export class FhenixClient extends FhenixClientBase {
   ): Promise<TfheCompactPublicKey> {
     let fhePublicKey = await this.fhePublicKeys[securityZone];
     if (!fhePublicKey) {
-      this.fhePublicKeys[securityZone] = FhenixClient.getFheKeyFromProvider(
+      this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(
         this.provider,
         securityZone,
       );
@@ -564,22 +566,21 @@ export class FhenixClientSync extends FhenixClientBase {
       );
     }
 
-    const fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
+    await InitFhevm().catch((err: unknown) => {
+      if (ignoreErrors) {
+        return undefined;
+      } else {
+        throw new Error(
+          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+        );
+      }
+    });
 
-    for (let i = 0; i < securityZones.length; i++) {
-      fhePublicKeys[securityZones[i]] = await GetFhePublicKey(
-        FhenixClient.getFheKeyFromProvider,
-        params.provider,
-      ).catch((err: unknown) => {
-        if (ignoreErrors) {
-          return undefined;
-        } else {
-          throw new Error(
-            `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-          );
-        }
-      });
-    }
+    const fhePublicKeys = await Promise.all(
+      securityZones.map((securityZone) =>
+        FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+      ),
+    );
 
     return new FhenixClientSync({ ...params, fhePublicKeys });
   }

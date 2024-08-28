@@ -19,6 +19,7 @@ import {
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
+  InstanceParamsWithFhePublicKeys,
   SupportedProvider,
 } from "./types.js";
 
@@ -44,17 +45,15 @@ import {
   isPlainObject,
   isString,
 } from "./validation.js";
-import { GetFhePublicKey } from "./init.js";
+import { InitFhevm } from "./init.js";
 
-/**
- * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
- * It includes methods for encryption, unsealing, and managing permits.
- */
-export class FhenixClient {
+abstract class FhenixClientBase {
   private permits: ContractPermits = {};
-  private defaultSecurityZone: number = 0;
-  public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
+  abstract fhePublicKeys:
+    | Array<Promise<TfheCompactPublicKey | undefined>>
+    | Array<TfheCompactPublicKey | undefined>;
   protected provider: SupportedProvider;
+
   /**
    * Creates an instance of FhenixClient.
    * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
@@ -63,11 +62,7 @@ export class FhenixClient {
   public constructor(params: InstanceParams) {
     isPlainObject(params);
 
-    // if (params?.provider === undefined) {
-    //   params.provider = new JsonRpcProvider("http://localhost:42069");
-    // }
-
-    const { provider, ignoreErrors } = params;
+    const { provider } = params;
 
     this.provider = provider;
 
@@ -76,36 +71,20 @@ export class FhenixClient {
         "Failed to initialize Fhenix Client - must include a web3 provider",
       );
     }
-
-    // todo (eshel) probably add securityZone here?
-    this.fhePublicKeys[this.defaultSecurityZone] = GetFhePublicKey(
-      FhenixClient.getFheKeyFromProvider,
-      provider,
-    ).catch((err: unknown) => {
-      if (ignoreErrors) {
-        return undefined;
-      } else {
-        throw new Error(
-          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-        );
-      }
-    });
   }
 
   // Encryption Methods
+
   /**
    * Encrypts a Uint8 value using the stored public key.
    * @param {number} value - The Uint8 value to encrypt.
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
    */
-  async encrypt_bool(
+  abstract encrypt_bool(
     value: boolean,
-    securityZone: number = 0,
-  ): Promise<EncryptedBool> {
-    const fhePublicKey = await this._getPublicKey(securityZone);
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedBool> | EncryptedBool;
 
   /**
    * Encrypts a Uint8 value using the stored public key.
@@ -113,34 +92,10 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint8(
+  abstract encrypt_uint8(
     value: number,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint8> {
-    isNumber(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT8, 0);
-
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
-  }
-
-  private async _getPublicKey(securityZone: number) {
-    let fhePublicKey = await this.fhePublicKeys[securityZone];
-    if (!fhePublicKey) {
-      this.fhePublicKeys[securityZone] = FhenixClient.getFheKeyFromProvider(
-        this.provider,
-        securityZone,
-      );
-      fhePublicKey = await this.fhePublicKeys[securityZone];
-      if (!fhePublicKey) {
-        throw new Error(
-          `Public key for security zone ${securityZone} somehow not initialized`,
-        );
-      }
-    }
-    return fhePublicKey;
-  }
+    securityZone?: number,
+  ): Promise<EncryptedUint8> | EncryptedUint8;
 
   /**
    * Encrypts a Uint16 value using the stored public key.
@@ -148,16 +103,10 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint16(
+  abstract encrypt_uint16(
     value: number,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint16> {
-    isNumber(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT16, 0);
-    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedUint16> | EncryptedUint16;
 
   /**
    * Encrypts a Uint32 value using the stored public key.
@@ -165,17 +114,10 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint32(
+  abstract encrypt_uint32(
     value: number,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint32> {
-    isNumber(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedUint32> | EncryptedUint32;
 
   /**
    * Encrypts a Uint64 value using the stored public key.
@@ -183,17 +125,10 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint64(
+  abstract encrypt_uint64(
     value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint64> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedUint64> | EncryptedUint64;
 
   /**
    * Encrypts a Uint128 value using the stored public key.
@@ -201,17 +136,10 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint128(
+  abstract encrypt_uint128(
     value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint128> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedUint128> | EncryptedUint128;
 
   /**
    * Encrypts a Uint256 value using the stored public key.
@@ -219,34 +147,21 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
    */
-  async encrypt_uint256(
+  abstract encrypt_uint256(
     value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint256> {
-    isBigIntOrHexString(value);
+    securityZone?: number,
+  ): Promise<EncryptedUint256> | EncryptedUint256;
 
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
-  }
   /**
    * Encrypts an Address (Uint160) value using the stored public key.
    * @param {bigint | string} value - The Address (Uint160) value to encrypt.
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
    */
-  async encrypt_address(
+  abstract encrypt_address(
     value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedAddress> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedAddress> | EncryptedAddress;
 
   /**
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
@@ -255,45 +170,11 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to encrypt the value (default 0).
    * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
    */
-  async encrypt(
+  abstract encrypt(
     value: number,
     type?: EncryptionTypes,
-    securityZone: number = 0,
-  ): Promise<EncryptedNumber> {
-    isNumber(value);
-
-    let outputSize = type;
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // choose the most efficient ciphertext size if not selected
-    if (!outputSize) {
-      if (value < MAX_UINT8) {
-        outputSize = EncryptionTypes.uint8;
-      } else if (value < MAX_UINT16) {
-        outputSize = EncryptionTypes.uint16;
-      } else if (value < MAX_UINT32) {
-        outputSize = EncryptionTypes.uint32;
-      } else {
-        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
-      }
-    }
-
-    switch (outputSize) {
-      case EncryptionTypes.uint8:
-        ValidateUintInRange(value, MAX_UINT8, 0);
-        break;
-      case EncryptionTypes.uint16:
-        ValidateUintInRange(value, MAX_UINT16, 0);
-        break;
-      case EncryptionTypes.uint32:
-        ValidateUintInRange(value, MAX_UINT32, 0);
-        break;
-      default:
-    }
-
-    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
-  }
+    securityZone?: number,
+  ): Promise<EncryptedNumber> | EncryptedNumber;
 
   // Unsealing Method
 
@@ -413,7 +294,7 @@ export class FhenixClient {
    * @param securityZone - The security zone for which to retrieve the key (default 0).
    * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
    */
-  private static async getFheKeyFromProvider(
+  static async getFheKeyFromProvider(
     provider: SupportedProvider,
     securityZone: number = 0,
   ): Promise<TfheCompactPublicKey> {
@@ -468,5 +349,370 @@ export class FhenixClient {
     } catch (err) {
       throw new Error(`Error deserializing public key ${err}`);
     }
+  }
+}
+
+/**
+ * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+ * It includes methods for encryption, unsealing, and managing permits.
+ */
+export class FhenixClient extends FhenixClientBase {
+  private defaultSecurityZone = 0;
+  public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
+
+  /**
+   * Creates an instance of FhenixClient.
+   * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
+   * @param {InstanceParams} params - Parameters to initialize the client.
+   */
+  public constructor(params: InstanceParams) {
+    super(params);
+
+    InitFhevm().catch((err: unknown) => {
+      if (params.ignoreErrors) {
+        return undefined;
+      } else {
+        throw new Error(
+          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+        );
+      }
+    });
+
+    // In the future the default array can be updated to include additional security zones
+    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption
+    this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
+      FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+    );
+  }
+
+  private async _getPublicKey(
+    securityZone: number,
+  ): Promise<TfheCompactPublicKey> {
+    let fhePublicKey = await this.fhePublicKeys[securityZone];
+    if (!fhePublicKey) {
+      this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(
+        this.provider,
+        securityZone,
+      );
+      fhePublicKey = await this.fhePublicKeys[securityZone];
+      if (!fhePublicKey) {
+        throw new Error(
+          `Public key for security zone ${securityZone} somehow not initialized`,
+        );
+      }
+    }
+    return fhePublicKey;
+  }
+
+  async encrypt_bool(
+    value: boolean,
+    securityZone: number = 0,
+  ): Promise<EncryptedBool> {
+    const fhePublicKey = await this._getPublicKey(securityZone);
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_uint8(
+    value: number,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint8> {
+    isNumber(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+    ValidateUintInRange(value, MAX_UINT8, 0);
+
+    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_uint16(
+    value: number,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint16> {
+    isNumber(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+    ValidateUintInRange(value, MAX_UINT16, 0);
+    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_uint32(
+    value: number,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint32> {
+    isNumber(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+
+    ValidateUintInRange(value, MAX_UINT32, 0);
+    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_uint64(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint64> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_uint128(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint128> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_uint256(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedUint256> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt_address(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): Promise<EncryptedAddress> {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
+  }
+
+  async encrypt(
+    value: number,
+    type?: EncryptionTypes,
+    securityZone: number = 0,
+  ): Promise<EncryptedNumber> {
+    isNumber(value);
+
+    let outputSize = type;
+
+    const fhePublicKey = await this._getPublicKey(securityZone);
+
+    // choose the most efficient ciphertext size if not selected
+    if (!outputSize) {
+      if (value < MAX_UINT8) {
+        outputSize = EncryptionTypes.uint8;
+      } else if (value < MAX_UINT16) {
+        outputSize = EncryptionTypes.uint16;
+      } else if (value < MAX_UINT32) {
+        outputSize = EncryptionTypes.uint32;
+      } else {
+        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
+      }
+    }
+
+    switch (outputSize) {
+      case EncryptionTypes.uint8:
+        ValidateUintInRange(value, MAX_UINT8, 0);
+        break;
+      case EncryptionTypes.uint16:
+        ValidateUintInRange(value, MAX_UINT16, 0);
+        break;
+      case EncryptionTypes.uint32:
+        ValidateUintInRange(value, MAX_UINT32, 0);
+        break;
+      default:
+    }
+
+    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
+  }
+}
+
+/**
+ * The FhenixClientSync class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+ * It includes methods for encryption, unsealing, and managing permits.
+ *
+ * The Sync FhenixClient allows the `client.encrypt_<xxxx>()` functions to be performed synchronously
+ *
+ * @Note The Sync FhenixClient must be created using `await FhenixClientSync.create({provider})` instead of `new FhenixClient({provider})`
+ */
+export class FhenixClientSync extends FhenixClientBase {
+  public fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
+
+  public constructor(params: InstanceParamsWithFhePublicKeys) {
+    super(params);
+
+    this.fhePublicKeys = params.fhePublicKeys;
+  }
+
+  public static async create(
+    params: InstanceParams & { securityZones?: number[] },
+  ): Promise<FhenixClientSync> {
+    isPlainObject(params);
+
+    const { provider, ignoreErrors, securityZones = [0] } = params;
+
+    if (!provider) {
+      throw new Error(
+        "Failed to initialize Fhenix Client - must include a web3 provider",
+      );
+    }
+
+    await InitFhevm().catch((err: unknown) => {
+      if (ignoreErrors) {
+        return undefined;
+      } else {
+        throw new Error(
+          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+        );
+      }
+    });
+
+    const fhePublicKeys = await Promise.all(
+      securityZones.map((securityZone) =>
+        FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+      ),
+    );
+
+    return new FhenixClientSync({ ...params, fhePublicKeys });
+  }
+
+  // Encryption Methods
+
+  private _getPublicKey(securityZone: number) {
+    const fhePublicKey = this.fhePublicKeys[securityZone];
+    if (!fhePublicKey) {
+      throw new Error(
+        `Public key for security zone ${securityZone} not initialized`,
+      );
+    }
+    return fhePublicKey;
+  }
+
+  encrypt_bool(value: boolean, securityZone: number = 0): EncryptedBool {
+    const fhePublicKey = this._getPublicKey(securityZone);
+    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint8(value: number, securityZone: number = 0): EncryptedUint8 {
+    isNumber(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+    ValidateUintInRange(value, MAX_UINT8, 0);
+
+    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint16(value: number, securityZone: number = 0): EncryptedUint16 {
+    isNumber(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+    ValidateUintInRange(value, MAX_UINT16, 0);
+    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint32(value: number, securityZone: number = 0): EncryptedUint32 {
+    isNumber(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    ValidateUintInRange(value, MAX_UINT32, 0);
+    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint64(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): EncryptedUint64 {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint128(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): EncryptedUint128 {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_uint256(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): EncryptedUint256 {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
+  }
+
+  encrypt_address(
+    value: bigint | string,
+    securityZone: number = 0,
+  ): EncryptedAddress {
+    isBigIntOrHexString(value);
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    // ValidateUintInRange(value, MAX_UINT64, 0);
+    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
+  }
+
+  encrypt(
+    value: number,
+    type?: EncryptionTypes,
+    securityZone: number = 0,
+  ): EncryptedNumber {
+    isNumber(value);
+
+    let outputSize = type;
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    // choose the most efficient ciphertext size if not selected
+    if (!outputSize) {
+      if (value < MAX_UINT8) {
+        outputSize = EncryptionTypes.uint8;
+      } else if (value < MAX_UINT16) {
+        outputSize = EncryptionTypes.uint16;
+      } else if (value < MAX_UINT32) {
+        outputSize = EncryptionTypes.uint32;
+      } else {
+        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
+      }
+    }
+
+    switch (outputSize) {
+      case EncryptionTypes.uint8:
+        ValidateUintInRange(value, MAX_UINT8, 0);
+        break;
+      case EncryptionTypes.uint16:
+        ValidateUintInRange(value, MAX_UINT16, 0);
+        break;
+      case EncryptionTypes.uint32:
+        ValidateUintInRange(value, MAX_UINT32, 0);
+        break;
+      default:
+    }
+
+    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 }

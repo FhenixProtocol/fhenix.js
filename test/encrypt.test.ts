@@ -1,7 +1,3 @@
-// import {
-//
-//   createTfheKeypair
-// } from "@fhenixprotocol/tfhe-keys";
 import {
   CompactFheUint8,
   CompactFheUint16,
@@ -11,6 +7,7 @@ import {
   CompactFheUint160,
   CompactFheUint256,
   TfheClientKey,
+  TfheCompactPublicKey,
 } from "../lib/esm/sdk/fhe/fhe";
 import { createTfheKeypair } from "./keygen";
 import {
@@ -28,7 +25,7 @@ import { expect, describe, it, beforeAll } from "vitest";
 
 describe("encrypt_uint8", () => {
   let clientKey: TfheClientKey;
-  let publicKey;
+  let publicKey: TfheCompactPublicKey;
 
   beforeAll(async () => {
     const keypair = createTfheKeypair();
@@ -71,7 +68,7 @@ describe("encrypt_uint8", () => {
   it("encrypt_uint32/decrypt 0 32bits", async () => {
     const buffer = encrypt_uint32(0, publicKey);
     const compact = CompactFheUint8.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(0);
   });
@@ -87,7 +84,7 @@ describe("encrypt_uint8", () => {
   it("encrypt_uint64/decrypt 64bits", async () => {
     const buffer = encrypt_uint64("222222222", publicKey);
     const compact = CompactFheUint64.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted.toString(16)).toBe("222222222");
   });
@@ -95,7 +92,7 @@ describe("encrypt_uint8", () => {
   it("encrypt_uint128/decrypt 128bits", async () => {
     const buffer = encrypt_uint128("222222222333333333333", publicKey);
     const compact = CompactFheUint128.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted.toString(16)).toBe("222222222333333333333");
   });
@@ -106,7 +103,7 @@ describe("encrypt_uint8", () => {
       publicKey,
     );
     const compact = CompactFheUint256.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted.toString(16)).toBe(
       "2222222223333333333334444444444444444",
@@ -118,7 +115,7 @@ describe("encrypt_uint8", () => {
       publicKey,
     );
     const compact = CompactFheUint160.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted.toString(16).toUpperCase()).toBe(
       "324234AF23a816AA9165de162b1b0d3D40eA1234".toUpperCase(),
@@ -128,7 +125,7 @@ describe("encrypt_uint8", () => {
   it("encrypt/decrypt 0 8bits", async () => {
     const buffer = encrypt(0, publicKey, EncryptionTypes.uint8);
     const compact = CompactFheUint8.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(0);
   });
@@ -136,7 +133,7 @@ describe("encrypt_uint8", () => {
   it("encrypt/decrypt 8bits", async () => {
     const buffer = encrypt(34, publicKey, EncryptionTypes.uint8);
     const compact = CompactFheUint8.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(34);
   });
@@ -144,7 +141,7 @@ describe("encrypt_uint8", () => {
   it("encrypt/decrypt 0 16bits", async () => {
     const buffer = encrypt(0, publicKey, EncryptionTypes.uint16);
     const compact = CompactFheUint16.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(0);
   });
@@ -152,7 +149,7 @@ describe("encrypt_uint8", () => {
   it("encrypt/decrypt 16bits", async () => {
     const buffer = encrypt(434, publicKey, EncryptionTypes.uint16);
     const compact = CompactFheUint16.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(434);
   });
@@ -160,7 +157,7 @@ describe("encrypt_uint8", () => {
   it("encrypt/decrypt 0 32bits", async () => {
     const buffer = encrypt(0, publicKey, EncryptionTypes.uint32);
     const compact = CompactFheUint32.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(0);
   });
@@ -168,7 +165,7 @@ describe("encrypt_uint8", () => {
   it("encrypt/decrypt 32bits", async () => {
     const buffer = encrypt(30210, publicKey, EncryptionTypes.uint32);
     const compact = CompactFheUint32.deserialize(buffer.data);
-    let encrypted = compact.expand();
+    const encrypted = compact.expand();
     const decrypted = encrypted.decrypt(clientKey);
     expect(decrypted).toBe(30210);
   });

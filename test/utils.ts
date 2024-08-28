@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { JsonRpcProvider, AbiCoder } from "ethers";
 
 // Initialize genesis accounts
@@ -18,11 +20,12 @@ export async function sleep(ms: number) {
 }
 
 export async function waitForChainToStart(url: string) {
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       const client = new JsonRpcProvider(url);
       console.log(`connecting to ${url}...`);
-      let networkId = await client.getNetwork();
+      const networkId = await client.getNetwork();
       return Number(networkId.chainId);
     } catch (e) {
       console.log(`client not ready`);
@@ -48,10 +51,7 @@ export class MockProvider {
     this.publicKey = pk;
     this.chainId = chainId || "0x10";
   }
-  async send(
-    method: string,
-    params: any[] | Record<string, any>,
-  ): Promise<any> {
+  async send(method: string, params: unknown[] | undefined): Promise<any> {
     return new Promise((resolve, reject) => {
       if (method === "eth_chainId") {
         resolve(this.chainId);

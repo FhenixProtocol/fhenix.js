@@ -8739,9 +8739,14 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
   };
-  const GetFhePublicKey = (getKeyFn, provider) => __awaiter$1(void 0, void 0, void 0, function* () {
+  // INFO: The existing `GetFhePublicKey` function has been replaced with `InitFhevm`
+  // `GetFhePublicKey` didn't allow security zones to be set, and was overloaded with initializing the Fhevm
+  // Public key fetching has been moved to the Async and Sync FhenixClient constructors (they handle it slightly differently)
+  // - arch 2024-08-28
+  const InitFhevm = () => __awaiter$1(void 0, void 0, void 0, function* () {
+      // `asyncInitFhevm` in `/sdk/fhe/fhe.ts` in node env (noop)
+      // `asyncInitFhevm` in `/sdk/fhe/fhe-browser.ts` in browser env (init wasm)
       yield asyncInitFhevm();
-      return getKeyFn(provider);
   });
 
   var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -8753,11 +8758,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
   };
-  /**
-   * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
-   * It includes methods for encryption, unsealing, and managing permits.
-   */
-  class FhenixClient {
+  class FhenixClientBase {
       /**
        * Creates an instance of FhenixClient.
        * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
@@ -8765,191 +8766,12 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
        */
       constructor(params) {
           this.permits = {};
-          this.defaultSecurityZone = 0;
-          this.fhePublicKeys = [];
           isPlainObject(params);
-          // if (params?.provider === undefined) {
-          //   params.provider = new JsonRpcProvider("http://localhost:42069");
-          // }
-          const { provider, ignoreErrors } = params;
+          const { provider } = params;
           this.provider = provider;
           if (!this.provider) {
               throw new Error("Failed to initialize Fhenix Client - must include a web3 provider");
           }
-          // todo (eshel) probably add securityZone here?
-          this.fhePublicKeys[this.defaultSecurityZone] = GetFhePublicKey(FhenixClient.getFheKeyFromProvider, provider).catch((err) => {
-              if (ignoreErrors) {
-                  return undefined;
-              }
-              else {
-                  throw new Error(`Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`);
-              }
-          });
-      }
-      // Encryption Methods
-      /**
-       * Encrypts a Uint8 value using the stored public key.
-       * @param {number} value - The Uint8 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-       */
-      encrypt_bool(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              return encrypt_bool(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts a Uint8 value using the stored public key.
-       * @param {number} value - The Uint8 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-       */
-      encrypt_uint8(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isNumber(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              ValidateUintInRange(value, MAX_UINT8, 0);
-              return encrypt_uint8(value, fhePublicKey, securityZone);
-          });
-      }
-      _getPublicKey(securityZone) {
-          return __awaiter(this, void 0, void 0, function* () {
-              let fhePublicKey = yield this.fhePublicKeys[securityZone];
-              if (!fhePublicKey) {
-                  this.fhePublicKeys[securityZone] = FhenixClient.getFheKeyFromProvider(this.provider, securityZone);
-                  fhePublicKey = yield this.fhePublicKeys[securityZone];
-                  if (!fhePublicKey) {
-                      throw new Error(`Public key for security zone ${securityZone} somehow not initialized`);
-                  }
-              }
-              return fhePublicKey;
-          });
-      }
-      /**
-       * Encrypts a Uint16 value using the stored public key.
-       * @param {number} value - The Uint16 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
-       */
-      encrypt_uint16(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isNumber(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              ValidateUintInRange(value, MAX_UINT16, 0);
-              return encrypt_uint16(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts a Uint32 value using the stored public key.
-       * @param {number} value - The Uint32 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
-       */
-      encrypt_uint32(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isNumber(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              ValidateUintInRange(value, MAX_UINT32, 0);
-              return encrypt_uint32(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts a Uint64 value using the stored public key.
-       * @param {bigint | string} value - The Uint32 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
-       */
-      encrypt_uint64(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isBigIntOrHexString(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              // ValidateUintInRange(value, MAX_UINT64, 0);
-              return encrypt_uint64(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts a Uint128 value using the stored public key.
-       * @param {bigint | string} value - The Uint128 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
-       */
-      encrypt_uint128(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isBigIntOrHexString(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              // ValidateUintInRange(value, MAX_UINT64, 0);
-              return encrypt_uint128(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts a Uint256 value using the stored public key.
-       * @param {bigint | string} value - The Uint256 value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
-       */
-      encrypt_uint256(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isBigIntOrHexString(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              // ValidateUintInRange(value, MAX_UINT64, 0);
-              return encrypt_uint256(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts an Address (Uint160) value using the stored public key.
-       * @param {bigint | string} value - The Address (Uint160) value to encrypt.
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
-       */
-      encrypt_address(value_1) {
-          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
-              isBigIntOrHexString(value);
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              // ValidateUintInRange(value, MAX_UINT64, 0);
-              return encrypt_address(value, fhePublicKey, securityZone);
-          });
-      }
-      /**
-       * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
-       * @param {number} value - The numeric value to encrypt.
-       * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-       * @param securityZone - The security zone for which to encrypt the value (default 0).
-       * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
-       */
-      encrypt(value_1, type_1) {
-          return __awaiter(this, arguments, void 0, function* (value, type, securityZone = 0) {
-              isNumber(value);
-              let outputSize = type;
-              const fhePublicKey = yield this._getPublicKey(securityZone);
-              // choose the most efficient ciphertext size if not selected
-              if (!outputSize) {
-                  if (value < MAX_UINT8) {
-                      outputSize = exports.EncryptionTypes.uint8;
-                  }
-                  else if (value < MAX_UINT16) {
-                      outputSize = exports.EncryptionTypes.uint16;
-                  }
-                  else if (value < MAX_UINT32) {
-                      outputSize = exports.EncryptionTypes.uint32;
-                  }
-                  else {
-                      throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
-                  }
-              }
-              switch (outputSize) {
-                  case exports.EncryptionTypes.uint8:
-                      ValidateUintInRange(value, MAX_UINT8, 0);
-                      break;
-                  case exports.EncryptionTypes.uint16:
-                      ValidateUintInRange(value, MAX_UINT16, 0);
-                      break;
-                  case exports.EncryptionTypes.uint32:
-                      ValidateUintInRange(value, MAX_UINT32, 0);
-                      break;
-              }
-              return encrypt(value, fhePublicKey, type, securityZone);
-          });
       }
       // Unsealing Method
       /**
@@ -9083,6 +8905,262 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           });
       }
   }
+  /**
+   * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+   * It includes methods for encryption, unsealing, and managing permits.
+   */
+  class FhenixClient extends FhenixClientBase {
+      /**
+       * Creates an instance of FhenixClient.
+       * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
+       * @param {InstanceParams} params - Parameters to initialize the client.
+       */
+      constructor(params) {
+          super(params);
+          this.defaultSecurityZone = 0;
+          this.fhePublicKeys = [];
+          InitFhevm().catch((err) => {
+              if (params.ignoreErrors) {
+                  return undefined;
+              }
+              else {
+                  throw new Error(`Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`);
+              }
+          });
+          // In the future the default array can be updated to include additional security zones
+          // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption
+          this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) => FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone));
+      }
+      _getPublicKey(securityZone) {
+          return __awaiter(this, void 0, void 0, function* () {
+              let fhePublicKey = yield this.fhePublicKeys[securityZone];
+              if (!fhePublicKey) {
+                  this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(this.provider, securityZone);
+                  fhePublicKey = yield this.fhePublicKeys[securityZone];
+                  if (!fhePublicKey) {
+                      throw new Error(`Public key for security zone ${securityZone} somehow not initialized`);
+                  }
+              }
+              return fhePublicKey;
+          });
+      }
+      encrypt_bool(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              return encrypt_bool(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_uint8(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isNumber(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              ValidateUintInRange(value, MAX_UINT8, 0);
+              return encrypt_uint8(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_uint16(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isNumber(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              ValidateUintInRange(value, MAX_UINT16, 0);
+              return encrypt_uint16(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_uint32(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isNumber(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              ValidateUintInRange(value, MAX_UINT32, 0);
+              return encrypt_uint32(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_uint64(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isBigIntOrHexString(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              // ValidateUintInRange(value, MAX_UINT64, 0);
+              return encrypt_uint64(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_uint128(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isBigIntOrHexString(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              // ValidateUintInRange(value, MAX_UINT64, 0);
+              return encrypt_uint128(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_uint256(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isBigIntOrHexString(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              // ValidateUintInRange(value, MAX_UINT64, 0);
+              return encrypt_uint256(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt_address(value_1) {
+          return __awaiter(this, arguments, void 0, function* (value, securityZone = 0) {
+              isBigIntOrHexString(value);
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              // ValidateUintInRange(value, MAX_UINT64, 0);
+              return encrypt_address(value, fhePublicKey, securityZone);
+          });
+      }
+      encrypt(value_1, type_1) {
+          return __awaiter(this, arguments, void 0, function* (value, type, securityZone = 0) {
+              isNumber(value);
+              let outputSize = type;
+              const fhePublicKey = yield this._getPublicKey(securityZone);
+              // choose the most efficient ciphertext size if not selected
+              if (!outputSize) {
+                  if (value < MAX_UINT8) {
+                      outputSize = exports.EncryptionTypes.uint8;
+                  }
+                  else if (value < MAX_UINT16) {
+                      outputSize = exports.EncryptionTypes.uint16;
+                  }
+                  else if (value < MAX_UINT32) {
+                      outputSize = exports.EncryptionTypes.uint32;
+                  }
+                  else {
+                      throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
+                  }
+              }
+              switch (outputSize) {
+                  case exports.EncryptionTypes.uint8:
+                      ValidateUintInRange(value, MAX_UINT8, 0);
+                      break;
+                  case exports.EncryptionTypes.uint16:
+                      ValidateUintInRange(value, MAX_UINT16, 0);
+                      break;
+                  case exports.EncryptionTypes.uint32:
+                      ValidateUintInRange(value, MAX_UINT32, 0);
+                      break;
+              }
+              return encrypt(value, fhePublicKey, type, securityZone);
+          });
+      }
+  }
+  /**
+   * The FhenixClientSync class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
+   * It includes methods for encryption, unsealing, and managing permits.
+   *
+   * The Sync FhenixClient allows the `client.encrypt_<xxxx>()` functions to be performed synchronously
+   *
+   * @Note The Sync FhenixClient must be created using `await FhenixClientSync.create({provider})` instead of `new FhenixClient({provider})`
+   */
+  class FhenixClientSync extends FhenixClientBase {
+      constructor(params) {
+          super(params);
+          this.fhePublicKeys = [];
+          this.fhePublicKeys = params.fhePublicKeys;
+      }
+      static create(params) {
+          return __awaiter(this, void 0, void 0, function* () {
+              isPlainObject(params);
+              const { provider, ignoreErrors, securityZones = [0] } = params;
+              if (!provider) {
+                  throw new Error("Failed to initialize Fhenix Client - must include a web3 provider");
+              }
+              yield InitFhevm().catch((err) => {
+                  if (ignoreErrors) {
+                      return undefined;
+                  }
+                  else {
+                      throw new Error(`Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`);
+                  }
+              });
+              const fhePublicKeys = yield Promise.all(securityZones.map((securityZone) => FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone)));
+              return new FhenixClientSync(Object.assign(Object.assign({}, params), { fhePublicKeys }));
+          });
+      }
+      // Encryption Methods
+      _getPublicKey(securityZone) {
+          const fhePublicKey = this.fhePublicKeys[securityZone];
+          if (!fhePublicKey) {
+              throw new Error(`Public key for security zone ${securityZone} not initialized`);
+          }
+          return fhePublicKey;
+      }
+      encrypt_bool(value, securityZone = 0) {
+          const fhePublicKey = this._getPublicKey(securityZone);
+          return encrypt_bool(value, fhePublicKey, securityZone);
+      }
+      encrypt_uint8(value, securityZone = 0) {
+          isNumber(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          ValidateUintInRange(value, MAX_UINT8, 0);
+          return encrypt_uint8(value, fhePublicKey, securityZone);
+      }
+      encrypt_uint16(value, securityZone = 0) {
+          isNumber(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          ValidateUintInRange(value, MAX_UINT16, 0);
+          return encrypt_uint16(value, fhePublicKey, securityZone);
+      }
+      encrypt_uint32(value, securityZone = 0) {
+          isNumber(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          ValidateUintInRange(value, MAX_UINT32, 0);
+          return encrypt_uint32(value, fhePublicKey, securityZone);
+      }
+      encrypt_uint64(value, securityZone = 0) {
+          isBigIntOrHexString(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          // ValidateUintInRange(value, MAX_UINT64, 0);
+          return encrypt_uint64(value, fhePublicKey, securityZone);
+      }
+      encrypt_uint128(value, securityZone = 0) {
+          isBigIntOrHexString(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          // ValidateUintInRange(value, MAX_UINT64, 0);
+          return encrypt_uint128(value, fhePublicKey, securityZone);
+      }
+      encrypt_uint256(value, securityZone = 0) {
+          isBigIntOrHexString(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          // ValidateUintInRange(value, MAX_UINT64, 0);
+          return encrypt_uint256(value, fhePublicKey, securityZone);
+      }
+      encrypt_address(value, securityZone = 0) {
+          isBigIntOrHexString(value);
+          const fhePublicKey = this._getPublicKey(securityZone);
+          // ValidateUintInRange(value, MAX_UINT64, 0);
+          return encrypt_address(value, fhePublicKey, securityZone);
+      }
+      encrypt(value, type, securityZone = 0) {
+          isNumber(value);
+          let outputSize = type;
+          const fhePublicKey = this._getPublicKey(securityZone);
+          // choose the most efficient ciphertext size if not selected
+          if (!outputSize) {
+              if (value < MAX_UINT8) {
+                  outputSize = exports.EncryptionTypes.uint8;
+              }
+              else if (value < MAX_UINT16) {
+                  outputSize = exports.EncryptionTypes.uint16;
+              }
+              else if (value < MAX_UINT32) {
+                  outputSize = exports.EncryptionTypes.uint32;
+              }
+              else {
+                  throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
+              }
+          }
+          switch (outputSize) {
+              case exports.EncryptionTypes.uint8:
+                  ValidateUintInRange(value, MAX_UINT8, 0);
+                  break;
+              case exports.EncryptionTypes.uint16:
+                  ValidateUintInRange(value, MAX_UINT16, 0);
+                  break;
+              case exports.EncryptionTypes.uint32:
+                  ValidateUintInRange(value, MAX_UINT32, 0);
+                  break;
+          }
+          return encrypt(value, fhePublicKey, type, securityZone);
+      }
+  }
 
   // for mobile
   // if (typeof BigInt === "undefined") {
@@ -9093,6 +9171,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
     __proto__: null,
     get EncryptionTypes () { return exports.EncryptionTypes; },
     FhenixClient: FhenixClient,
+    FhenixClientSync: FhenixClientSync,
     GenerateSealingKey: GenerateSealingKey,
     SealingKey: SealingKey,
     generatePermit: generatePermit,
@@ -9103,6 +9182,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   });
 
   exports.FhenixClient = FhenixClient;
+  exports.FhenixClientSync = FhenixClientSync;
   exports.GenerateSealingKey = GenerateSealingKey;
   exports.SealingKey = SealingKey;
   exports.fhenixjs = fhenix;

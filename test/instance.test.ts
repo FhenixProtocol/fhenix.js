@@ -11,11 +11,22 @@ import {
   SealingKey,
 } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
-import { createAsyncSyncInstancePair, MockProvider } from "./utils";
+import { MockProvider } from "./utils";
 
 describe("Instance", () => {
   let tfhePublicKey: string;
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
+
+  const createAsyncSyncInstancePair = async (provider: any) => {
+    const instanceAsync = new FhenixClient({ provider });
+
+    const instanceSync = await FhenixClientSync.create({ provider });
+
+    return [
+      { type: "Async", instance: instanceAsync },
+      { type: "Sync", instance: instanceSync },
+    ];
+  };
 
   beforeAll(async () => {
     tfhePublicKey = createTfhePublicKey();
@@ -151,101 +162,147 @@ describe("Instance", () => {
   });
 
   it("checks that encrypting a malformed input throws the correct error", async () => {
-    const instances = await createAsyncSyncInstancePair(
-      new MockProvider(tfhePublicKey),
+    const provider = new MockProvider(tfhePublicKey);
+
+    const instanceAsync = new FhenixClient({ provider });
+
+    expect(() => instanceAsync.encrypt_uint8(undefined as any)).rejects.toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() => instanceAsync.encrypt_uint8(undefined as any)).rejects.toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint16(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint32(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint64(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint128(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint256(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_address(undefined as any),
+    ).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() => instanceAsync.encrypt(undefined as any)).rejects.toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
     );
 
-    for (let i = 0; i < instances.length; i++) {
-      const { type, instance } = instances[i];
+    expect(() =>
+      instanceAsync.encrypt_uint8("wrong value" as any),
+    ).rejects.toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint16("wrong value" as any),
+    ).rejects.toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+    expect(() =>
+      instanceAsync.encrypt_uint32("wrong value" as any),
+    ).rejects.toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+    expect(() => instanceAsync.encrypt_uint64(222 as any)).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceAsync.encrypt_uint128(222 as any)).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceAsync.encrypt_uint256(222 as any)).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceAsync.encrypt_address(222 as any)).rejects.toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceAsync.encrypt("wrong value" as any)).rejects.toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
 
-      await expect(() =>
-        instance.encrypt_uint8(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `undefined`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint16(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `undefined`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint32(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `undefined`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint64(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `undefined`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint128(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `undefined`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint256(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `undefined`.",
-      );
-      await expect(() =>
-        instance.encrypt_address(undefined as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `undefined`.",
-      );
-      await expect(() => instance.encrypt(undefined as any)).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `undefined`.",
-      );
+    // Sync
 
-      await expect(() =>
-        instance.encrypt_uint8("wrong value" as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `string`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint16("wrong value" as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `string`.",
-      );
-      await expect(() =>
-        instance.encrypt_uint32("wrong value" as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `string`.",
-      );
-      await expect(() => instance.encrypt_uint64(222 as any)).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `number`.",
-      );
-      await expect(() => instance.encrypt_uint128(222 as any)).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `number`.",
-      );
-      await expect(() => instance.encrypt_uint256(222 as any)).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `number`.",
-      );
-      await expect(() => instance.encrypt_address(222 as any)).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `bigint or hex string`, received value of type `number`.",
-      );
-      await expect(() =>
-        instance.encrypt("wrong value" as any),
-      ).rejects.toThrow(
-        `(${type} Client)` +
-          "Expected value which is `number`, received value of type `string`.",
-      );
-    }
+    const instanceSync = await FhenixClientSync.create({ provider });
+
+    expect(() => instanceSync.encrypt_uint8(undefined as any)).toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_uint8(undefined as any)).toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_uint16(undefined as any)).toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_uint32(undefined as any)).toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_uint64(undefined as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_uint128(undefined as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_uint256(undefined as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt_address(undefined as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `undefined`.",
+    );
+    expect(() => instanceSync.encrypt(undefined as any)).toThrow(
+      "Expected value which is `number`, received value of type `undefined`.",
+    );
+
+    expect(() => instanceSync.encrypt_uint8("wrong value" as any)).toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+    expect(() => instanceSync.encrypt_uint16("wrong value" as any)).toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+    expect(() => instanceSync.encrypt_uint32("wrong value" as any)).toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+    expect(() => instanceSync.encrypt_uint64(222 as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceSync.encrypt_uint128(222 as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceSync.encrypt_uint256(222 as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceSync.encrypt_address(222 as any)).toThrow(
+      "Expected value which is `bigint or hex string`, received value of type `number`.",
+    );
+    expect(() => instanceSync.encrypt("wrong value" as any)).toThrow(
+      "Expected value which is `number`, received value of type `string`.",
+    );
+  });
+
+  it("checks that encrypting an input succeeds", async () => {
+    const provider = new MockProvider(tfhePublicKey);
+
+    const instanceAsync = new FhenixClient({ provider });
+    await instanceAsync.encrypt_bool(true);
+
+    const instanceSync = await FhenixClientSync.create({ provider });
+    instanceSync.encrypt_bool(true);
   });
 
   it("check that a permit gets generated, loaded to the instance and can unseal data for a specific contract", async () => {

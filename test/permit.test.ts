@@ -10,7 +10,7 @@ import {
   SealingKey,
 } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
-import { createAsyncSyncInstancePair, MockProvider } from "./utils";
+import { MockProvider } from "./utils";
 
 const localStorageMock: Storage = (() => {
   let store: Record<string, string> = {};
@@ -49,6 +49,17 @@ if (typeof window === "undefined") {
 describe("Permit Tests", () => {
   let tfhePublicKey: string;
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
+
+  const createAsyncSyncInstancePair = async (provider: any) => {
+    const instanceAsync = new FhenixClient({ provider });
+
+    const instanceSync = await FhenixClientSync.create({ provider });
+
+    return [
+      { type: "Async", instance: instanceAsync },
+      { type: "Sync", instance: instanceSync },
+    ];
+  };
 
   beforeAll(async () => {
     tfhePublicKey = createTfhePublicKey();

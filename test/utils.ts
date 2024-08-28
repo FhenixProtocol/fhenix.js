@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { JsonRpcProvider, AbiCoder } from "ethers";
-import { FhenixClient, FhenixClientSync } from "../lib/esm";
 
 // Initialize genesis accounts
 const mnemonics = [
@@ -76,14 +75,3 @@ export class MockProvider {
     return new MockSigner();
   }
 }
-
-export const createAsyncSyncInstancePair = async (provider: any) => {
-  const instanceAsync = new FhenixClient({ provider });
-
-  const instanceSync = await FhenixClientSync.create({ provider });
-
-  return [
-    { type: "Async", instance: instanceAsync },
-    { type: "Sync", instance: instanceSync },
-  ];
-};

@@ -3,7 +3,7 @@ export const asyncInitFhevm = async () => {
   // fs.readFileSync(wasm);
 };
 
-export { TfheCompactPublicKey } from "./tfhe.js";
+export { TfheClientKey, TfheCompactPublicKey } from "./tfhe.js";
 export {
   CompactFheBool,
   CompactFheUint8,

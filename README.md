@@ -128,16 +128,34 @@ const client = new FhenixClient({ provider });
 let encrypted = await client.encrypt(5, EncryptionTypes.uint8);
 // ... call contract with `encrypted`
 
-// -or- initialize Sync Fhenix Client (sync encrypt_xxxx() methods)
-const clientSync = await FhenixClient.create({ provider });
+// to unseal data from a Fhenix contract
+const cleartext = client.unseal(contractAddress, sealed);
+```
+
+### Sync Fhenix Client
+
+If you need to use the `encrypt_xxxx()` functions of FhenixClient synchronously (ex: top level of a component / in a hook), then you may want to use `FhenixClientSync`.
+
+```javascript
+// Created using a static method instead of the `new` keyword
+const clientSync = await FhenixClientSync.create({ provider });
 
 // to encrypt data for a Fhenix contract (sync)
 let encrypted = clientSync.encrypt(5, EncryptionTypes.uint8);
 // ... call contract with `encrypted`
-
-// to unseal data from a Fhenix contract
-const cleartext = client.unseal(contractAddress, sealed);
 ```
+
+`FhenixClientSync` and `FhenixClient` share all functionality other than the async/sync `encrypt_xxxx()` functions.
+
+By default, `FhenixClientSync` is configured to only use the default security zone 0. If you need to interact with additional security zones, they can be initialized when creating the sync client as follows:
+
+```javascript
+const clientSync = await FhenixClientSync.create({
+  provider,
+  securityZones: [0, 1],
+});
+```
+
 
 
 ### Permits & Access Control

@@ -35,11 +35,17 @@ export type PermitSignature = {
 /**
  * A type representing the parameters to initialize an instance.
  * provider is an optional SupportedProvider for blockchain interactions.
- * fhePublicKeys are omitted when creating a FhenixClient, but are generated internally when creating a FhenixClientSync
  */
 export type InstanceParams = {
   provider: SupportedProvider;
   ignoreErrors?: boolean;
+};
+
+/**
+ * Type of the constructor of the sync fhenix client
+ * fhePublicKeys are generated in the static `create` method of the sync fhenix client
+ */
+export type InstanceParamsWithFhePublicKeys = InstanceParams & {
   fhePublicKeys: Array<TfheCompactPublicKey | undefined>;
 };
 

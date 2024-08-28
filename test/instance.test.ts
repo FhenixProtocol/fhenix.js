@@ -364,6 +364,18 @@ describe("Instance", () => {
     instanceSync.encrypt(10, undefined, 0);
   });
 
+  it("sync fhenix client should revert on second uninitialized security zone", async () => {
+    const provider = new JsonRpcProvider("http://localhost:8545") as any;
+
+    const instanceSync = await FhenixClientSync.create({
+      provider,
+    });
+
+    expect(instanceSync.encrypt(11, undefined, 1)).toThrow(
+      "`Public key for security zone 1 not initialized`",
+    );
+  });
+
   it("encrypt with instance on second security zone", async () => {
     const provider = new JsonRpcProvider("http://localhost:8545") as any;
 
@@ -377,6 +389,7 @@ describe("Instance", () => {
 
     const instanceSync = await FhenixClientSync.create({
       provider,
+      securityZones: [0, 1],
     });
 
     instanceSync.encrypt(11, undefined, 1);

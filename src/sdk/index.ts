@@ -19,6 +19,7 @@ import {
   EncryptedUint8,
   EncryptionTypes,
   InstanceParams,
+  InstanceParamsWithFhePublicKeys,
   SupportedProvider,
 } from "./types.js";
 
@@ -58,7 +59,7 @@ abstract class FhenixClientBase {
    * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
    * @param {InstanceParams} params - Parameters to initialize the client.
    */
-  public constructor(params: Omit<InstanceParams, "fhePublicKeys">) {
+  public constructor(params: InstanceParams) {
     isPlainObject(params);
 
     const { provider } = params;
@@ -364,7 +365,7 @@ export class FhenixClient extends FhenixClientBase {
    * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
    * @param {InstanceParams} params - Parameters to initialize the client.
    */
-  public constructor(params: Omit<InstanceParams, "fhePublicKeys">) {
+  public constructor(params: InstanceParams) {
     super(params);
 
     // todo (eshel) probably add securityZone here?
@@ -544,18 +545,18 @@ export class FhenixClient extends FhenixClientBase {
 export class FhenixClientSync extends FhenixClientBase {
   public fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
 
-  public constructor(params: InstanceParams) {
+  public constructor(params: InstanceParamsWithFhePublicKeys) {
     super(params);
 
     this.fhePublicKeys = params.fhePublicKeys;
   }
 
   public static async create(
-    params: Omit<InstanceParams, "fhePublicKeys">,
+    params: InstanceParams & { securityZones?: number[] },
   ): Promise<FhenixClientSync> {
     isPlainObject(params);
 
-    const { provider, ignoreErrors } = params;
+    const { provider, ignoreErrors, securityZones = [0] } = params;
 
     if (!provider) {
       throw new Error(
@@ -564,20 +565,21 @@ export class FhenixClientSync extends FhenixClientBase {
     }
 
     const fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
-    const defaultSecurityZone = 0;
 
-    fhePublicKeys[defaultSecurityZone] = await GetFhePublicKey(
-      FhenixClient.getFheKeyFromProvider,
-      params.provider,
-    ).catch((err: unknown) => {
-      if (ignoreErrors) {
-        return undefined;
-      } else {
-        throw new Error(
-          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-        );
-      }
-    });
+    for (let i = 0; i < securityZones.length; i++) {
+      fhePublicKeys[securityZones[i]] = await GetFhePublicKey(
+        FhenixClient.getFheKeyFromProvider,
+        params.provider,
+      ).catch((err: unknown) => {
+        if (ignoreErrors) {
+          return undefined;
+        } else {
+          throw new Error(
+            `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+          );
+        }
+      });
+    }
 
     return new FhenixClientSync({ ...params, fhePublicKeys });
   }

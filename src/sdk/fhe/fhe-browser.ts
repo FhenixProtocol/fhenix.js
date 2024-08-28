@@ -1,4 +1,4 @@
-import * as wasm from "./tfhe_bg.wasm";
+import wasm from "./tfhe_bg.wasm";
 //@ts-expect-error imports from different wasm/js files are wonky
 import initSDK, { InitOutput } from "./tfhe.js";
 
@@ -11,8 +11,7 @@ const initFhevm: InitFhevm = async () => {
     try {
       initialized = await initSDK(wasm);
     } catch (_) {
-      const wasmModule = await import("./tfhe_bg.wasm");
-      initialized = await initSDK(wasmModule.default);
+      initialized = await initSDK(wasm());
     }
   }
   return initialized;

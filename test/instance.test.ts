@@ -372,7 +372,7 @@ describe("Instance", () => {
     });
 
     expect(instanceSync.encrypt(11, undefined, 1)).toThrow(
-      "`Public key for security zone 1 not initialized`",
+      "Public key for security zone 1 not initialized",
     );
   });
 

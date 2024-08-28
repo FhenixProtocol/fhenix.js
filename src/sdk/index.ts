@@ -589,11 +589,9 @@ export class FhenixClientSync extends FhenixClientBase {
   private _getPublicKey(securityZone: number) {
     const fhePublicKey = this.fhePublicKeys[securityZone];
     if (!fhePublicKey) {
-      if (!fhePublicKey) {
-        throw new Error(
-          `Public key for security zone ${securityZone} not initialized`,
-        );
-      }
+      throw new Error(
+        `Public key for security zone ${securityZone} not initialized`,
+      );
     }
     return fhePublicKey;
   }

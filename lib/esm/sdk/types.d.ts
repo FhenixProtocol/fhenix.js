@@ -1,4 +1,3 @@
-import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { Permit } from "../extensions/access_control/index.js";
 export { PermitSigner } from "../extensions/access_control/index.js";
 /**
@@ -31,12 +30,11 @@ export type PermitSignature = {
 /**
  * A type representing the parameters to initialize an instance.
  * provider is an optional SupportedProvider for blockchain interactions.
- * fhePublicKeys are omitted when creating a FhenixClient, but are generated internally when creating a FhenixClientSync
+ * initSdk is an optional boolean indicating whether to initialize the SDK.
  */
 export type InstanceParams = {
     provider: SupportedProvider;
     ignoreErrors?: boolean;
-    fhePublicKeys: Array<TfheCompactPublicKey | undefined>;
 };
 /**
  * A type representing a pair of public and private keys used for a contract, along with an optional signature.

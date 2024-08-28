@@ -1,4 +1,2 @@
-import { SupportedProvider } from "./types.js";
-import { TfheCompactPublicKey } from "./fhe/fhe.js";
-export declare const GetFhePublicKey: (getKeyFn: (provider: SupportedProvider) => Promise<TfheCompactPublicKey>, provider: SupportedProvider) => Promise<TfheCompactPublicKey>;
+export declare const InitFhevm: () => Promise<void>;
 //# sourceMappingURL=init.d.ts.map

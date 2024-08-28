@@ -376,9 +376,6 @@ describe("Instance", () => {
     );
   });
 
-  // NOTE: This will fix itself when the latest localfhenix has a publickey set for securityZone 1
-  // Q: Maybe we can mock a second securityZone?
-  // - arch 2024-08-28
   it("encrypt with instance on second security zone", async () => {
     const provider = new JsonRpcProvider("http://localhost:8545") as any;
 

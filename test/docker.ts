@@ -15,7 +15,7 @@ export async function runDockerContainerAsync() {
 
   const removePrevious = `docker kill ${CONTAINER_NAME}`;
 
-  const command = `docker run --rm --name ${CONTAINER_NAME} ${ports} -d ${imageName}`;
+  const command = `docker run --rm --env FHEOS_SECURITY_ZONES=2 --name ${CONTAINER_NAME} ${ports} -d ${imageName}`;
 
   try {
     try {

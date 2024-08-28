@@ -30,7 +30,7 @@
     "lint": "eslint src/",
     "compile": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
     "build": "pnpm _hack-backup-cjs && pnpm compile && pnpm build-rollup && uglifyjs ./dist/fhenix.esm.js -o ./dist/fhenix.esm.min.js && uglifyjs ./dist/fhenix.umd.js -o ./dist/fhenix.umd.min.js && pnpm _hack-restore-cjs",
-    "test": "VITE_CJS_IGNORE_WARNING=true vitest ",
+    "test": "pnpm compile && VITE_CJS_IGNORE_WARNING=true vitest ",
     "coverage": "VITE_CJS_IGNORE_WARNING=true vitest run --coverage",
     "_hack-backup-cjs": "cp ./lib/commonjs/sdk/fhe/tfhe.js . && cp ./lib/commonjs/sdk/fhe/tfhe-browser.js .",
     "_hack-restore-cjs": "mv tfhe.js ./lib/commonjs/sdk/fhe/ && mv tfhe-browser.js ./lib/commonjs/sdk/fhe/",

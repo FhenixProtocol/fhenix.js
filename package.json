@@ -28,7 +28,7 @@
     "build-rollup": "rollup -c",
     "dev-rollup": "rollup -c -w",
     "lint": "eslint src/",
-    "compile": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
+    "compile": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && tsc -p tsconfig.types.json",
     "build": "pnpm _hack-backup-cjs && pnpm compile && pnpm build-rollup && uglifyjs ./dist/fhenix.esm.js -o ./dist/fhenix.esm.min.js && uglifyjs ./dist/fhenix.umd.js -o ./dist/fhenix.umd.min.js && pnpm _hack-restore-cjs",
     "test": "pnpm compile && VITE_CJS_IGNORE_WARNING=true vitest ",
     "coverage": "pnpm compile && VITE_CJS_IGNORE_WARNING=true vitest run --coverage",

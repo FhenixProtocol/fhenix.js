@@ -1,4 +1,3 @@
-//@ts-expect-error imports from different wasm/js files are wonky
 import wasm from "./tfhe_bg.wasm";
 //@ts-expect-error imports from different wasm/js files are wonky
 import initSDK, { InitOutput } from "./tfhe.js";

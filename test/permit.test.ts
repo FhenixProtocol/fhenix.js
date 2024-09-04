@@ -16,12 +16,14 @@ import {
 import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 import { afterEach } from "vitest";
+import { getAllExistingPermits } from "../src/fhenix";
 
 describe("Permit Tests", () => {
   let tfhePublicKey: string;
   let provider: MockProvider;
   let signerAddress: string;
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
+  const contractAddress2 = "0xB170fC5BAC4a87A63fC84653Ee7e0db65CC62f96";
 
   const createAsyncSyncInstancePair = async (provider: any) => {
     const instanceAsync = new FhenixClient({ provider });
@@ -134,5 +136,39 @@ describe("Permit Tests", () => {
       const cleartext = permit!.sealingKey.unseal(ciphertext);
       expect(cleartext).toBe(BigInt(value));
     }
+  });
+
+  it("loading all existing permits succeeds", async () => {
+    const permit = await getPermit(contractAddress, provider);
+    const permit2 = await getPermit(contractAddress2, provider);
+
+    const existingPermits = await getAllExistingPermits(
+      await (await provider.getSigner()).getAddress(),
+    );
+
+    expect(JSON.stringify(existingPermits[contractAddress])).toEqual(
+      JSON.stringify(permit),
+    );
+    expect(JSON.stringify(existingPermits[contractAddress2])).toEqual(
+      JSON.stringify(permit2),
+    );
+  });
+
+  it("loading all existing permits via client succeeds", async () => {
+    const instance = new FhenixClient({ provider });
+
+    const permit = await instance.generatePermit(contractAddress);
+    const permit2 = await instance.generatePermit(contractAddress2);
+
+    const existingPermits = instance.loadAllPermitsFromLocalStorage(
+      await (await provider.getSigner()).getAddress(),
+    );
+
+    expect(JSON.stringify(existingPermits[contractAddress])).toEqual(
+      JSON.stringify(permit),
+    );
+    expect(JSON.stringify(existingPermits[contractAddress2])).toEqual(
+      JSON.stringify(permit2),
+    );
   });
 });

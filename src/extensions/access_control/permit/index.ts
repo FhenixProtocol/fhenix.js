@@ -87,6 +87,33 @@ export const getPermit = async (
   return autoGenerate ? generatePermit(contract, provider) : null;
 };
 
+export const getAllExistingPermits = (
+  account: string,
+): Record<string, Permit> => {
+  const permits: Record<string, Permit> = {};
+
+  const search = new RegExp(`${PERMIT_PREFIX}(.*?)_${account}`);
+
+  Object.keys(window.localStorage).forEach((key) => {
+    const matchArray = key.match(search);
+    if (matchArray == null) return;
+
+    const contract = matchArray[1];
+    const permitRaw = window.localStorage.getItem(key);
+
+    if (permitRaw == null) return;
+
+    try {
+      const permit = parsePermit(permitRaw);
+      permits[contract] = permit;
+    } catch (err) {
+      console.warn(err);
+    }
+  });
+
+  return permits;
+};
+
 export const getAllPermits = (): Map<string, Permit> => {
   const permits: Map<string, Permit> = new Map();
 

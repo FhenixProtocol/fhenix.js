@@ -25,6 +25,7 @@ import {
 
 import {
   generatePermit,
+  getAllExistingPermits,
   getPermitFromLocalstorage,
   Permission,
   Permit,
@@ -262,6 +263,21 @@ abstract class FhenixClientBase {
     if (permitFromLs != null) return permitFromLs;
 
     return this.permits[contractAddress];
+  }
+
+  /**
+   * Retrieves all stored permits for a specific account.
+   * @param {string} account - The address of the user account.
+   * @returns {Record<string, Permit>} - The permits associated with each contract address.
+   */
+  loadAllPermitsFromLocalStorage(account: string): Record<string, Permit> {
+    const existingPermits = getAllExistingPermits(account);
+
+    Object.keys(existingPermits).forEach((contractAddress) => {
+      this.permits[contractAddress] = existingPermits[contractAddress];
+    });
+
+    return this.permits;
   }
 
   /**

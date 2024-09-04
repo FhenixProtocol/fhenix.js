@@ -229,22 +229,8 @@ export const generatePermit = async (
     //permit: msgParams,
     //msgSig
   };
-  if (typeof window !== "undefined" && window.localStorage) {
-    // Sealing key is a class, and will include methods in the JSON
-    const serialized: SerializedPermit = {
-      contractAddress: permit.contractAddress,
-      sealingKey: {
-        publicKey: permit.sealingKey.publicKey,
-        privateKey: permit.sealingKey.privateKey,
-      },
-      signature: permit.signature,
-    };
 
-    window.localStorage.setItem(
-      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
-      JSON.stringify(serialized),
-    );
-  }
+  storePermitInLocalStorage(permit, await signer.getAddress());
   return permit;
 };
 
@@ -259,7 +245,7 @@ export const removePermit = (contract: string, account: string): void => {
 
 export const getPermitFromLocalstorage = (
   contract: string,
-  account?: string,
+  account: string,
 ): Permit | undefined => {
   let savedPermit: string | null = null;
   if (typeof window !== "undefined" && window.localStorage) {
@@ -281,4 +267,32 @@ export const getPermitFromLocalstorage = (
   }
 
   return parsePermit(savedPermit);
+};
+
+export const storePermitInLocalStorage = (permit: Permit, account: string) => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    // Sealing key is a class, and will include methods in the JSON
+    const serialized: SerializedPermit = {
+      contractAddress: permit.contractAddress,
+      sealingKey: {
+        publicKey: permit.sealingKey.publicKey,
+        privateKey: permit.sealingKey.privateKey,
+      },
+      signature: permit.signature,
+    };
+
+    window.localStorage.setItem(
+      `${PERMIT_PREFIX}${permit.contractAddress}_${account}`,
+      JSON.stringify(serialized),
+    );
+  }
+};
+
+export const removePermitFromLocalstorage = (
+  contract: string,
+  account: string,
+) => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}_${account}`);
+  }
 };

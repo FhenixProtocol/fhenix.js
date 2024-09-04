@@ -29,6 +29,8 @@ import {
   Permission,
   Permit,
   PermitSigner,
+  removePermitFromLocalstorage,
+  storePermitInLocalStorage,
 } from "../extensions/access_control/index.js";
 
 import {
@@ -185,11 +187,7 @@ abstract class FhenixClientBase {
    * @param {string} account - The account attached to existing permits.
    * @returns bigint - The unsealed message.
    */
-  unseal(
-    contractAddress: string,
-    ciphertext: string,
-    account?: string,
-  ): bigint {
+  unseal(contractAddress: string, ciphertext: string, account: string): bigint {
     isAddress(contractAddress);
     isString(ciphertext);
 
@@ -226,7 +224,10 @@ abstract class FhenixClientBase {
       provider || this.provider!,
       signer,
     );
-    this.storePermit(permit);
+
+    // Permit has already been put into local storage, it can be inserted directly into `this.permits`
+    this.permits[contractAddress] = permit;
+
     return permit;
   }
 
@@ -238,7 +239,7 @@ abstract class FhenixClientBase {
    */
   private _loadPermitFromLocalStorage(
     contractAddress: string,
-    account?: string,
+    account: string,
   ): Permit | undefined {
     const fromLs = getPermitFromLocalstorage(contractAddress, account);
     if (fromLs == null) return undefined;
@@ -253,16 +254,12 @@ abstract class FhenixClientBase {
    * @param {string} account - The address of the user account.
    * @returns {Permit} - The permit associated with the contract address.
    */
-  getPermit(contractAddress: string, account?: string): Permit | undefined {
+  getPermit(contractAddress: string, account: string): Permit | undefined {
     const permitFromLs = this._loadPermitFromLocalStorage(
       contractAddress,
       account,
     );
     if (permitFromLs != null) return permitFromLs;
-
-    if (this.permits[contractAddress] != null) {
-      return undefined;
-    }
 
     return this.permits[contractAddress];
   }
@@ -272,16 +269,19 @@ abstract class FhenixClientBase {
    * Does not store the permit in localstorage (should it?)
    * @param {Permit} permit - The permit to store.
    */
-  storePermit(permit: Permit) {
+  storePermit(permit: Permit, account: string) {
+    storePermitInLocalStorage(permit, account);
     this.permits[permit.contractAddress] = permit;
   }
 
   /**
    * Removes a stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
+   * @param {string} account - The account address of the permit.
    */
-  removePermit(contractAddress: string) {
-    if (this.hasPermit(contractAddress)) {
+  removePermit(contractAddress: string, account: string) {
+    if (this.hasPermit(contractAddress, account)) {
+      removePermitFromLocalstorage(contractAddress, account);
       delete this.permits[contractAddress];
     }
   }
@@ -292,14 +292,14 @@ abstract class FhenixClientBase {
    * @param {string} account - The account address attached to the stored permits
    * @returns {boolean} - True if a permit exists, false otherwise.
    */
-  hasPermit(contractAddress: string, account?: string): boolean {
+  hasPermit(contractAddress: string, account: string): boolean {
     const permitFromLs = this._loadPermitFromLocalStorage(
       contractAddress,
       account,
     );
     if (permitFromLs != null) return true;
 
-    return this.permits[contractAddress] !== null;
+    return this.permits[contractAddress] != null;
   }
 
   /**

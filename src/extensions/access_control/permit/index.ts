@@ -77,24 +77,13 @@ export const getPermit = async (
   const getSigner = determineRequestSigner(provider);
   const signer = await getSigner(provider);
 
-  let savedPermit: string | null = null;
-  if (typeof window !== "undefined" && window.localStorage) {
-    savedPermit = window.localStorage.getItem(
-      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
-    );
-    if (!savedPermit) {
-      // Backward compatibility
-      savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
-    }
-  }
+  const savedPermit = getPermitFromLocalstorage(
+    contract,
+    await signer.getAddress(),
+  );
 
-  if (savedPermit) {
-    try {
-      return parsePermit(savedPermit);
-    } catch (err) {
-      console.warn(err);
-    }
-  }
+  if (savedPermit != null) return savedPermit;
+
   return autoGenerate ? generatePermit(contract, provider) : null;
 };
 

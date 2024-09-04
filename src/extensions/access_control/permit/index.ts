@@ -77,7 +77,7 @@ export const getPermit = async (
   const getSigner = determineRequestSigner(provider);
   const signer = await getSigner(provider);
 
-  let savedPermit = null;
+  let savedPermit: string | null = null;
   if (typeof window !== "undefined" && window.localStorage) {
     savedPermit = window.localStorage.getItem(
       `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
@@ -259,9 +259,9 @@ export const removePermit = (contract: string, account: string): void => {
 
 export const getPermitFromLocalstorage = (
   contract: string,
-  account: string,
+  account?: string,
 ): Permit | undefined => {
-  let savedPermit = undefined;
+  let savedPermit: string | null = null;
   if (typeof window !== "undefined" && window.localStorage) {
     savedPermit = window.localStorage.getItem(
       `${PERMIT_PREFIX}${contract}_${account}`,

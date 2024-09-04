@@ -182,13 +182,20 @@ abstract class FhenixClientBase {
    * Unseals an encrypted message using the stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
    * @param {string} ciphertext - The encrypted message to unseal.
+   * @param {string} account - The account attached to existing permits.
    * @returns bigint - The unsealed message.
    */
-  unseal(contractAddress: string, ciphertext: string): bigint {
+  unseal(
+    contractAddress: string,
+    ciphertext: string,
+    account?: string,
+  ): bigint {
     isAddress(contractAddress);
     isString(ciphertext);
 
-    if (!this.hasPermit(contractAddress)) {
+    const permit = this.getPermit(contractAddress, account);
+
+    if (permit == null) {
       throw new Error(`Missing keypair for ${contractAddress}`);
     }
 
@@ -224,19 +231,36 @@ abstract class FhenixClientBase {
   }
 
   /**
+   * Reusable permit loading and storing from local storage
+   * @param {string} contractAddress - The address of the contract.
+   * @param {string} account - The address of the user account.
+   * @returns {Permit | undefined} - The permit loaded from local storage
+   */
+  private _loadPermitFromLocalStorage(
+    contractAddress: string,
+    account?: string,
+  ): Permit | undefined {
+    const fromLs = getPermitFromLocalstorage(contractAddress, account);
+    if (fromLs == null) return undefined;
+
+    this.permits[contractAddress] = fromLs;
+    return fromLs;
+  }
+
+  /**
    * Retrieves the stored permit for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
    * @param {string} account - The address of the user account.
    * @returns {Permit} - The permit associated with the contract address.
    */
-  getPermit(contractAddress: string, account: string): Permit | undefined {
-    const fromLs = getPermitFromLocalstorage(contractAddress, account);
-    if (fromLs) {
-      this.permits[contractAddress] = fromLs;
-      return fromLs;
-    }
+  getPermit(contractAddress: string, account?: string): Permit | undefined {
+    const permitFromLs = this._loadPermitFromLocalStorage(
+      contractAddress,
+      account,
+    );
+    if (permitFromLs != null) return permitFromLs;
 
-    if (!this.hasPermit(contractAddress)) {
+    if (this.permits[contractAddress] != null) {
       return undefined;
     }
 
@@ -265,9 +289,16 @@ abstract class FhenixClientBase {
   /**
    * Checks if a permit exists for a specific contract address.
    * @param {string} contractAddress - The address of the contract.
+   * @param {string} account - The account address attached to the stored permits
    * @returns {boolean} - True if a permit exists, false otherwise.
    */
-  hasPermit(contractAddress: string): boolean {
+  hasPermit(contractAddress: string, account?: string): boolean {
+    const permitFromLs = this._loadPermitFromLocalStorage(
+      contractAddress,
+      account,
+    );
+    if (permitFromLs != null) return true;
+
     return this.permits[contractAddress] !== null;
   }
 

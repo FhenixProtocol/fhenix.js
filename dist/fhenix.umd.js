@@ -5496,7 +5496,6 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   let initialized;
   const initFhevm = () => __awaiter$4(void 0, void 0, void 0, function* () {
       if (!initialized) {
-          console.log(wasm$1);
           try {
               initialized = yield __wbg_init(wasm$1);
           }
@@ -5508,8 +5507,6 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   });
   const asyncInitFhevm = () => __awaiter$4(void 0, void 0, void 0, function* () {
       try {
-          // const { initFhevm } = await import("./init.js");
-          console.log("initFhevm");
           yield initFhevm();
       }
       catch (err) {
@@ -8399,24 +8396,32 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       }
       const getSigner = determineRequestSigner(provider);
       const signer = yield getSigner(provider);
-      let savedPermit = null;
-      if (typeof window !== "undefined" && window.localStorage) {
-          savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}_${yield signer.getAddress()}`);
-          if (!savedPermit) {
-              // Backward compatibility
-              savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
-          }
-      }
-      if (savedPermit) {
+      const savedPermit = getPermitFromLocalstorage(contract, yield signer.getAddress());
+      if (savedPermit != null)
+          return savedPermit;
+      return autoGenerate ? generatePermit(contract, provider) : null;
+  });
+  const getAllExistingPermits = (account) => {
+      const permits = {};
+      const search = new RegExp(`${PERMIT_PREFIX}(.*?)_${account}`);
+      Object.keys(window.localStorage).forEach((key) => {
+          const matchArray = key.match(search);
+          if (matchArray == null)
+              return;
+          const contract = matchArray[1];
+          const permitRaw = window.localStorage.getItem(key);
+          if (permitRaw == null)
+              return;
           try {
-              return parsePermit(savedPermit);
+              const permit = parsePermit(permitRaw);
+              permits[contract] = permit;
           }
           catch (err) {
               console.warn(err);
           }
-      }
-      return autoGenerate ? generatePermit(contract, provider) : null;
-  });
+      });
+      return permits;
+  };
   const getAllPermits = () => {
       const permits = new Map();
       for (let i = 0; i < window.localStorage.length; i++) {
@@ -8509,18 +8514,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           //permit: msgParams,
           //msgSig
       };
-      if (typeof window !== "undefined" && window.localStorage) {
-          // Sealing key is a class, and will include methods in the JSON
-          const serialized = {
-              contractAddress: permit.contractAddress,
-              sealingKey: {
-                  publicKey: permit.sealingKey.publicKey,
-                  privateKey: permit.sealingKey.privateKey,
-              },
-              signature: permit.signature,
-          };
-          window.localStorage.setItem(`${PERMIT_PREFIX}${contract}_${yield signer.getAddress()}`, JSON.stringify(serialized));
-      }
+      storePermitInLocalStorage(permit, yield signer.getAddress());
       return permit;
   });
   const removePermit = (contract, account) => {
@@ -8533,7 +8527,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       }
   };
   const getPermitFromLocalstorage = (contract, account) => {
-      let savedPermit = undefined;
+      let savedPermit = null;
       if (typeof window !== "undefined" && window.localStorage) {
           savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}_${account}`);
           if (!account) {
@@ -8548,6 +8542,25 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           return undefined;
       }
       return parsePermit(savedPermit);
+  };
+  const storePermitInLocalStorage = (permit, account) => {
+      if (typeof window !== "undefined" && window.localStorage) {
+          // Sealing key is a class, and will include methods in the JSON
+          const serialized = {
+              contractAddress: permit.contractAddress,
+              sealingKey: {
+                  publicKey: permit.sealingKey.publicKey,
+                  privateKey: permit.sealingKey.privateKey,
+              },
+              signature: permit.signature,
+          };
+          window.localStorage.setItem(`${PERMIT_PREFIX}${permit.contractAddress}_${account}`, JSON.stringify(serialized));
+      }
+  };
+  const removePermitFromLocalstorage = (contract, account) => {
+      if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}_${account}`);
+      }
   };
 
   const MAX_UINT8 = 255;
@@ -8772,12 +8785,14 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
        * Unseals an encrypted message using the stored permit for a specific contract address.
        * @param {string} contractAddress - The address of the contract.
        * @param {string} ciphertext - The encrypted message to unseal.
+       * @param {string} account - The account attached to existing permits.
        * @returns bigint - The unsealed message.
        */
-      unseal(contractAddress, ciphertext) {
+      unseal(contractAddress, ciphertext, account) {
           isAddress(contractAddress);
           isString(ciphertext);
-          if (!this.hasPermit(contractAddress)) {
+          const permit = this.getPermit(contractAddress, account);
+          if (permit == null) {
               throw new Error(`Missing keypair for ${contractAddress}`);
           }
           return this.permits[contractAddress].sealingKey.unseal(ciphertext);
@@ -8798,9 +8813,23 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
                   throw new Error("error getting provider");
               }
               const permit = yield generatePermit(contractAddress, provider || this.provider, signer);
-              this.storePermit(permit);
+              // Permit has already been put into local storage, it can be inserted directly into `this.permits`
+              this.permits[contractAddress] = permit;
               return permit;
           });
+      }
+      /**
+       * Reusable permit loading and storing from local storage
+       * @param {string} contractAddress - The address of the contract.
+       * @param {string} account - The address of the user account.
+       * @returns {Permit | undefined} - The permit loaded from local storage
+       */
+      _loadPermitFromLocalStorage(contractAddress, account) {
+          const fromLs = getPermitFromLocalstorage(contractAddress, account);
+          if (fromLs == null)
+              return undefined;
+          this.permits[contractAddress] = fromLs;
+          return fromLs;
       }
       /**
        * Retrieves the stored permit for a specific contract address.
@@ -8809,40 +8838,54 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
        * @returns {Permit} - The permit associated with the contract address.
        */
       getPermit(contractAddress, account) {
-          const fromLs = getPermitFromLocalstorage(contractAddress, account);
-          if (fromLs) {
-              this.permits[contractAddress] = fromLs;
-              return fromLs;
-          }
-          if (!this.hasPermit(contractAddress)) {
-              return undefined;
-          }
+          const permitFromLs = this._loadPermitFromLocalStorage(contractAddress, account);
+          if (permitFromLs != null)
+              return permitFromLs;
           return this.permits[contractAddress];
+      }
+      /**
+       * Retrieves all stored permits for a specific account.
+       * @param {string} account - The address of the user account.
+       * @returns {Record<string, Permit>} - The permits associated with each contract address.
+       */
+      loadAllPermitsFromLocalStorage(account) {
+          const existingPermits = getAllExistingPermits(account);
+          Object.keys(existingPermits).forEach((contractAddress) => {
+              this.permits[contractAddress] = existingPermits[contractAddress];
+          });
+          return this.permits;
       }
       /**
        * Stores a permit for a specific contract address. Will overwrite any existing permit for the same contract address.
        * Does not store the permit in localstorage (should it?)
        * @param {Permit} permit - The permit to store.
        */
-      storePermit(permit) {
+      storePermit(permit, account) {
+          storePermitInLocalStorage(permit, account);
           this.permits[permit.contractAddress] = permit;
       }
       /**
        * Removes a stored permit for a specific contract address.
        * @param {string} contractAddress - The address of the contract.
+       * @param {string} account - The account address of the permit.
        */
-      removePermit(contractAddress) {
-          if (this.hasPermit(contractAddress)) {
+      removePermit(contractAddress, account) {
+          if (this.hasPermit(contractAddress, account)) {
+              removePermitFromLocalstorage(contractAddress, account);
               delete this.permits[contractAddress];
           }
       }
       /**
        * Checks if a permit exists for a specific contract address.
        * @param {string} contractAddress - The address of the contract.
+       * @param {string} account - The account address attached to the stored permits
        * @returns {boolean} - True if a permit exists, false otherwise.
        */
-      hasPermit(contractAddress) {
-          return this.permits[contractAddress] !== null;
+      hasPermit(contractAddress, account) {
+          const permitFromLs = this._loadPermitFromLocalStorage(contractAddress, account);
+          if (permitFromLs != null)
+              return true;
+          return this.permits[contractAddress] != null;
       }
       /**
        * Exports all stored permits.
@@ -9169,10 +9212,13 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
     GenerateSealingKey: GenerateSealingKey,
     SealingKey: SealingKey,
     generatePermit: generatePermit,
+    getAllExistingPermits: getAllExistingPermits,
     getAllPermits: getAllPermits,
     getPermit: getPermit,
     getPermitFromLocalstorage: getPermitFromLocalstorage,
-    removePermit: removePermit
+    removePermit: removePermit,
+    removePermitFromLocalstorage: removePermitFromLocalstorage,
+    storePermitInLocalStorage: storePermitInLocalStorage
   });
 
   exports.FhenixClient = FhenixClient;
@@ -9181,10 +9227,13 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   exports.SealingKey = SealingKey;
   exports.fhenixjs = fhenix;
   exports.generatePermit = generatePermit;
+  exports.getAllExistingPermits = getAllExistingPermits;
   exports.getAllPermits = getAllPermits;
   exports.getPermit = getPermit;
   exports.getPermitFromLocalstorage = getPermitFromLocalstorage;
   exports.removePermit = removePermit;
+  exports.removePermitFromLocalstorage = removePermitFromLocalstorage;
+  exports.storePermitInLocalStorage = storePermitInLocalStorage;
 
 }));
 //# sourceMappingURL=fhenix.umd.js.map

@@ -79,9 +79,10 @@ declare abstract class FhenixClientBase {
      * Unseals an encrypted message using the stored permit for a specific contract address.
      * @param {string} contractAddress - The address of the contract.
      * @param {string} ciphertext - The encrypted message to unseal.
+     * @param {string} account - The account attached to existing permits.
      * @returns bigint - The unsealed message.
      */
-    unseal(contractAddress: string, ciphertext: string): bigint;
+    unseal(contractAddress: string, ciphertext: string, account: string): bigint;
     /**
      * Creates a new permit for a specific contract address. Also saves the permit to localstorage (if available)
      * @param {string} contractAddress - The address of the contract.
@@ -93,6 +94,13 @@ declare abstract class FhenixClientBase {
      */
     generatePermit(contractAddress: string, provider?: SupportedProvider, signer?: PermitSigner): Promise<Permit>;
     /**
+     * Reusable permit loading and storing from local storage
+     * @param {string} contractAddress - The address of the contract.
+     * @param {string} account - The address of the user account.
+     * @returns {Permit | undefined} - The permit loaded from local storage
+     */
+    private _loadPermitFromLocalStorage;
+    /**
      * Retrieves the stored permit for a specific contract address.
      * @param {string} contractAddress - The address of the contract.
      * @param {string} account - The address of the user account.
@@ -100,22 +108,30 @@ declare abstract class FhenixClientBase {
      */
     getPermit(contractAddress: string, account: string): Permit | undefined;
     /**
+     * Retrieves all stored permits for a specific account.
+     * @param {string} account - The address of the user account.
+     * @returns {Record<string, Permit>} - The permits associated with each contract address.
+     */
+    loadAllPermitsFromLocalStorage(account: string): Record<string, Permit>;
+    /**
      * Stores a permit for a specific contract address. Will overwrite any existing permit for the same contract address.
      * Does not store the permit in localstorage (should it?)
      * @param {Permit} permit - The permit to store.
      */
-    storePermit(permit: Permit): void;
+    storePermit(permit: Permit, account: string): void;
     /**
      * Removes a stored permit for a specific contract address.
      * @param {string} contractAddress - The address of the contract.
+     * @param {string} account - The account address of the permit.
      */
-    removePermit(contractAddress: string): void;
+    removePermit(contractAddress: string, account: string): void;
     /**
      * Checks if a permit exists for a specific contract address.
      * @param {string} contractAddress - The address of the contract.
+     * @param {string} account - The account address attached to the stored permits
      * @returns {boolean} - True if a permit exists, false otherwise.
      */
-    hasPermit(contractAddress: string): boolean;
+    hasPermit(contractAddress: string, account: string): boolean;
     /**
      * Exports all stored permits.
      * @returns {ContractPermits} - All stored permits.

@@ -26,6 +26,7 @@ export type Permit = {
     publicKey: string;
 };
 export declare const getPermit: (contract: string, provider: SupportedProvider, autoGenerate?: boolean) => Promise<Permit | null>;
+export declare const getAllExistingPermits: (account: string) => Record<string, Permit>;
 export declare const getAllPermits: () => Map<string, Permit>;
 interface SignerPublicSignedTypedData {
     signTypedData(domain: object, types: object, value: object): Promise<string>;
@@ -39,5 +40,7 @@ export type PermitSigner = SignerPrivateSignedTypedData | SignerPublicSignedType
 export declare const generatePermit: (contract: string, provider: SupportedProvider, customSigner?: PermitSigner) => Promise<Permit>;
 export declare const removePermit: (contract: string, account: string) => void;
 export declare const getPermitFromLocalstorage: (contract: string, account: string) => Permit | undefined;
+export declare const storePermitInLocalStorage: (permit: Permit, account: string) => void;
+export declare const removePermitFromLocalstorage: (contract: string, account: string) => void;
 export {};
 //# sourceMappingURL=index.d.ts.map

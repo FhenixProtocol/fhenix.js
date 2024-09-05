@@ -7,7 +7,6 @@ export type InitFhevm = typeof initSDK;
 
 const initFhevm: InitFhevm = async () => {
   if (!initialized) {
-    console.log(wasm);
     try {
       initialized = await initSDK(wasm);
     } catch (_) {
@@ -19,9 +18,6 @@ const initFhevm: InitFhevm = async () => {
 
 export const asyncInitFhevm: () => Promise<void> = async () => {
   try {
-    // const { initFhevm } = await import("./init.js");
-    console.log("initFhevm");
-
     await initFhevm();
   } catch (err) {
     throw new Error(`Error initializing FhenixClient ${err}`);

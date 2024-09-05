@@ -77,25 +77,41 @@ export const getPermit = async (
   const getSigner = determineRequestSigner(provider);
   const signer = await getSigner(provider);
 
-  let savedPermit = null;
-  if (typeof window !== "undefined" && window.localStorage) {
-    savedPermit = window.localStorage.getItem(
-      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
-    );
-    if (!savedPermit) {
-      // Backward compatibility
-      savedPermit = window.localStorage.getItem(`${PERMIT_PREFIX}${contract}`);
-    }
-  }
+  const savedPermit = getPermitFromLocalstorage(
+    contract,
+    await signer.getAddress(),
+  );
 
-  if (savedPermit) {
+  if (savedPermit != null) return savedPermit;
+
+  return autoGenerate ? generatePermit(contract, provider) : null;
+};
+
+export const getAllExistingPermits = (
+  account: string,
+): Record<string, Permit> => {
+  const permits: Record<string, Permit> = {};
+
+  const search = new RegExp(`${PERMIT_PREFIX}(.*?)_${account}`);
+
+  Object.keys(window.localStorage).forEach((key) => {
+    const matchArray = key.match(search);
+    if (matchArray == null) return;
+
+    const contract = matchArray[1];
+    const permitRaw = window.localStorage.getItem(key);
+
+    if (permitRaw == null) return;
+
     try {
-      return parsePermit(savedPermit);
+      const permit = parsePermit(permitRaw);
+      permits[contract] = permit;
     } catch (err) {
       console.warn(err);
     }
-  }
-  return autoGenerate ? generatePermit(contract, provider) : null;
+  });
+
+  return permits;
 };
 
 export const getAllPermits = (): Map<string, Permit> => {
@@ -229,22 +245,8 @@ export const generatePermit = async (
     //permit: msgParams,
     //msgSig
   };
-  if (typeof window !== "undefined" && window.localStorage) {
-    // Sealing key is a class, and will include methods in the JSON
-    const serialized: SerializedPermit = {
-      contractAddress: permit.contractAddress,
-      sealingKey: {
-        publicKey: permit.sealingKey.publicKey,
-        privateKey: permit.sealingKey.privateKey,
-      },
-      signature: permit.signature,
-    };
 
-    window.localStorage.setItem(
-      `${PERMIT_PREFIX}${contract}_${await signer.getAddress()}`,
-      JSON.stringify(serialized),
-    );
-  }
+  storePermitInLocalStorage(permit, await signer.getAddress());
   return permit;
 };
 
@@ -261,7 +263,7 @@ export const getPermitFromLocalstorage = (
   contract: string,
   account: string,
 ): Permit | undefined => {
-  let savedPermit = undefined;
+  let savedPermit: string | null = null;
   if (typeof window !== "undefined" && window.localStorage) {
     savedPermit = window.localStorage.getItem(
       `${PERMIT_PREFIX}${contract}_${account}`,
@@ -281,4 +283,32 @@ export const getPermitFromLocalstorage = (
   }
 
   return parsePermit(savedPermit);
+};
+
+export const storePermitInLocalStorage = (permit: Permit, account: string) => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    // Sealing key is a class, and will include methods in the JSON
+    const serialized: SerializedPermit = {
+      contractAddress: permit.contractAddress,
+      sealingKey: {
+        publicKey: permit.sealingKey.publicKey,
+        privateKey: permit.sealingKey.privateKey,
+      },
+      signature: permit.signature,
+    };
+
+    window.localStorage.setItem(
+      `${PERMIT_PREFIX}${permit.contractAddress}_${account}`,
+      JSON.stringify(serialized),
+    );
+  }
+};
+
+export const removePermitFromLocalstorage = (
+  contract: string,
+  account: string,
+) => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    window.localStorage.removeItem(`${PERMIT_PREFIX}${contract}_${account}`);
+  }
 };

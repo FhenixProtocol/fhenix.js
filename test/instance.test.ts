@@ -145,18 +145,23 @@ describe("Instance", () => {
       signature: "",
     };
 
-    const instances = await createAsyncSyncInstancePair(
-      new MockProvider(tfhePublicKey),
-    );
+    const provider = new MockProvider(tfhePublicKey);
+    const signerAddress = await (await provider.getSigner()).getAddress();
+
+    const instances = await createAsyncSyncInstancePair(provider);
 
     for (let i = 0; i < instances.length; i++) {
       const { type, instance } = instances[i];
 
-      instance.storePermit(permit);
+      instance.storePermit(permit, signerAddress);
 
       const ciphertext = SealingKey.seal(value, keypair.publicKey);
 
-      const cleartext = instance.unseal(contractAddress, ciphertext);
+      const cleartext = instance.unseal(
+        contractAddress,
+        ciphertext,
+        signerAddress,
+      );
       expect(cleartext).toBe(BigInt(value));
     }
   });
@@ -307,6 +312,7 @@ describe("Instance", () => {
 
   it("check that a permit gets generated, loaded to the instance and can unseal data for a specific contract", async () => {
     const provider = new MockProvider(tfhePublicKey);
+    const signerAddress = await (await provider.getSigner()).getAddress();
     const value = 100;
 
     const instances = await createAsyncSyncInstancePair(provider);
@@ -317,15 +323,16 @@ describe("Instance", () => {
 
       const sealed = SealingKey.seal(value, permit!.sealingKey.publicKey);
 
-      instance.storePermit(permit!);
+      instance.storePermit(permit!, signerAddress);
 
-      const cleartext = instance.unseal(contractAddress, sealed);
+      const cleartext = instance.unseal(contractAddress, sealed, signerAddress);
       expect(cleartext).toBe(BigInt(value));
     }
   });
 
   it("checks that a permit will not decrypt data for a different contract", async () => {
     const provider = new MockProvider(tfhePublicKey);
+    const signerAddress = await (await provider.getSigner()).getAddress();
     const value = 100;
 
     const instances = await createAsyncSyncInstancePair(provider);
@@ -336,10 +343,10 @@ describe("Instance", () => {
 
       const sealed = SealingKey.seal(value, permit!.sealingKey.publicKey);
 
-      instance.storePermit(permit!);
+      instance.storePermit(permit!, signerAddress);
 
       expect(() =>
-        instance.unseal("0x000000000000000000000000000", sealed),
+        instance.unseal("0x000000000000000000000000000", sealed, signerAddress),
       ).toThrow(
         /Address 0x000000000000000000000000000 is not valid EVM address/,
       );

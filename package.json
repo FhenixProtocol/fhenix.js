@@ -1,6 +1,6 @@
 {
   "name": "fhenixjs",
-  "version": "0.4.0",
+  "version": "0.4.0-alpha.7",
   "description": "The JavaScript SDK for Fhenix",
   "main": "./lib/commonjs/index.js",
   "module": "./lib/esm/index.js",

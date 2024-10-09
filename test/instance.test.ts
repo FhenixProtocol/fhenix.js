@@ -62,7 +62,9 @@ describe("Instance", () => {
 
     await expect(
       new FhenixClient({ provider }).fhePublicKeys[0],
-    ).rejects.toThrow(/.*Error while requesting network public key from provider for security zone 0:*/i);
+    ).rejects.toThrow(
+      /.*Error while requesting network public key from provider for security zone 0:*/i,
+    );
 
     // SYNC
 
@@ -72,7 +74,9 @@ describe("Instance", () => {
 
     await expect(
       FhenixClientSync.create({ provider: providerSync }),
-    ).rejects.toThrow(/.*Error while requesting network public key from provider for security zone 0:*/i);
+    ).rejects.toThrow(
+      /.*Error while requesting network public key from provider for security zone 0:*/i,
+    );
   });
 
   it("creates an unsupported provider", async () => {
@@ -107,7 +111,10 @@ describe("Instance", () => {
 
   it("skips public key fetching", async () => {
     const mockProvider = new MockProvider(BigInt(10));
-    const instance = new FhenixClient({ provider: mockProvider, skipPubKeyFetch: true });
+    const instance = new FhenixClient({
+      provider: mockProvider,
+      skipPubKeyFetch: true,
+    });
     expect(instance.encrypt_bool).toBeDefined();
     expect(instance.encrypt_uint8).toBeDefined();
     expect(instance.encrypt_uint16).toBeDefined();

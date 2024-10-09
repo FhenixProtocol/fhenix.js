@@ -62,7 +62,9 @@ describe("Instance", () => {
 
     await expect(
       new FhenixClient({ provider }).fhePublicKeys[0],
-    ).rejects.toThrow(/.*Error while requesting chainId from provider.*/i);
+    ).rejects.toThrow(
+      /.*Error while requesting network public key from provider for security zone 0:*/i,
+    );
 
     // SYNC
 
@@ -72,7 +74,9 @@ describe("Instance", () => {
 
     await expect(
       FhenixClientSync.create({ provider: providerSync }),
-    ).rejects.toThrow(/.*Error while requesting chainId from provider.*/i);
+    ).rejects.toThrow(
+      /.*Error while requesting network public key from provider for security zone 0:*/i,
+    );
   });
 
   it("creates an unsupported provider", async () => {
@@ -105,29 +109,33 @@ describe("Instance", () => {
     );
   });
 
-  it("fails to create an instance", async () => {
-    await expect(
-      new FhenixClient({
-        provider: new MockProvider(tfhePublicKey, "not a number"),
-      }).fhePublicKeys[0],
-    ).rejects.toThrow(
-      `received non-hex number from chainId request: "not a number"`,
-    );
+  it("skips public key fetching", async () => {
+    const mockProvider = new MockProvider(BigInt(10));
+    const instance = new FhenixClient({
+      provider: mockProvider,
+      skipPubKeyFetch: true,
+    });
+    expect(instance.encrypt_bool).toBeDefined();
+    expect(instance.encrypt_uint8).toBeDefined();
+    expect(instance.encrypt_uint16).toBeDefined();
+    expect(instance.encrypt_uint32).toBeDefined();
+    expect(instance.encrypt_uint64).toBeDefined();
+    expect(instance.encrypt_uint128).toBeDefined();
+    expect(instance.encrypt_uint256).toBeDefined();
+    expect(instance.encrypt_address).toBeDefined();
+    expect(instance.unseal).toBeDefined();
+    expect(instance.storePermit).toBeDefined();
+    expect(instance.encrypt).toBeDefined();
+    expect(instance.hasPermit).toBeDefined();
+  });
 
+  it("fails to create an instance", async () => {
     const secondProvider = new MockProvider(BigInt(10));
     await expect(
       new FhenixClient({ provider: secondProvider }).fhePublicKeys[0],
     ).rejects.toThrow("Error using publicKey from provider: expected string");
 
     // SYNC
-
-    await expect(
-      FhenixClientSync.create({
-        provider: new MockProvider(tfhePublicKey, "not a number"),
-      }),
-    ).rejects.toThrow(
-      `received non-hex number from chainId request: "not a number"`,
-    );
 
     await expect(
       FhenixClientSync.create({ provider: secondProvider }),

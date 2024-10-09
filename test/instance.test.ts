@@ -105,7 +105,7 @@ describe("Instance", () => {
     );
   });
 
-  it.only("skips public key fetching", async () => {
+  it("skips public key fetching", async () => {
     const mockProvider = new MockProvider(BigInt(10));
     const instance = new FhenixClient({ provider: mockProvider, skipPubKeyFetch: true });
     expect(instance.encrypt_bool).toBeDefined();

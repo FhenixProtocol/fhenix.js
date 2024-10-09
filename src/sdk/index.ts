@@ -414,7 +414,7 @@ export class FhenixClient extends FhenixClientBase {
     // In the future the default array can be updated to include additional security zones
     // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption.
     // By default, doesn't skip fetching the public key
-    if (params.skipPubKeyFetch !== false) {
+    if (params.skipPubKeyFetch !== true) {
       this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
         FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
       );
@@ -593,6 +593,10 @@ export class FhenixClientSync extends FhenixClientBase {
     params: InstanceParams & { securityZones?: number[] },
   ): Promise<FhenixClientSync> {
     isPlainObject(params);
+
+    if (params.skipPubKeyFetch !== false) {
+      console.warn("warning: FhenixClientSync doesn't support skipping public key fetching on creation")
+    }
 
     const { provider, ignoreErrors, securityZones = [0] } = params;
 

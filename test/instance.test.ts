@@ -105,6 +105,23 @@ describe("Instance", () => {
     );
   });
 
+  it.only("skips public key fetching", async () => {
+    const mockProvider = new MockProvider(BigInt(10));
+    const instance = new FhenixClient({ provider: mockProvider, skipPubKeyFetch: true });
+    expect(instance.encrypt_bool).toBeDefined();
+    expect(instance.encrypt_uint8).toBeDefined();
+    expect(instance.encrypt_uint16).toBeDefined();
+    expect(instance.encrypt_uint32).toBeDefined();
+    expect(instance.encrypt_uint64).toBeDefined();
+    expect(instance.encrypt_uint128).toBeDefined();
+    expect(instance.encrypt_uint256).toBeDefined();
+    expect(instance.encrypt_address).toBeDefined();
+    expect(instance.unseal).toBeDefined();
+    expect(instance.storePermit).toBeDefined();
+    expect(instance.encrypt).toBeDefined();
+    expect(instance.hasPermit).toBeDefined();
+  });
+
   it("fails to create an instance", async () => {
     const secondProvider = new MockProvider(BigInt(10));
     await expect(

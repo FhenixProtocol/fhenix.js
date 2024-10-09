@@ -426,10 +426,13 @@ export class FhenixClient extends FhenixClientBase {
     });
 
     // In the future the default array can be updated to include additional security zones
-    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption
-    this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
-      FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
-    );
+    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption.
+    // By default, doesn't skip fetching the public key
+    if (params.skipPubKeyFetch !== false) {
+      this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
+        FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+      );
+    }
   }
 
   private async _getPublicKey(

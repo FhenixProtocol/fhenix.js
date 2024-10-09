@@ -39,6 +39,7 @@ export type PermitSignature = {
 export type InstanceParams = {
   provider: SupportedProvider;
   ignoreErrors?: boolean;
+  skipPubKeyFetch?: boolean;
 };
 
 /**

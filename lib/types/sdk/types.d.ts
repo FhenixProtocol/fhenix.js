@@ -35,6 +35,7 @@ export type PermitSignature = {
 export type InstanceParams = {
     provider: SupportedProvider;
     ignoreErrors?: boolean;
+    skipPubKeyFetch?: boolean;
 };
 /**
  * Type of the constructor of the sync fhenix client

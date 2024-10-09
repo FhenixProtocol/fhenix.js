@@ -347,12 +347,6 @@ abstract class FhenixClientBase {
   ): Promise<TfheCompactPublicKey> {
     const requestMethod = determineRequestMethod(provider);
 
-    const chainIdP = requestMethod(provider, "eth_chainId").catch(
-      (err: Error) => {
-        throw Error(`Error while requesting chainId from provider: ${err}`);
-      },
-    );
-
     const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
     const callData = funcSig + toABIEncodedUint32(securityZone);
 
@@ -368,14 +362,7 @@ abstract class FhenixClientBase {
       },
     );
 
-    const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
-
-    const chainIdNum: number = parseInt(chainId, 16);
-    if (isNaN(chainIdNum)) {
-      throw new Error(
-        `received non-hex number from chainId request: "${chainId}"`,
-      );
-    }
+    const publicKey = await publicKeyP;
 
     if (typeof publicKey !== "string") {
       throw new Error("Error using publicKey from provider: expected string");
@@ -387,7 +374,6 @@ abstract class FhenixClientBase {
       );
     }
 
-    // todo (eshel) verify this
     // magically know how to decode rlp or w/e returns from the evm json-rpc
     const buff = fromHexString(publicKey.slice(130));
 

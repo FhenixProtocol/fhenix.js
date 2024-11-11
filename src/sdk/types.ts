@@ -128,3 +128,17 @@ export interface EncryptedUint64 extends EncryptedNumber {}
 export interface EncryptedUint128 extends EncryptedNumber {}
 export interface EncryptedUint256 extends EncryptedNumber {}
 export interface EncryptedAddress extends EncryptedNumber {}
+
+export type SealedBool = {
+  data: string;
+  utype: 13;
+};
+export type SealedUint = {
+  data: string;
+  utype: 0 | 1 | 2 | 3 | 4 | 5;
+};
+export type SealedAddress = {
+  data: string;
+  utype: 12;
+};
+export type SealedItem = SealedBool | SealedUint | SealedAddress;

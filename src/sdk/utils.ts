@@ -1,5 +1,7 @@
 import { isNumber } from "./validation.js";
 
+export const ZeroAddress = "0x0000000000000000000000000000000000000000";
+
 export const ValidateUintInRange = (
   value: number,
   max: number,

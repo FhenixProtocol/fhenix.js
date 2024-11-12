@@ -25,24 +25,23 @@ import {
   PUBLIC_KEY_LENGTH_MIN,
 } from "./consts.js";
 import * as tfheEncrypt from "./encrypt.js";
-import {
-  isBigIntOrHexString,
-  isNumber,
-  isPlainObject,
-  isString,
-} from "./validation.js";
+import { isBigIntOrHexString, isNumber, isString } from "./validation.js";
 import { InitFhevm } from "./init.js";
-import { generatePermitV2 } from "../extensions/access_control/permitV2/generate.js";
+import {
+  generatePermitV2,
+  generatePermitV2AsRecipient,
+} from "../extensions/access_control/permitV2/generate.js";
 import {
   getPermitV2Hash,
   getPermit as getPermitFromStore,
   setPermit as setPermitInStore,
   setActivePermitHash as setActivePermitHashInStore,
-  removePermit as removePermitFromStore,
   getPermits as getPermitsFromStore,
   getActivePermitHash as getActivePermitHashFromStore,
   getFheKey,
   setFheKey,
+  getActivePermit as getActivePermitFromStore,
+  getPermission as getPermissionFromStore,
 } from "../extensions/store.js";
 import {
   SendFn,
@@ -53,24 +52,22 @@ import {
 } from "../extensions/types.js";
 
 export class FhenixClientV2 {
-  private account: string | undefined;
-  private chainId: string | undefined;
-  private securityZones: number[] = [];
+  public account: string | undefined;
+  public chainId: string | undefined;
+  public securityZones: number[] = [];
 
   private send: SendFn;
   private signTypedData: SignTypedDataFn;
 
-  private fhevmInitialized: boolean = false;
-  private fhePublicKeysInitialized: boolean = false;
+  public fhevmInitialized: boolean = false;
+  public fhePublicKeysInitialized: boolean = false;
 
   /**
    * Creates an instance of FhenixClient.
    * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
    * @param {InstanceParams} params - Parameters to initialize the client.
    */
-  public constructor(params: { send: SendFn; signTypedData: SignTypedDataFn }) {
-    isPlainObject(params);
-  }
+  public constructor() {}
 
   // Called when initializing or updating the provider
   // Should re-initialize when account or chain changes
@@ -141,7 +138,7 @@ export class FhenixClientV2 {
     this.fhePublicKeysInitialized = true;
   }
 
-  // Encryption Methods
+  // Encrypt
 
   private _getPublicKey(securityZone: number) {
     if (!this.fhevmInitialized) {
@@ -335,13 +332,105 @@ export class FhenixClientV2 {
     return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 
-  // Unsealing Method
+  // Permits & Unsealing
+
+  // Create a fresh permit with options
+  // This new permit will be set as the active permit
+  async createPermit(options: PermitV2Options): Promise<PermitV2> {
+    if (this.account == null || this.chainId == null)
+      throw new Error("Cannot generate permit without chainId or account");
+
+    const permit = await generatePermitV2(
+      this.chainId,
+      options,
+      this.signTypedData,
+    );
+
+    setPermitInStore(this.account, permit);
+    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
+
+    return permit;
+  }
+
+  // Allows the `recipient` of a permit to inject it, and create the `recipientSignature` in turn
+  // This new permit will be set as the active permit
+  async createPermitAsRecipient(issuerPermit: PermitV2): Promise<PermitV2> {
+    if (this.account == null || this.chainId == null)
+      throw new Error("Cannot generate permit without chainId or account");
+
+    const permit = await generatePermitV2AsRecipient(
+      this.chainId,
+      issuerPermit,
+      this.signTypedData,
+    );
+
+    setPermitInStore(this.account, permit);
+    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
+
+    return permit;
+  }
+
+  // Select which permit to use with its hash
+  async usePermit(hash: string) {
+    if (this.account == null || this.chainId == null)
+      throw new Error("Cannot generate permit without chainId or account");
+
+    const permit = getPermitFromStore(this.account, hash);
+    if (permit == null) return;
+
+    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
+  }
+
+  // Inserts an existing permit into the store and sets it as the active permit
+  // NOTE: This is a short-circuit, there are no checks that this permit is valid
+  async useExistingPermit(permit: PermitV2) {
+    if (this.account == null)
+      throw new Error("Cannot generate permit without account");
+
+    setPermitInStore(this.account, permit);
+    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
+  }
+
+  /**
+   * Retrieves a stored permit.
+   * @param {string} hash - Optional hash of the permit to get, defaults to active permit
+   * @returns {PermitV2 | undefined} - The active permit or permit associated with `hash`.
+   */
+  getPermit(hash?: string): PermitV2 | undefined {
+    if (hash != null) return getPermitFromStore(this.account, hash);
+    return getActivePermitFromStore(this.account);
+  }
+
+  /**
+   * Retrieves a stored permission.
+   * @param {string} hash - Optional hash of the permission to get, defaults to active permit's permission
+   * @returns {PermissionV2 | undefined} - The active permission or permission associated with `hash`.
+   */
+  getPermission(hash?: string): PermissionV2 | undefined {
+    return getPermissionFromStore(this.account, hash);
+  }
+
+  /**
+   * Exports all stored permits.
+   * @returns {Record<string, PermitV2>} - All stored permits.
+   */
+  getAllPermits() {
+    return getPermitsFromStore(this.account);
+  }
+
+  extractPermitPermission({ sealingPair, ...permit }: PermitV2): PermissionV2 {
+    return {
+      ...permit,
+      sealingKey: `0x${sealingPair.publicKey}`,
+    };
+  }
 
   /**
    * Unseals an encrypted message using the stored permit for a specific contract address.
    *
    * @param {string} ciphertext - The encrypted message to unseal.
-   * @param {string} permitV2Hash - The hash of the permit to use for this operation, defaults to active permitV2 hash
+   * @param {string} account - Users address, defaults to this.account
+   * @param {string} hash - The hash of the permit to use for this operation, defaults to active permitV2 hash
    * @returns bigint - The unsealed message.
    */
   unseal(ciphertext: string, account?: string, hash?: string): bigint {
@@ -364,99 +453,7 @@ export class FhenixClientV2 {
     return permit.sealingPair.unseal(ciphertext);
   }
 
-  // Permit Management Methods
-  /**
-   * Creates a new permit for a specific contract address. Also saves the permit to localstorage (if available)
-   * @param {string} contractAddress - The address of the contract.
-   * @param {SupportedProvider} provider - The provider from which to sign the permit - must container a signer.
-   * @param signer - the signer to use to sign the permit if provider does not support signing (e.g. hardhat)
-   * @returns Permit - The permit associated with the contract address.
-   *
-   * @throws {Error} - If the provider does not contain a signer, or if a provider is not set
-   */
-  async generatePermitV2(options: PermitV2Options) {
-    if (this.account == null || this.chainId == null)
-      throw new Error("Cannot generate permit without chainId or account");
-
-    const permit = await generatePermitV2(
-      this.chainId,
-      options,
-      this.signTypedData,
-    );
-
-    setPermitInStore(this.account, permit);
-    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
-
-    return permit;
-  }
-
-  /**
-   * Retrieves the stored permit for a specific contract address.
-   * @param {string} account - The address of the user account.
-   * @param {string} hash - Hashed identifier of permitV2 data.
-   * @returns {PermitV2 | undefined} - The permit associated with the contract address.
-   */
-  getPermit(account: string, hash: string): PermitV2 | undefined {
-    return getPermitFromStore(account, hash);
-  }
-
-  /**
-   * Stores a permit in localStorage, will overwrite existing permit with identical hash contents
-   * @param {string} account - The address of the user account.
-   * @param {PermitV2} permit - The permit to store.
-   */
-  storePermit(account: string, permit: PermitV2) {
-    setPermitInStore(account, permit);
-  }
-
-  /**
-   * Removes a stored permit for a specific contract address.
-   * @param {string} account - The address of the user account.
-   * @param {string} hash - The hashed permitV2 data.
-   */
-  removePermit(account: string, hash: string) {
-    removePermitFromStore(account, hash);
-  }
-
-  /**
-   * Checks if a permit exists for a specific contract address.
-   * @param {string} account - The address of the user account.
-   * @param {string} hash - The hashed permitV2 data.
-   * @returns {boolean} - True if a permit exists, false otherwise.
-   */
-  hasPermit(account: string, hash: string): boolean {
-    const permit = getPermitFromStore(account, hash);
-    return permit == null;
-  }
-
-  /**
-   * Exports all stored permits.
-   * @returns {ContractPermits} - All stored permits.
-   */
-  exportPermits() {
-    return getPermitsFromStore(this.account);
-  }
-
-  getActivePermitPermission(): PermissionV2 | undefined {
-    if (this.account == null) return undefined;
-
-    const activePermitHash = getActivePermitHashFromStore(this.account);
-    if (activePermitHash == null) return undefined;
-
-    const permit = getPermitFromStore(this.account, activePermitHash);
-    if (permit == null) return undefined;
-
-    return this.extractPermitPermission(permit);
-  }
-
-  extractPermitPermission({ sealingPair, ...permit }: PermitV2): PermissionV2 {
-    return {
-      ...permit,
-      sealingKey: `0x${sealingPair.publicKey}`,
-    };
-  }
-
-  // Private helper methods
+  // Helpers
 
   async getChainIdFromProvider(send: SendFn): Promise<string> {
     const chainId = (await send("eth_chainId").catch((err: Error) => {

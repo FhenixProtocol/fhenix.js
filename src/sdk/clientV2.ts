@@ -32,19 +32,25 @@ import {
   isString,
 } from "./validation.js";
 import { InitFhevm } from "./init.js";
+import { generatePermitV2 } from "../extensions/access_control/permitV2/generate.js";
 import {
-  generatePermitV2,
-  getAllExistingPermitV2s,
-  getPermitV2FromLocalstorage,
   getPermitV2Hash,
-  PermissionV2,
-  PermitV2,
-  PermitV2Options,
-  removePermitV2FromLocalStorage,
+  getPermit as getPermitFromStore,
+  setPermit as setPermitInStore,
+  setActivePermitHash as setActivePermitHashInStore,
+  removePermit as removePermitFromStore,
+  getPermits as getPermitsFromStore,
+  getActivePermitHash as getActivePermitHashFromStore,
+  getFheKey,
+  setFheKey,
+} from "../extensions/store.js";
+import {
   SendFn,
   SignTypedDataFn,
-  storePermitV2InLocalStorage,
-} from "../extensions/access_control/permitV2/index.js";
+  PermitV2,
+  PermitV2Options,
+  PermissionV2,
+} from "../extensions/types.js";
 
 export class FhenixClientV2 {
   private account: string | undefined;
@@ -54,13 +60,8 @@ export class FhenixClientV2 {
   private send: SendFn;
   private signTypedData: SignTypedDataFn;
 
-  private permits: Record<string, PermitV2> = {};
-  private fhePublicKeys: Array<TfheCompactPublicKey | undefined>;
-
   private fhevmInitialized: boolean = false;
   private fhePublicKeysInitialized: boolean = false;
-
-  private activePermitHash: string | undefined;
 
   /**
    * Creates an instance of FhenixClient.
@@ -105,9 +106,6 @@ export class FhenixClientV2 {
 
     // PROVIDER
 
-    // TODO: Pass account to localstorage, store activePermitHash as well
-    // if (account !== this.account) this.activePermitHash = null
-
     this.account = account;
     this.send = send;
     this.signTypedData = signTypedData;
@@ -131,12 +129,12 @@ export class FhenixClientV2 {
     if (securityZones.length === 0)
       throw new Error("No securityZones provided");
 
-    this.fhePublicKeys = await Promise.all(
+    await Promise.all(
       securityZones.map((securityZone) =>
         FhenixClientV2.getFheKeyFromProvider(
           this.chainId,
-          this.send,
           securityZone,
+          this.send,
         ),
       ),
     );
@@ -152,13 +150,15 @@ export class FhenixClientV2 {
     if (!this.fhePublicKeysInitialized) {
       throw new Error("FHE Public Keys not initialized");
     }
-    if (!this.fhePublicKeys[securityZone]) {
+
+    const key = getFheKey(this.chainId, securityZone);
+    if (!key) {
       throw new Error(
         `Public key for security zone ${securityZone} not initialized`,
       );
     }
 
-    return this.fhePublicKeys[securityZone];
+    return key;
   }
 
   /**
@@ -344,18 +344,21 @@ export class FhenixClientV2 {
    * @param {string} permitV2Hash - The hash of the permit to use for this operation, defaults to active permitV2 hash
    * @returns bigint - The unsealed message.
    */
-  unseal(ciphertext: string, hash?: string): bigint {
+  unseal(ciphertext: string, account?: string, hash?: string): bigint {
     isString(ciphertext);
-    const resolvedHash = hash ?? this.activePermitHash;
-    if (resolvedHash == null) {
+    const resolvedAccount = account ?? this.account;
+    const resolvedHash = hash ?? getActivePermitHashFromStore(resolvedAccount);
+    if (resolvedAccount == null || resolvedHash == null) {
       throw new Error(
         `PermitV2 hash not provided and active PermitV2 not found`,
       );
     }
 
-    const permit = this.permits[resolvedHash];
+    const permit = getPermitFromStore(resolvedAccount, resolvedHash);
     if (permit == null) {
-      throw new Error(`PermitV2 with hash ${hash} not found`);
+      throw new Error(
+        `PermitV2 with account <${account}> and hash <${hash}> not found`,
+      );
     }
 
     return permit.sealingPair.unseal(ciphertext);
@@ -376,35 +379,15 @@ export class FhenixClientV2 {
       throw new Error("Cannot generate permit without chainId or account");
 
     const permit = await generatePermitV2(
-      this.account,
       this.chainId,
       options,
       this.signTypedData,
     );
 
-    // Permit has already been put into local storage, it can be inserted directly into `this.permits`
-    const hash = getPermitV2Hash(permit);
-    this.permits[hash] = permit;
-    this.activePermitHash = hash;
+    setPermitInStore(this.account, permit);
+    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
 
     return permit;
-  }
-
-  /**
-   * Reusable permit loading and storing from local storage
-   * @param {string} account - The address of the user account.
-   * @param {string} hash - Hashed identifier of permitV2 data.
-   * @returns {PermitV2 | undefined} - The permit loaded from local storage
-   */
-  private _loadPermitFromLocalStorage(
-    account: string,
-    hash: string,
-  ): PermitV2 | undefined {
-    const fromLs = getPermitV2FromLocalstorage(account, hash);
-    if (fromLs == null) return undefined;
-
-    this.permits[hash] = fromLs;
-    return fromLs;
   }
 
   /**
@@ -414,23 +397,7 @@ export class FhenixClientV2 {
    * @returns {PermitV2 | undefined} - The permit associated with the contract address.
    */
   getPermit(account: string, hash: string): PermitV2 | undefined {
-    const permitFromLs = this._loadPermitFromLocalStorage(account, hash);
-    return permitFromLs ?? this.permits[hash];
-  }
-
-  /**
-   * Retrieves all stored permits for a specific account.
-   * @param {string} account - The address of the user account.
-   * @returns {Record<string, PermitV2>} - The permits associated with each contract address.
-   */
-  loadAllPermitsFromLocalStorage(account: string): Record<string, PermitV2> {
-    const existingPermits = getAllExistingPermitV2s(account);
-
-    Object.keys(existingPermits).forEach((hash) => {
-      this.permits[hash] = existingPermits[hash];
-    });
-
-    return this.permits;
+    return getPermitFromStore(account, hash);
   }
 
   /**
@@ -439,8 +406,7 @@ export class FhenixClientV2 {
    * @param {PermitV2} permit - The permit to store.
    */
   storePermit(account: string, permit: PermitV2) {
-    storePermitV2InLocalStorage(account, permit);
-    this.permits[getPermitV2Hash(permit)] = permit;
+    setPermitInStore(account, permit);
   }
 
   /**
@@ -449,10 +415,7 @@ export class FhenixClientV2 {
    * @param {string} hash - The hashed permitV2 data.
    */
   removePermit(account: string, hash: string) {
-    if (this.hasPermit(account, hash)) {
-      removePermitV2FromLocalStorage(account, hash);
-      delete this.permits[hash];
-    }
+    removePermitFromStore(account, hash);
   }
 
   /**
@@ -462,9 +425,8 @@ export class FhenixClientV2 {
    * @returns {boolean} - True if a permit exists, false otherwise.
    */
   hasPermit(account: string, hash: string): boolean {
-    const permitFromLs = this._loadPermitFromLocalStorage(account, hash);
-    if (permitFromLs != null) return true;
-    return this.permits[hash] != null;
+    const permit = getPermitFromStore(account, hash);
+    return permit == null;
   }
 
   /**
@@ -472,7 +434,19 @@ export class FhenixClientV2 {
    * @returns {ContractPermits} - All stored permits.
    */
   exportPermits() {
-    return this.permits;
+    return getPermitsFromStore(this.account);
+  }
+
+  getActivePermitPermission(): PermissionV2 | undefined {
+    if (this.account == null) return undefined;
+
+    const activePermitHash = getActivePermitHashFromStore(this.account);
+    if (activePermitHash == null) return undefined;
+
+    const permit = getPermitFromStore(this.account, activePermitHash);
+    if (permit == null) return undefined;
+
+    return this.extractPermitPermission(permit);
   }
 
   extractPermitPermission({ sealingPair, ...permit }: PermitV2): PermissionV2 {
@@ -506,9 +480,12 @@ export class FhenixClientV2 {
    */
   static async getFheKeyFromProvider(
     chainId: string | undefined,
-    send: SendFn,
     securityZone: number = 0,
+    send: SendFn,
   ): Promise<TfheCompactPublicKey> {
+    const storedKey = getFheKey(chainId, securityZone);
+    if (storedKey != null) return storedKey;
+
     const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
     const callData = funcSig + toABIEncodedUint32(securityZone);
 
@@ -546,7 +523,9 @@ export class FhenixClientV2 {
     const buff = fromHexString(publicKey.slice(130));
 
     try {
-      return TfheCompactPublicKey.deserialize(buff);
+      const key = TfheCompactPublicKey.deserialize(buff);
+      setFheKey(chainId, securityZone, key);
+      return key;
     } catch (err) {
       throw new Error(`Error deserializing public key ${err}`);
     }

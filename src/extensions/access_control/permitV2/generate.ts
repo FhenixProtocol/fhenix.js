@@ -118,7 +118,7 @@ export const generatePermitV2 = async (
     message,
   );
 
-  const permitV2: PermitV2 = {
+  return {
     issuer,
     expiration,
     sealingPair: keypair,
@@ -130,6 +130,38 @@ export const generatePermitV2 = async (
     issuerSignature,
     recipientSignature: "0x",
   };
+};
 
-  return permitV2;
+export const generatePermitV2AsRecipient = async (
+  chainId: string,
+  issuerPermit: PermitV2,
+  signTypedData: SignTypedDataFn,
+): Promise<PermitV2> => {
+  const keypair = await GenerateSealingKey();
+
+  const { types, message } = getSignatureTypesAndMessage(
+    "PermissionedV2Receiver",
+    SignatureTypes["PermissionedV2Receiver"],
+    {
+      sealingKey: `0x${keypair.publicKey}`,
+      issuerSignature: issuerPermit.issuerSignature,
+    },
+  );
+
+  const recipientSignature = await signTypedData(
+    {
+      name: "Fhenix Permission v2.0.0",
+      version: "v2.0.0",
+      chainId,
+      verifyingContract: ZeroAddress,
+    },
+    types,
+    message,
+  );
+
+  return {
+    ...issuerPermit,
+    sealingPair: keypair,
+    recipientSignature,
+  };
 };

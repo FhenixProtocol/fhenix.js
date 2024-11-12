@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { PermitV2, PermitV2Core, SerializedPermitV2 } from "./types";
+import {
+  PermissionV2,
+  PermitV2,
+  PermitV2Core,
+  SerializedPermitV2,
+} from "./types";
 import { SealingKey } from "../sdk/sealing";
 import { keccak256, ZeroAddress } from "ethers";
 import { TfheCompactPublicKey } from "../sdk/fhe/fhe";
@@ -16,7 +21,7 @@ type PersistState = {
   fheKeys: ChainRecord<SecurityZoneRecord<Uint8Array | undefined>>;
 };
 
-export const useStore = create<PersistState>()(
+export const useFhenixStore = create<PersistState>()(
   persist(
     () => ({
       permits: {},
@@ -26,6 +31,16 @@ export const useStore = create<PersistState>()(
     { name: "fhenix.js" },
   ),
 );
+
+const extractPermitPermission = ({
+  sealingPair,
+  ...permit
+}: PermitV2): PermissionV2 => {
+  return {
+    ...permit,
+    sealingKey: `0x${sealingPair.publicKey}`,
+  };
+};
 
 const serializePermitV2 = (permitV2: PermitV2): SerializedPermitV2 => ({
   ...permitV2,
@@ -59,13 +74,45 @@ export const getPermitV2Hash = (permitV2: PermitV2Core): string => {
 };
 
 export const getPermit = (
-  account: string,
-  hash: string,
+  account: string | undefined,
+  hash: string | undefined,
 ): PermitV2 | undefined => {
-  const savedPermit = useStore.getState().permits[account]?.[hash];
+  if (account == null || hash == null) return;
+
+  const savedPermit = useFhenixStore.getState().permits[account]?.[hash];
   if (savedPermit == null) return;
 
   return parsePermitV2(savedPermit);
+};
+
+export const getActivePermit = (
+  account: string | undefined,
+): PermitV2 | undefined => {
+  if (account == null) return;
+
+  const activePermitHash = useFhenixStore.getState().activePermitHash[account];
+  return getPermit(account, activePermitHash);
+};
+
+export const getActivePermission = (
+  account: string | undefined,
+): PermissionV2 | undefined => {
+  const permit = getActivePermit(account);
+  if (permit == null) return;
+
+  return extractPermitPermission(permit);
+};
+
+export const getPermission = (
+  account: string | undefined,
+  hash: string | undefined,
+): PermissionV2 | undefined => {
+  if (hash == null) return getActivePermission(account);
+
+  const permit = getPermit(account, hash);
+  if (permit == null) return;
+
+  return extractPermitPermission(permit);
 };
 
 export const getPermits = (
@@ -73,7 +120,9 @@ export const getPermits = (
 ): Record<string, PermitV2> => {
   if (account == null) return {};
 
-  return Object.entries(useStore.getState().permits[account] ?? {}).reduce(
+  return Object.entries(
+    useFhenixStore.getState().permits[account] ?? {},
+  ).reduce(
     (acc, [hash, permit]) => {
       if (permit == undefined) return acc;
       return { ...acc, [hash]: parsePermitV2(permit) };
@@ -84,7 +133,7 @@ export const getPermits = (
 
 export const setPermit = (account: string, permitV2: PermitV2) => {
   const hash = getPermitV2Hash(permitV2);
-  useStore.setState((state) => ({
+  useFhenixStore.setState((state) => ({
     permits: {
       ...state.permits,
       [account]: {
@@ -96,7 +145,7 @@ export const setPermit = (account: string, permitV2: PermitV2) => {
 };
 
 export const removePermit = (account: string, hash: string) => {
-  useStore.setState((state) => ({
+  useFhenixStore.setState((state) => ({
     permits: {
       ...state.permits,
       [account]: {
@@ -111,11 +160,11 @@ export const getActivePermitHash = (
   account: string | undefined,
 ): string | undefined => {
   if (account == null) return undefined;
-  return useStore.getState().activePermitHash[account];
+  return useFhenixStore.getState().activePermitHash[account];
 };
 
 export const setActivePermitHash = (account: string, hash: string) => {
-  useStore.setState((state) => ({
+  useFhenixStore.setState((state) => ({
     activePermitHash: {
       ...state.activePermitHash,
       [account]: hash,
@@ -124,7 +173,7 @@ export const setActivePermitHash = (account: string, hash: string) => {
 };
 
 export const removeActivePermitHash = (account: string) => {
-  useStore.setState((state) => ({
+  useFhenixStore.setState((state) => ({
     activePermitHash: {
       ...state.activePermitHash,
       [account]: undefined,
@@ -138,7 +187,7 @@ export const getFheKey = (
 ): TfheCompactPublicKey | undefined => {
   if (chainId == null || securityZone == null) return undefined;
 
-  const serialized = useStore.getState().fheKeys[chainId]?.[securityZone];
+  const serialized = useFhenixStore.getState().fheKeys[chainId]?.[securityZone];
   if (serialized == null) return undefined;
 
   return TfheCompactPublicKey.deserialize(serialized);
@@ -151,7 +200,7 @@ export const setFheKey = (
 ) => {
   if (chainId == null || securityZone == null) return;
 
-  useStore.setState((state) => ({
+  useFhenixStore.setState((state) => ({
     fheKeys: {
       ...state.fheKeys,
       [chainId]: {
@@ -168,7 +217,7 @@ export const removeFheKey = (
 ) => {
   if (chainId == null || securityZone == null) return;
 
-  useStore.setState((state) => ({
+  useFhenixStore.setState((state) => ({
     fheKeys: {
       ...state.fheKeys,
       [chainId]: {

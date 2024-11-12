@@ -63,6 +63,10 @@ export type PermitV2 = {
   recipientSignature: string;
 };
 
+export type PermitV2Satisfiers = Expand<
+  Pick<PermitV2, "contracts" | "projects">
+>;
+
 export type PermitV2Core = Expand<
   Pick<PermitV2, "issuer"> &
     Partial<

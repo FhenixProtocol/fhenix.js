@@ -52,7 +52,8 @@
   "dependencies": {
     "@types/node": "^20.0.0",
     "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1"
+    "tweetnacl-util": "^0.15.1",
+    "zustand": "^5.0.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "25.0.8",

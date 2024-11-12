@@ -1,14 +1,17 @@
 import { ZeroAddress } from "../../../sdk/utils.js";
-import {
-  determineRequestMethod,
-  determineRequestSigner,
-  SupportedProvider,
-} from "../../../sdk/types.js";
-import { EIP712Domain, EIP712Message, EIP712Types } from "../EIP712.js";
+import { EIP712Message, EIP712Types } from "../EIP712.js";
 import { GenerateSealingKey, SealingKey } from "../../../sdk/sealing.js";
 import { keccak256 } from "ethers";
 
-const PERMIT_V2_PREFIX = "Fhenix_saved_permit_v2_";
+const PERMIT_V2_PREFIX = "Fhenix_saved_permit_v2";
+const ACTIVE_PERMIT_V2_HASH_PREFIX = "Fhenix_active_permit_v2_hash";
+
+export type SendFn = (method: string, params?: unknown[]) => Promise<unknown>;
+export type SignTypedDataFn = (
+  domain: object,
+  types: object,
+  value: object,
+) => Promise<string>;
 
 /**
  * Type representing the full PermitV2
@@ -66,6 +69,26 @@ export type PermitV2 = {
   recipientSignature: string;
 };
 
+export type PermitV2Core = Expand<
+  Pick<PermitV2, "issuer"> &
+    Partial<
+      Pick<
+        PermitV2,
+        | "contracts"
+        | "projects"
+        | "recipient"
+        | "validatorId"
+        | "validatorContract"
+      >
+    >
+>;
+export type PermitV2Options = Expand<
+  Partial<
+    Omit<PermitV2, "sealingPair" | "issuerSignature" | "recipientSignature">
+  > &
+    Pick<PermitV2, "issuer">
+>;
+
 /**
  * A type representing the PermissionV2 struct that is passed to PermissionedV2.sol to grant encrypted data access.
  */
@@ -76,6 +99,66 @@ export type PermissionV2 = Expand<
 >;
 type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
+const PermitV2SignatureAllFields = [
+  { name: "issuer", type: "address" },
+  { name: "expiration", type: "uint64" },
+  { name: "contracts", type: "address[]" },
+  { name: "projects", type: "string[]" },
+  { name: "recipient", type: "address" },
+  { name: "validatorId", type: "uint256" },
+  { name: "validatorContract", type: "address" },
+  { name: "sealingKey", type: "bytes32" },
+  { name: "issuerSignature", type: "bytes" },
+] as const;
+type PermitV2SignatureFieldOption =
+  (typeof PermitV2SignatureAllFields)[number]["name"];
+
+const SignatureTypes = {
+  PermissionedV2IssuerSelf: [
+    "issuer",
+    "expiration",
+    "contracts",
+    "projects",
+    "recipient",
+    "validatorId",
+    "validatorContract",
+    "sealingKey",
+  ] satisfies PermitV2SignatureFieldOption[],
+  PermissionedV2IssuerShared: [
+    "issuer",
+    "expiration",
+    "contracts",
+    "projects",
+    "recipient",
+    "validatorId",
+    "validatorContract",
+  ] satisfies PermitV2SignatureFieldOption[],
+  PermissionedV2Receiver: [
+    "sealingKey",
+    "issuerSignature",
+  ] satisfies PermitV2SignatureFieldOption[],
+} as const;
+type SignatureIdentifier = keyof typeof SignatureTypes;
+
+const getSignatureTypesAndMessage = <T extends PermitV2SignatureFieldOption>(
+  typeName: SignatureIdentifier,
+  fields: T[] | readonly T[],
+  values: Expand<Pick<PermissionV2, T> & Partial<PermissionV2>>,
+): { types: EIP712Types; message: EIP712Message } => {
+  const types = {
+    [typeName]: PermitV2SignatureAllFields.filter((fieldType) =>
+      fields.includes(fieldType.name as T),
+    ),
+  };
+
+  const message: EIP712Message = {};
+  for (const field in fields) {
+    message[field] = values[field];
+  }
+
+  return { types, message };
+};
+
 type SerializedPermitV2 = Omit<PermitV2, "sealingPair"> & {
   sealingPair: {
     privateKey: string;
@@ -83,25 +166,15 @@ type SerializedPermitV2 = Omit<PermitV2, "sealingPair"> & {
   };
 };
 
-const getPermitV2Hash = (
-  permitV2: Pick<
-    PermitV2,
-    | "issuer"
-    | "contracts"
-    | "projects"
-    | "recipient"
-    | "validatorId"
-    | "validatorContract"
-  >,
-): string => {
+export const getPermitV2Hash = (permitV2: PermitV2Core): string => {
   return keccak256(
     JSON.stringify({
       issuer: permitV2.issuer,
-      contracts: permitV2.contracts,
-      projects: permitV2.projects,
-      recipient: permitV2.recipient,
-      validatorId: permitV2.validatorId,
-      validatorContract: permitV2.validatorContract,
+      contracts: permitV2.contracts ?? [],
+      projects: permitV2.projects ?? [],
+      recipient: permitV2.recipient ?? ZeroAddress,
+      validatorId: permitV2.validatorId ?? 0,
+      validatorContract: permitV2.validatorContract ?? ZeroAddress,
     }),
   );
 };
@@ -130,11 +203,14 @@ const parsePermitV2 = (savedPermit: string): PermitV2 => {
 };
 
 export const getPermitV2 = async (
-  options: Partial<
-    Omit<PermitV2, "sealingPair" | "issuerSignature" | "recipientSignature">
-  > &
-    Pick<PermitV2, "issuer">,
-  provider: SupportedProvider,
+  account: string,
+  chainId: string,
+  options: PermitV2Options,
+  signTypedData: (
+    domain: object,
+    types: object,
+    value: object,
+  ) => Promise<string>,
   autoGenerate: boolean = true,
 ): Promise<PermitV2 | null> => {
   const {
@@ -155,13 +231,15 @@ export const getPermitV2 = async (
     validatorContract,
   });
 
-  const savedPermit = getPermitV2FromLocalstorage(hash);
+  const savedPermit = getPermitV2FromLocalstorage(account, hash);
 
   const timestamp = Math.floor(Date.now() / 1000);
   if (savedPermit != null && savedPermit.expiration > timestamp)
     return savedPermit;
 
-  return autoGenerate ? generatePermitV2(options, provider) : null;
+  return autoGenerate
+    ? generatePermitV2(account, chainId, options, signTypedData)
+    : null;
 };
 
 export const getAllExistingPermitV2s = (
@@ -169,7 +247,7 @@ export const getAllExistingPermitV2s = (
 ): Record<string, PermitV2> => {
   const permits: Record<string, PermitV2> = {};
 
-  const search = new RegExp(`${PERMIT_V2_PREFIX}(.*?)_${account}`);
+  const search = new RegExp(`${PERMIT_V2_PREFIX}_${account}_(.*?)`);
 
   Object.keys(window.localStorage).forEach((key) => {
     const matchArray = key.match(search);
@@ -191,46 +269,11 @@ export const getAllExistingPermitV2s = (
   return permits;
 };
 
-interface SignerPublicSignedTypedData {
-  signTypedData(domain: object, types: object, value: object): Promise<string>;
-  getAddress(): Promise<string>;
-}
-interface SignerPrivateSignedTypedData {
-  _signTypedData(domain: object, types: object, value: object): Promise<string>;
-  getAddress(): Promise<string>;
-}
-
-export type PermitSigner =
-  | SignerPrivateSignedTypedData
-  | SignerPublicSignedTypedData;
-
-const sign = async (
-  signer: PermitSigner,
-  domain: EIP712Domain,
-  types: EIP712Types,
-  value: EIP712Message,
-): Promise<string> => {
-  if (
-    "_signTypedData" in signer &&
-    typeof signer._signTypedData == "function"
-  ) {
-    return await signer._signTypedData(domain, types, value);
-  } else if (
-    "signTypedData" in signer &&
-    typeof signer.signTypedData == "function"
-  ) {
-    return await signer.signTypedData(domain, types, value);
-  }
-  throw new Error("Unsupported signer");
-};
-
 export const generatePermitV2 = async (
-  options: Partial<
-    Omit<PermitV2, "sealingPair" | "issuerSignature" | "recipientSignature">
-  > &
-    Pick<PermitV2, "issuer">,
-  provider: SupportedProvider,
-  customSigner?: PermitSigner,
+  account: string,
+  chainId: string,
+  options: PermitV2Options,
+  signTypedData: SignTypedDataFn,
 ): Promise<PermitV2> => {
   const {
     issuer,
@@ -244,73 +287,28 @@ export const generatePermitV2 = async (
 
   const isSharing = recipient !== ZeroAddress;
 
-  if (!provider) {
-    throw new Error("Provider is undefined");
-  }
-
-  const requestMethod = determineRequestMethod(provider);
-
-  let signer: PermitSigner;
-  if (!customSigner) {
-    const getSigner = determineRequestSigner(provider);
-    signer = await getSigner(provider);
-  } else {
-    signer = customSigner;
-  }
-
-  const chainId = await requestMethod(provider, "eth_chainId", []);
-
   const keypair = await GenerateSealingKey();
 
-  let types: EIP712Types = {
-    PermissionedV2IssuerSelf: [
-      { name: "issuer", type: "address" },
-      { name: "expiration", type: "uint64" },
-      { name: "contracts", type: "address[]" },
-      { name: "projects", type: "string[]" },
-      { name: "recipient", type: "address" },
-      { name: "validatorId", type: "uint256" },
-      { name: "validatorContract", type: "address" },
-      { name: "sealingKey", type: "bytes32" },
-    ],
-  };
-  let message: object = {
-    issuer,
-    sealingKey: `0x${keypair.publicKey}`,
-    expiration: expiration.toString(),
-    contracts,
-    projects,
-    recipient,
-    validatorId,
-    validatorContract,
-  };
+  const signatureName = isSharing
+    ? "PermissionedV2IssuerShared"
+    : "PermissionedV2IssuerSelf";
 
-  if (isSharing) {
-    types = {
-      PermissionedV2IssuerShared: [
-        { name: "issuer", type: "address" },
-        { name: "expiration", type: "uint64" },
-        { name: "contracts", type: "address[]" },
-        { name: "projects", type: "string[]" },
-        { name: "recipient", type: "address" },
-        { name: "validatorId", type: "uint256" },
-        { name: "validatorContract", type: "address" },
-      ],
-    };
-    message = {
+  const { types, message } = getSignatureTypesAndMessage(
+    signatureName,
+    SignatureTypes[signatureName],
+    {
       issuer,
-      expiration: expiration.toString(),
+      sealingKey: `0x${keypair.publicKey}`,
+      expiration,
       contracts,
       projects,
       recipient,
       validatorId,
       validatorContract,
-    };
-  }
+    },
+  );
 
-  const msgSig = await sign(
-    signer,
-    // Domain
+  const issuerSignature = await signTypedData(
     {
       name: "Fhenix Permission v2.0.0",
       version: "v2.0.0",
@@ -318,7 +316,7 @@ export const generatePermitV2 = async (
       verifyingContract: ZeroAddress,
     },
     types,
-    message as EIP712Message,
+    message,
   );
 
   const permitV2: PermitV2 = {
@@ -330,43 +328,75 @@ export const generatePermitV2 = async (
     recipient: recipient,
     validatorId,
     validatorContract,
-    issuerSignature: msgSig,
+    issuerSignature,
     recipientSignature: "0x",
   };
 
-  storePermitV2InLocalStorage(permitV2);
+  storePermitV2InLocalStorage(account, permitV2);
+  updateActivePermitV2HashInLS(account, permitV2);
   return permitV2;
 };
 
-export const removePermitV2 = (hash: string): void => {
-  if (typeof window === "undefined" || window.localStorage == null) return;
-
-  window.localStorage.removeItem(`${PERMIT_V2_PREFIX}${hash}`);
-};
+const localStorageAvailable = () =>
+  typeof window !== "undefined" && window.localStorage != null;
 
 export const getPermitV2FromLocalstorage = (
+  account: string,
   hash: string,
 ): PermitV2 | undefined => {
-  if (typeof window === "undefined" || window.localStorage == null) return;
+  if (!localStorageAvailable()) return;
 
-  const savedPermit = window.localStorage.getItem(`${PERMIT_V2_PREFIX}${hash}`);
+  const savedPermit = window.localStorage.getItem(
+    [PERMIT_V2_PREFIX, account, hash].join("_"),
+  );
   if (savedPermit == null) return;
 
   return parsePermitV2(savedPermit);
 };
 
-export const storePermitV2InLocalStorage = (permitV2: PermitV2) => {
-  if (typeof window === "undefined" || window.localStorage == null) return;
+export const storePermitV2InLocalStorage = (
+  account: string,
+  permitV2: PermitV2,
+) => {
+  if (!localStorageAvailable()) return;
 
   const hash = getPermitV2Hash(permitV2);
 
   window.localStorage.setItem(
-    `${PERMIT_V2_PREFIX}${hash}`,
+    [PERMIT_V2_PREFIX, account, hash].join("_"),
     serializePermitV2(permitV2),
   );
 };
 
-export const removePermitV2FromLocalstorage = (hash: string) => {
-  if (typeof window === "undefined" || window.localStorage == null) return;
-  window.localStorage.removeItem(`${PERMIT_V2_PREFIX}${hash}`);
+export const removePermitV2FromLocalStorage = (
+  account: string,
+  hash: string,
+): void => {
+  if (!localStorageAvailable()) return;
+  window.localStorage.removeItem([PERMIT_V2_PREFIX, account, hash].join("_"));
+};
+
+// Localstorage (active permitV2 hash)
+
+export const updateActivePermitV2HashInLS = (
+  account: string,
+  permitV2: PermitV2,
+) => {
+  if (!localStorageAvailable()) return;
+
+  window.localStorage.setItem(
+    [ACTIVE_PERMIT_V2_HASH_PREFIX, account].join("_"),
+    getPermitV2Hash(permitV2),
+  );
+};
+
+export const getActivePermitV2HashFromLS = (account: string) => {
+  if (!localStorageAvailable()) return;
+
+  const hash = window.localStorage.getItem(
+    [ACTIVE_PERMIT_V2_HASH_PREFIX, account].join("_"),
+  );
+
+  if (hash == null) return;
+  return hash;
 };

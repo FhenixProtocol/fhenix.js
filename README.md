@@ -115,6 +115,47 @@ Also, if you had to fiddle with a bundler or config to get it working, please sh
 
 Completely untested. Maybe yes, maybe no, maybe both.
 
+### FhenixClientV2
+
+```typescript
+const provider = new JsonRpcProvider("http://localhost:8545");
+
+const client = new FhenixClientV2();
+await client.initialize({
+  send: provider.send,
+  signTypedData: (await provider.getSigner()).signTypedData
+})
+
+// Create PermitV2 (will trigger a wallet signature in web3 frontend)
+await client.createPermit({
+  type: 'self',
+  issuer: account,
+  projects: ["COUNTER", "FHERC20"],
+})
+
+// Encrypt (will encrypt any nested encryptables)
+const encrypted = client.encryptTyped([
+  Encryptable.uint8(5),
+  [Encryptable.uint128("50"), Encryptable.bool(true)],
+  50n,
+  "hello"
+])
+// encrypted - [EncryptedUint8, [EncryptedUint128, EncryptedBool], bigint, string]
+
+// Inject permission (read operation)
+const sealed = await counter.connect(bob).getCount(client.getPermission())
+// sealed - SealedUint({ data: ciphertext, utype: 0-5 })
+
+// Unseal (will unseal any nested SealedItems)
+const unsealed = await client.unsealTyped([
+  sealed, 
+  MockSealedUint, 
+  MockSealedBool, 
+  { hello: "world", sealed: MockSealedAddress }
+])
+// unsealed - [bigint, bigint, bool, { hello: string, sealed: string }]
+```
+
 ## Usage
 
 ```javascript

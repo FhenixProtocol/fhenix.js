@@ -1,6 +1,5 @@
+import { ZeroAddress } from "ethers";
 import { z } from "zod";
-
-const ZeroAddress = "0x0000000000000000000000000000000000000000";
 
 const SerializedSealingPair = z.object({
   privateKey: z.string(),

@@ -5,21 +5,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import {
-  FhenixClient,
-  FhenixClientSync,
-  GenerateSealingKey,
-  getPermit,
-  Permit,
-  SealingKey,
-} from "../lib/esm";
+import { SealingKey } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
 import { MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
-import { getAllExistingPermits } from "../src/fhenix";
-import { FhenixClientV2 } from "../src/sdk/clientV2";
 import { PermitV2 } from "../src/sdk/permitV2";
-import { getAddress, hexlify, ZeroAddress } from "ethers";
+import { getAddress, ZeroAddress } from "ethers";
 import { SealedAddress, SealedBool, SealedUint } from "../src/sdk/types";
 
 describe("PermitV2 Tests", () => {

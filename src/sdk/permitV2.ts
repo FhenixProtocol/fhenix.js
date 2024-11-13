@@ -22,6 +22,7 @@ import {
   SealedItem,
   SealedUint,
 } from "./types";
+import { PermitV2OptionsValidator, PermitV2Validator } from "./permitV2.z";
 
 export class PermitV2 implements PermitV2Interface {
   /**
@@ -97,17 +98,30 @@ export class PermitV2 implements PermitV2Interface {
   }
 
   static async create(options: PermitV2Options) {
+    const {
+      success,
+      data: parsed,
+      error,
+    } = PermitV2OptionsValidator.safeParse(options);
+
+    if (!success) {
+      console.log("Error parsing PermitV2Options", options, error);
+      throw new Error(
+        "Parsing PermitV2Options failed " + JSON.stringify(error, null, 2),
+      );
+    }
+
+    const sealingPair =
+      parsed.sealingPair != null
+        ? new SealingKey(
+            parsed.sealingPair.privateKey,
+            parsed.sealingPair.publicKey,
+          )
+        : await GenerateSealingKey();
+
     return new PermitV2({
-      contracts: [],
-      projects: [],
-      expiration: 1000000000000,
-      recipient: ZeroAddress,
-      validatorId: 0,
-      validatorContract: ZeroAddress,
-      sealingPair: await GenerateSealingKey(),
-      issuerSignature: "0x",
-      recipientSignature: "0x",
-      ...options,
+      ...parsed,
+      sealingPair,
     });
   }
 
@@ -126,6 +140,10 @@ export class PermitV2 implements PermitV2Interface {
         sealingPair.publicKey,
       ),
     });
+  };
+
+  static validate = (permit: PermitV2) => {
+    return PermitV2Validator.safeParse(permit);
   };
 
   /**

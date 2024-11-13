@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { Permit } from "../extensions/access_control/index.js";
-import { Primitive } from "type-fest";
+import { LiteralToPrimitive, Primitive } from "type-fest";
 import { PermissionV2 } from "../extensions/types.js";
 export { PermitSigner } from "../extensions/access_control/index.js";
 
@@ -152,14 +152,14 @@ export type EncryptedNumber = {
   securityZone: number;
 };
 
-export type EncryptedBool = EncryptedNumber;
-export type EncryptedUint8 = EncryptedNumber;
-export type EncryptedUint16 = EncryptedNumber;
-export type EncryptedUint32 = EncryptedNumber;
-export type EncryptedUint64 = EncryptedNumber;
-export type EncryptedUint128 = EncryptedNumber;
-export type EncryptedUint256 = EncryptedNumber;
-export type EncryptedAddress = EncryptedNumber;
+export interface EncryptedBool extends EncryptedNumber {}
+export interface EncryptedUint8 extends EncryptedNumber {}
+export interface EncryptedUint16 extends EncryptedNumber {}
+export interface EncryptedUint32 extends EncryptedNumber {}
+export interface EncryptedUint64 extends EncryptedNumber {}
+export interface EncryptedUint128 extends EncryptedNumber {}
+export interface EncryptedUint256 extends EncryptedNumber {}
+export interface EncryptedAddress extends EncryptedNumber {}
 
 export type EncryptableBool = {
   data: boolean;
@@ -202,6 +202,25 @@ export type EncryptableAddress = {
   utype: FheUType.address;
 };
 
+export const Encryptable = {
+  bool: (data: EncryptableBool["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.bool }) as EncryptableBool,
+  uint8: (data: EncryptableUint8["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.uint8 }) as EncryptableUint8,
+  uint16: (data: EncryptableUint16["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.uint16 }) as EncryptableUint16,
+  uint32: (data: EncryptableUint32["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.uint32 }) as EncryptableUint32,
+  uint64: (data: EncryptableUint64["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.uint64 }) as EncryptableUint64,
+  uint128: (data: EncryptableUint128["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.uint128 }) as EncryptableUint128,
+  uint256: (data: EncryptableUint256["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.uint256 }) as EncryptableUint256,
+  address: (data: EncryptableAddress["data"], securityZone?: number) =>
+    ({ data, securityZone, utype: FheUType.address }) as EncryptableAddress,
+} as const;
+
 export type EncryptableItem =
   | EncryptableBool
   | EncryptableUint8
@@ -212,21 +231,29 @@ export type EncryptableItem =
   | EncryptableUint256
   | EncryptableAddress;
 
-export type EncryptedItemMap<E extends EncryptableItem> = {
-  [FheUType.bool]: EncryptedBool;
-  [FheUType.uint8]: EncryptedUint8;
-  [FheUType.uint16]: EncryptedUint16;
-  [FheUType.uint32]: EncryptedUint32;
-  [FheUType.uint64]: EncryptedUint64;
-  [FheUType.uint128]: EncryptedUint128;
-  [FheUType.uint256]: EncryptedUint256;
-  [FheUType.address]: EncryptedAddress;
-}[E["utype"]];
+export type EncryptedItemMap<E extends EncryptableItem> =
+  E extends EncryptableBool
+    ? EncryptedBool
+    : E extends EncryptableUint8
+      ? EncryptedUint8
+      : E extends EncryptableUint16
+        ? EncryptedUint16
+        : E extends EncryptableUint32
+          ? EncryptedUint32
+          : E extends EncryptableUint64
+            ? EncryptedUint64
+            : E extends EncryptableUint128
+              ? EncryptedUint128
+              : E extends EncryptableUint256
+                ? EncryptedUint256
+                : E extends EncryptableAddress
+                  ? EncryptedAddress
+                  : never;
 
 export type MappedEncryptedTypes<T> = T extends "permission"
   ? PermissionV2
   : T extends Primitive
-    ? T
+    ? LiteralToPrimitive<T>
     : T extends EncryptableItem
       ? EncryptedItemMap<T>
       : {
@@ -266,7 +293,7 @@ export type UnsealedItemMap<S extends SealedItem> = S extends SealedBool
       : never;
 
 export type MappedUnsealedTypes<T> = T extends Primitive
-  ? T
+  ? LiteralToPrimitive<T>
   : T extends SealedItem
     ? UnsealedItemMap<T>
     : {

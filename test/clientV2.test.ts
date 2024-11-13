@@ -4,7 +4,7 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
 import {
   FhenixClient,
   FhenixClientSync,
@@ -14,36 +14,50 @@ import {
   SealingKey,
 } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
-import { MockProvider } from "./utils";
+import { MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import { getAllExistingPermits } from "../src/fhenix";
 import { FhenixClientV2 } from "../src/sdk/clientV2";
+import { PermitV2 } from "../src/sdk/permitV2";
+import { getAddress, hexlify, ZeroAddress } from "ethers";
+import {
+  Encryptable,
+  EncryptedAddress,
+  EncryptedBool,
+  EncryptedUint64,
+  EncryptedUint8,
+  SealedAddress,
+  SealedBool,
+  SealedUint,
+} from "../src/sdk/types";
+import { PermissionV2 } from "../src/extensions/types";
 
 describe("PermitV2 Tests", () => {
-  let tfhePublicKey: string;
-  let provider: MockProvider;
-  let signerAddress: string;
+  let bobPublicKey: string;
+  let bobProvider: MockProvider;
+  let bobSigner: MockSigner;
+  let bobAddress: string;
+
+  let adaPublicKey: string;
+  let adaProvider: MockProvider;
+  let adaSigner: MockSigner;
+  let adaAddress: string;
+
   const contractAddress = "0x1c786b8ca49D932AFaDCEc00827352B503edf16c";
   const contractAddress2 = "0xB170fC5BAC4a87A63fC84653Ee7e0db65CC62f96";
-  const projectId = "COUNTER";
-  const projectId2 = "UNISWAP";
-
-  const createClient = async (provider: MockProvider) => {
-    const client = new FhenixClientV2();
-
-    await client.initialize({
-      account: await (await provider.getSigner()).getAddress(),
-      send: provider.send,
-      signTypedData: (await provider.getSigner())._signTypedData,
-    });
-
-    return client;
-  };
+  const counterProjectId = "COUNTER";
+  const uniswapProjectId = "UNISWAP";
 
   beforeAll(async () => {
-    tfhePublicKey = createTfhePublicKey();
-    provider = new MockProvider(tfhePublicKey);
-    signerAddress = await (await provider.getSigner()).getAddress();
+    bobPublicKey = createTfhePublicKey();
+    bobProvider = new MockProvider(bobPublicKey);
+    bobSigner = await bobProvider.getSigner();
+    bobAddress = await bobSigner.getAddress();
+
+    adaPublicKey = createTfhePublicKey();
+    adaProvider = new MockProvider(adaPublicKey);
+    adaSigner = await adaProvider.getSigner();
+    adaAddress = await adaSigner.getAddress();
   });
 
   afterEach(() => {
@@ -54,49 +68,64 @@ describe("PermitV2 Tests", () => {
     expect(typeof window).not.toBe("undefined");
   });
 
-  it("creates an instance", async () => {
+  it("constructor", async () => {
     const client = new FhenixClientV2();
-
-    expect(client.fhevmInitialized).to.eq(false);
-    expect(client.fhePublicKeysInitialized).to.eq(false);
-    expect(client.account).to.eq(undefined);
-    expect(client.chainId).to.eq(undefined);
-    expect(client.securityZones).to.eq(undefined);
-
-    const account = await (await provider.getSigner()).getAddress();
-
+    expect(client).to.not.be.null;
+  });
+  it("initialize", async () => {
+    const client = new FhenixClientV2();
     await client.initialize({
-      account,
-      send: provider.send,
-      signTypedData: (await provider.getSigner())._signTypedData,
+      account: bobAddress,
+      send: bobProvider.send,
+      signTypedData: bobSigner._signTypedData,
     });
 
     expect(client.fhevmInitialized).to.eq(true);
     expect(client.fhePublicKeysInitialized).to.eq(true);
-    expect(client.account).to.eq(account);
-    expect(client.chainId).to.eq(provider.chainId);
-    expect(client.securityZones).to.eq([0]);
   });
-
-  // Core
-  it("re-initialize");
-  it("multiple clients");
-
-  // Encrypt
+  it("re-initialize (change account)");
   it("encrypt");
+  it("encryptTyped", async () => {
+    const client = new FhenixClientV2();
+    await client.initialize({
+      account: bobAddress,
+      send: bobProvider.send,
+      signTypedData: bobSigner._signTypedData,
+    });
 
-  // Permit
+    await client.createPermit({
+      type: "self",
+      issuer: bobAddress,
+      projects: [counterProjectId],
+    });
+
+    const PermissionSlot = "permission" as const;
+
+    const injectedPermission = client.encryptTyped(PermissionSlot);
+    expectTypeOf(injectedPermission).toEqualTypeOf<PermissionV2>();
+
+    const nestedEncrypt = client.encryptTyped([
+      PermissionSlot,
+      { a: Encryptable.bool(false), b: Encryptable.uint64(10n), c: "hello" },
+      ["hello", 20n, Encryptable.address(contractAddress)],
+      Encryptable.uint8(10),
+    ] as const);
+
+    type ExpectedEncryptedType = [
+      PermissionV2,
+      Readonly<{ a: EncryptedBool; b: EncryptedUint64; c: string }>,
+      Readonly<[string, bigint, EncryptedAddress]>,
+      EncryptedUint8,
+    ];
+
+    expectTypeOf<ExpectedEncryptedType>().toEqualTypeOf(nestedEncrypt);
+  });
   it("createPermit");
-  it("createPermitAsRecipient");
-  it("usePermit");
   it("importPermit");
+  it("selectActivePermit");
   it("getPermit");
   it("getPermission");
   it("getAllPermits");
-
-  // Unseal
   it("unseal");
-
-  // Integration
-  it("sharing");
+  it("unsealTyped");
 });

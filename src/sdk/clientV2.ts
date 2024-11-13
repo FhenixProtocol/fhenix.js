@@ -529,6 +529,33 @@ export class FhenixClientV2 {
     return permit.unseal(ciphertext);
   }
 
+  /**
+   * Uses the privateKey of `permit.sealingPair` to recursively unseal any contained `SealedItems`.
+   * If `item` is a single `SealedItem` it will be individually.
+   * NOTE: Only unseals typed `SealedItem`s returned from `FHE.sealoutputTyped` and the FHE bindings' `e____.sealTyped`.
+   *
+   * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
+   * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
+   */
+  unsealTyped<T>(item: T, account?: string, hash?: string) {
+    const resolvedAccount = account ?? this.account;
+    const resolvedHash = hash ?? getActivePermitHashFromStore(resolvedAccount);
+    if (resolvedAccount == null || resolvedHash == null) {
+      throw new Error(
+        `PermitV2 hash not provided and active PermitV2 not found`,
+      );
+    }
+
+    const permit = getPermitFromStore(resolvedAccount, resolvedHash);
+    if (permit == null) {
+      throw new Error(
+        `PermitV2 with account <${account}> and hash <${hash}> not found`,
+      );
+    }
+
+    return permit.unsealTyped(item);
+  }
+
   // Helpers
 
   async getChainIdFromProvider(send: SendFn): Promise<string> {

@@ -1,5 +1,6 @@
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { Permit } from "../extensions/access_control/index.js";
+import { Primitive } from "type-fest";
 export { PermitSigner } from "../extensions/access_control/index.js";
 
 /**
@@ -143,6 +144,33 @@ export type SealedAddress = {
   utype: 12;
 };
 export type SealedItem = SealedBool | SealedUint | SealedAddress;
+
+export type UnsealedItemMap<S extends SealedItem> = S extends SealedBool
+  ? boolean
+  : S extends SealedUint
+    ? bigint
+    : S extends SealedAddress
+      ? string
+      : never;
+
+export type MappedUnsealedTypes<T> = T extends Primitive
+  ? T
+  : T extends SealedItem
+    ? UnsealedItemMap<T>
+    : {
+        [K in keyof T]: MappedUnsealedTypes<T[K]>;
+      };
+
+// Type guard for any SealedItem
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isSealedItem(value: any): value is SealedItem {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.data === "string" &&
+    [0, 1, 2, 3, 4, 5, 12, 13].includes(value.utype)
+  );
+}
 
 // Type guard for SealedBool
 export function isSealedBool(value: SealedItem): value is SealedBool {

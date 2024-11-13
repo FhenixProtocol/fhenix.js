@@ -16,11 +16,9 @@ import { isString } from "./validation";
 import {
   isSealedAddress,
   isSealedBool,
+  isSealedItem,
   isSealedUint,
-  SealedAddress,
-  SealedBool,
-  SealedItem,
-  SealedUint,
+  MappedUnsealedTypes,
 } from "./types";
 import { PermitV2OptionsValidator, PermitV2Validator } from "./permitV2.z";
 
@@ -268,34 +266,51 @@ export class PermitV2 implements PermitV2Interface {
   };
 
   /**
-   * Uses the privateKey of `permit.sealingPair` to unseal `sealed.data` ciphertext.
+   * Uses the privateKey of `permit.sealingPair` to recursively unseal any contained `SealedItems`.
+   * If `item` is a single `SealedItem` it will be individually.
+   * NOTE: Only unseals typed `SealedItem`s returned from `FHE.sealoutputTyped` and the FHE bindings' `e____.sealTyped`.
    *
-   * @param {SealedItem} sealed - Typed structs returned from `FHE.sealoutputTyped` and the FHE bindings' `e____.sealTyped`.
-   * @returns - Unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
+   * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
+   * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
    */
-  unsealTyped = <S extends SealedItem>(
-    sealed: S,
-  ): S extends SealedBool
-    ? boolean
-    : S extends SealedUint
-      ? bigint
-      : S extends SealedAddress
-        ? string
-        : never => {
-    const bn = this.sealingPair.unseal(sealed.data);
+  unsealTyped<T extends any[]>(item: [...T]): [...MappedUnsealedTypes<T>];
+  unsealTyped<T>(item: T): MappedUnsealedTypes<T>;
+  unsealTyped<T>(item: T) {
+    // SealedItem
+    if (isSealedItem(item)) {
+      const bn = this.sealingPair.unseal(item.data);
+      if (isSealedBool(item)) {
+        // Return a boolean for SealedBool
+        return Boolean(bn).valueOf() as any;
+      }
+      if (isSealedAddress(item)) {
+        // Return a string for SealedAddress
+        return getAddress(`0x${bn.toString(16).slice(-40)}`) as any;
+      }
+      if (isSealedUint(item)) {
+        // Return a bigint for SealedUint
+        return bn as any;
+      }
+    }
 
-    if (isSealedBool(sealed)) {
-      return Boolean(bn).valueOf() as any; // Return a boolean for SealedBool
-    }
-    if (isSealedAddress(sealed)) {
-      return getAddress(`0x${bn.toString(16).slice(-40)}`) as any; // Return a string for SealedAddress
-    }
-    if (isSealedUint(sealed)) {
-      return bn as any; // Return a bigint for SealedUint
+    // Object | Array
+    if (typeof item === "object" && item !== null) {
+      if (Array.isArray(item)) {
+        // Array - recurse
+        return item.map((nestedItem) => this.unsealTyped(nestedItem));
+      } else {
+        // Object - recurse
+        const result: any = {};
+        for (const key in item) {
+          result[key] = this.unsealTyped(item[key]);
+        }
+        return result;
+      }
     }
 
-    throw new Error("Unsupported type");
-  };
+    // Primitive
+    return item;
+  }
 
   /**
    * Check if permit satisfies the requirements param.

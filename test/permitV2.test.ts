@@ -4,7 +4,7 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
 import {
   FhenixClient,
   FhenixClientSync,
@@ -282,6 +282,61 @@ describe("PermitV2 Tests", () => {
     };
     const addressCleartext = permit.unsealTyped(addressCipherStruct);
     expect(addressCleartext).to.eq(addressValue);
+
+    // Array - Nested
+    const nestedCleartext = permit.unsealTyped([
+      boolCipherStruct,
+      ["hello", "world"],
+      uintCipherStruct,
+      5,
+      addressCipherStruct,
+      false,
+      20n,
+      {
+        bool: boolCipherStruct,
+        uint: uintCipherStruct,
+        address: addressCipherStruct,
+        clear: "clear",
+      },
+    ]);
+
+    type ExpectedCleartextType = [
+      boolean,
+      string[],
+      bigint,
+      number,
+      string,
+      boolean,
+      bigint,
+      {
+        bool: boolean;
+        uint: bigint;
+        address: string;
+        clear: string;
+      },
+    ];
+
+    const expectedCleartext: ExpectedCleartextType = [
+      boolValue,
+      ["hello", "world"],
+      uintValue,
+      5,
+      addressValue,
+      false,
+      20n,
+      {
+        bool: boolValue,
+        uint: uintValue,
+        address: addressValue,
+        clear: "clear",
+      },
+    ];
+
+    expectTypeOf<
+      typeof nestedCleartext
+    >().toEqualTypeOf<ExpectedCleartextType>();
+
+    expect(nestedCleartext).to.deep.eq(expectedCleartext);
   });
 
   it("serialize", async () => {

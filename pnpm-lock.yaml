@@ -29,6 +29,9 @@ dependencies:
       tweetnacl-util:
         specifier: ^0.15.1
         version: 0.15.1
+      type-fest:
+        specifier: ^4.26.1
+        version: 4.26.1
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -1812,6 +1815,10 @@ packages:
   type-fest@0.20.2:
     resolution: {integrity: sha512-Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ==}
     engines: {node: '>=10'}
+
+  type-fest@4.26.1:
+    resolution: {integrity: sha512-yOGpmOAL7CkKe/91I5O3gPICmJNLJ1G4zFYVAsRHg7M64biSnPtRj0WNQt++bRkjYOqjWXrhnUw1utzmVErAdg==}
+    engines: {node: '>=16'}
 
   typedoc-plugin-extras@3.0.0:
     resolution: {integrity: sha512-eiAe3qtm2WbV5owdncpt0zHZPqsNZH2mzNGILPd4zqrvEZie3Et9es4cpGZ+8lHO/SI0pVKwsAj7IuMxPNOdYg==}
@@ -3711,10 +3718,9 @@ snapshots:
     engines: {node: '>=10'}
     dev: true
 
-  /typedoc-plugin-extras@3.0.0(typedoc@0.25.13):
-    resolution: {integrity: sha512-eiAe3qtm2WbV5owdncpt0zHZPqsNZH2mzNGILPd4zqrvEZie3Et9es4cpGZ+8lHO/SI0pVKwsAj7IuMxPNOdYg==}
-    peerDependencies:
-      typedoc: 0.25.x
+  type-fest@4.26.1: {}
+
+  typedoc-plugin-extras@3.0.0(typedoc@0.25.13(typescript@5.4.5)):
     dependencies:
       typedoc: 0.25.13(typescript@5.4.5)
     dev: true

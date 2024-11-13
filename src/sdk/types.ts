@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { Permit } from "../extensions/access_control/index.js";
 import { Primitive } from "type-fest";
+import { PermissionV2 } from "../extensions/types.js";
 export { PermitSigner } from "../extensions/access_control/index.js";
 
 /**
@@ -23,6 +25,34 @@ export enum EncryptionTypes {
   uint256 = "uint256",
   address = "address",
 }
+export enum FheUType {
+  bool = 13,
+  uint8 = 0,
+  uint16 = 1,
+  uint32 = 2,
+  uint64 = 3,
+  uint128 = 4,
+  uint256 = 5,
+  address = 12,
+}
+export const FheUintUTypes = [
+  FheUType.uint8,
+  FheUType.uint16,
+  FheUType.uint32,
+  FheUType.uint64,
+  FheUType.uint128,
+  FheUType.uint256,
+] as const;
+export const FheAllUTypes = [
+  FheUType.bool,
+  FheUType.uint8,
+  FheUType.uint16,
+  FheUType.uint32,
+  FheUType.uint64,
+  FheUType.uint128,
+  FheUType.uint256,
+  FheUType.address,
+] as const;
 
 /**
  * A type representing the signature for a permit.
@@ -116,31 +146,113 @@ export function determineRequestSigner(provider: SupportedProvider): Function {
   }
 }
 
-export interface EncryptedNumber {
+export type EncryptedNumber = {
   data: Uint8Array;
   securityZone: number;
-}
+};
 
-export interface EncryptedBool extends EncryptedNumber {}
-export interface EncryptedUint8 extends EncryptedNumber {}
-export interface EncryptedUint16 extends EncryptedNumber {}
-export interface EncryptedUint32 extends EncryptedNumber {}
-export interface EncryptedUint64 extends EncryptedNumber {}
-export interface EncryptedUint128 extends EncryptedNumber {}
-export interface EncryptedUint256 extends EncryptedNumber {}
-export interface EncryptedAddress extends EncryptedNumber {}
+export type EncryptedBool = EncryptedNumber;
+export type EncryptedUint8 = EncryptedNumber;
+export type EncryptedUint16 = EncryptedNumber;
+export type EncryptedUint32 = EncryptedNumber;
+export type EncryptedUint64 = EncryptedNumber;
+export type EncryptedUint128 = EncryptedNumber;
+export type EncryptedUint256 = EncryptedNumber;
+export type EncryptedAddress = EncryptedNumber;
+
+export type EncryptableBool = {
+  data: boolean;
+  securityZone?: number;
+  utype: FheUType.bool;
+};
+export type EncryptableUint8 = {
+  data: number;
+  securityZone?: number;
+  utype: FheUType.uint8;
+};
+export type EncryptableUint16 = {
+  data: number;
+  securityZone?: number;
+  utype: FheUType.uint16;
+};
+export type EncryptableUint32 = {
+  data: number;
+  securityZone?: number;
+  utype: FheUType.uint32;
+};
+export type EncryptableUint64 = {
+  data: string | bigint;
+  securityZone?: number;
+  utype: FheUType.uint64;
+};
+export type EncryptableUint128 = {
+  data: string | bigint;
+  securityZone?: number;
+  utype: FheUType.uint128;
+};
+export type EncryptableUint256 = {
+  data: string | bigint;
+  securityZone?: number;
+  utype: FheUType.uint256;
+};
+export type EncryptableAddress = {
+  data: string;
+  securityZone?: number;
+  utype: FheUType.address;
+};
+
+export type EncryptableItem =
+  | EncryptableBool
+  | EncryptableUint8
+  | EncryptableUint16
+  | EncryptableUint32
+  | EncryptableUint64
+  | EncryptableUint128
+  | EncryptableUint256
+  | EncryptableAddress;
+
+export type EncryptedItemMap<E extends EncryptableItem> = {
+  [FheUType.bool]: EncryptedBool;
+  [FheUType.uint8]: EncryptedUint8;
+  [FheUType.uint16]: EncryptedUint16;
+  [FheUType.uint32]: EncryptedUint32;
+  [FheUType.uint64]: EncryptedUint64;
+  [FheUType.uint128]: EncryptedUint128;
+  [FheUType.uint256]: EncryptedUint256;
+  [FheUType.address]: EncryptedAddress;
+}[E["utype"]];
+
+export type MappedEncryptedTypes<T> = T extends "permission"
+  ? PermissionV2
+  : T extends Primitive
+    ? T
+    : T extends EncryptableItem
+      ? EncryptedItemMap<T>
+      : {
+          [K in keyof T]: MappedEncryptedTypes<T[K]>;
+        };
+
+export function isEncryptableItem(value: any): value is EncryptableItem {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.data === "string" &&
+    typeof value.securityZone === "number" &&
+    FheAllUTypes.includes(value.utype)
+  );
+}
 
 export type SealedBool = {
   data: string;
-  utype: 13;
+  utype: FheUType.bool;
 };
 export type SealedUint = {
   data: string;
-  utype: 0 | 1 | 2 | 3 | 4 | 5;
+  utype: (typeof FheUintUTypes)[number];
 };
 export type SealedAddress = {
   data: string;
-  utype: 12;
+  utype: FheUType.address;
 };
 export type SealedItem = SealedBool | SealedUint | SealedAddress;
 
@@ -167,7 +279,7 @@ export function isSealedItem(value: any): value is SealedItem {
     typeof value === "object" &&
     value !== null &&
     typeof value.data === "string" &&
-    [0, 1, 2, 3, 4, 5, 12, 13].includes(value.utype)
+    FheAllUTypes.includes(value.utype)
   );
 }
 
@@ -177,7 +289,7 @@ export function isSealedBool(value: SealedItem): value is SealedBool {
     typeof value === "object" &&
     value !== null &&
     typeof value.data === "string" &&
-    value.utype === 13
+    value.utype === FheUType.bool
   );
 }
 
@@ -187,7 +299,7 @@ export function isSealedUint(value: SealedItem): value is SealedUint {
     typeof value === "object" &&
     value !== null &&
     typeof value.data === "string" &&
-    [0, 1, 2, 3, 4, 5].includes(value.utype)
+    FheUintUTypes.includes(value.utype as number)
   );
 }
 
@@ -197,7 +309,7 @@ export function isSealedAddress(value: SealedItem): value is SealedAddress {
     typeof value === "object" &&
     value !== null &&
     typeof value.data === "string" &&
-    value.utype === 12
+    value.utype === FheUType.address
   );
 }
 

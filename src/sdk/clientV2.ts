@@ -15,6 +15,9 @@ import {
   EncryptedUint64,
   EncryptedUint8,
   EncryptionTypes,
+  Result,
+  ResultErr,
+  ResultOk,
 } from "./types.js";
 
 import {
@@ -28,11 +31,6 @@ import * as tfheEncrypt from "./encrypt.js";
 import { isBigIntOrHexString, isNumber, isString } from "./validation.js";
 import { InitFhevm } from "./init.js";
 import {
-  generatePermitV2,
-  generatePermitV2AsRecipient,
-} from "../extensions/access_control/permitV2/generate.js";
-import {
-  getPermitV2Hash,
   getPermit as getPermitFromStore,
   setPermit as setPermitInStore,
   setActivePermitHash as setActivePermitHashInStore,
@@ -41,15 +39,15 @@ import {
   getFheKey,
   setFheKey,
   getActivePermit as getActivePermitFromStore,
-  getPermission as getPermissionFromStore,
 } from "../extensions/store.js";
 import {
   SendFn,
   SignTypedDataFn,
-  PermitV2,
+  PermitV2Interface,
   PermitV2Options,
   PermissionV2,
 } from "../extensions/types.js";
+import { PermitV2 } from "./permitV2.js";
 
 export class FhenixClientV2 {
   public account: string | undefined;
@@ -334,99 +332,119 @@ export class FhenixClientV2 {
 
   // Permits & Unsealing
 
-  // Create a fresh permit with options
-  // This new permit will be set as the active permit
+  /**
+   * Creates a new permit with options, prompts user for signature.
+   * Handles all `permit.type`s, and prompts for the correct signature type.
+   * The created PermitV2 will be inserted into the store and marked as the active permit.
+   * NOTE: This is a wrapper around `PermitV2.create` and `PermitV2.sign`
+   *
+   * @param {PermitV2Options} options - Partial PermitV2 fields to create the Permit with
+   * @returns {PermitV2} - Newly created PermitV2
+   */
   async createPermit(options: PermitV2Options): Promise<PermitV2> {
     if (this.account == null || this.chainId == null)
       throw new Error("Cannot generate permit without chainId or account");
 
-    const permit = await generatePermitV2(
-      this.chainId,
-      options,
-      this.signTypedData,
-    );
+    const permit = await PermitV2.create(options);
+    await permit.sign(this.chainId, this.signTypedData);
 
     setPermitInStore(this.account, permit);
-    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
+    setActivePermitHashInStore(this.account, permit.getHash());
 
     return permit;
   }
 
-  // Allows the `recipient` of a permit to inject it, and create the `recipientSignature` in turn
-  // This new permit will be set as the active permit
-  async createPermitAsRecipient(issuerPermit: PermitV2): Promise<PermitV2> {
-    if (this.account == null || this.chainId == null)
-      throw new Error("Cannot generate permit without chainId or account");
+  /**
+   * Imports a fully formed existing permit, expected to be valid.
+   * Does not ask for user signature, expects to already be populated.
+   * Will throw an error if the imported permit is invalid, see `PermitV2.isValid`.
+   * The imported PermitV2 will be inserted into the store and marked as the active permit.
+   *
+   * @param {PermitV2Interface} imported - Existing permit
+   */
+  async importPermit(imported: PermitV2Interface) {
+    if (this.account == null)
+      throw new Error("Cannot generate permit without account");
 
-    const permit = await generatePermitV2AsRecipient(
-      this.chainId,
-      issuerPermit,
-      this.signTypedData,
-    );
+    const permit = await PermitV2.create(imported);
+
+    const { valid, error } = permit.isValid();
+    if (!valid) {
+      throw new Error(`Imported permit is invalid: ${error}`);
+    }
 
     setPermitInStore(this.account, permit);
-    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
-
-    return permit;
+    setActivePermitHashInStore(this.account, permit.getHash());
   }
 
-  // Select which permit to use with its hash
-  async usePermit(hash: string) {
-    if (this.account == null || this.chainId == null)
-      throw new Error("Cannot generate permit without chainId or account");
+  /**
+   * Selects the active permit using its hash.
+   * If the hash is not found in the stored permits store, throws an error.
+   * The matched permit will be marked as the active permit.
+   *
+   * @param {string} hash - The `PermitV2.getHash` of the target permit.
+   */
+  async selectActivePermit(hash: string) {
+    if (this.account == null)
+      throw new Error("Cannot select permit without associated account");
 
     const permit = getPermitFromStore(this.account, hash);
     if (permit == null) return;
 
-    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
-  }
-
-  // Inserts an existing permit into the store and sets it as the active permit
-  // NOTE: This is a short-circuit, there are no checks that this permit is valid
-  async useExistingPermit(permit: PermitV2) {
-    if (this.account == null)
-      throw new Error("Cannot generate permit without account");
-
-    setPermitInStore(this.account, permit);
-    setActivePermitHashInStore(this.account, getPermitV2Hash(permit));
+    setActivePermitHashInStore(this.account, permit.getHash());
   }
 
   /**
-   * Retrieves a stored permit.
-   * @param {string} hash - Optional hash of the permit to get, defaults to active permit
-   * @returns {PermitV2 | undefined} - The active permit or permit associated with `hash`.
+   * Retrieves a stored permit based on its hash.
+   * If no hash is provided, the currently active permit will be retrieved.
+   *
+   * @param {string} hash - Optional `PermitV2.getHash` of the permit.
+   * @returns {Result<PermitV2>} - The active permit or permit associated with `hash` as a Result object.
    */
-  getPermit(hash?: string): PermitV2 | undefined {
-    if (hash != null) return getPermitFromStore(this.account, hash);
-    return getActivePermitFromStore(this.account);
+  getPermit(hash?: string): Result<PermitV2> {
+    if (this.account == null) return ResultErr("account missing");
+
+    if (hash == null) {
+      const permit = getActivePermitFromStore(this.account);
+      if (permit == null) return ResultErr(`active permit not found`);
+
+      return ResultOk(permit);
+    }
+
+    const permit = getPermitFromStore(this.account, hash);
+    if (permit == null)
+      return ResultErr(`permit with hash <${hash}> not found`);
+
+    return ResultOk(permit);
   }
 
   /**
-   * Retrieves a stored permission.
+   * Retrieves a stored permission based on the permit's hash.
+   * If no hash is provided, the currently active permit will be used.
+   * The `PermissionV2` is extracted from the permit.
+   *
    * @param {string} hash - Optional hash of the permission to get, defaults to active permit's permission
-   * @returns {PermissionV2 | undefined} - The active permission or permission associated with `hash`.
+   * @returns {Result<PermissionV2>} - The active permission or permission associated with `hash`, as a result object.
    */
-  getPermission(hash?: string): PermissionV2 | undefined {
-    return getPermissionFromStore(this.account, hash);
+  getPermission(hash?: string): Result<PermissionV2> {
+    const permitResult = this.getPermit(hash);
+    if (!permitResult.success) return permitResult;
+
+    return ResultOk(permitResult.data.getPermission());
   }
 
   /**
    * Exports all stored permits.
-   * @returns {Record<string, PermitV2>} - All stored permits.
+   * @returns {Result<Record<string, PermitV2>>} - All stored permits.
    */
-  getAllPermits() {
-    return getPermitsFromStore(this.account);
-  }
-
-  extractPermitPermission({ sealingPair, ...permit }: PermitV2): PermissionV2 {
-    return {
-      ...permit,
-      sealingKey: `0x${sealingPair.publicKey}`,
-    };
+  getAllPermits(): Result<Record<string, PermitV2>> {
+    if (this.account == null) return ResultErr("account missing");
+    return ResultOk(getPermitsFromStore(this.account));
   }
 
   /**
    * Unseals an encrypted message using the stored permit for a specific contract address.
+   * NOTE: Wrapper around `PermitV2.unseal`
    *
    * @param {string} ciphertext - The encrypted message to unseal.
    * @param {string} account - Users address, defaults to this.account
@@ -450,7 +468,7 @@ export class FhenixClientV2 {
       );
     }
 
-    return permit.sealingPair.unseal(ciphertext);
+    return permit.unseal(ciphertext);
   }
 
   // Helpers

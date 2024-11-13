@@ -11,15 +11,21 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.14.14
+      immer:
+        specifier: ^10.1.1
+        version: 10.1.1
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
       tweetnacl-util:
         specifier: ^0.15.1
         version: 0.15.1
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
       zustand:
         specifier: ^5.0.1
-        version: 5.0.1
+        version: 5.0.1(immer@10.1.1)
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: 25.0.8
@@ -1018,6 +1024,9 @@ packages:
     resolution: {integrity: sha512-g7dmpshy+gD7mh88OC9NwSGTKoc3kyLAZQRU1mt53Aw/vnvfXnbC+F/7F7QoYVKbV+KNvJx8wArewKy1vXMtlg==}
     engines: {node: '>= 4'}
 
+  immer@10.1.1:
+    resolution: {integrity: sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==}
+
   import-fresh@3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
     engines: {node: '>=6'}
@@ -1707,6 +1716,9 @@ packages:
   yocto-queue@1.1.1:
     resolution: {integrity: sha512-b4JR1PFR10y1mKjhHY9LaGo6tmrgjit7hxVIeAmyMw3jegXR4dhYqLaQF5zMXZxY7tLpMyJeLjr1C4rLmkVe8g==}
     engines: {node: '>=12.20'}
+
+  zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
   zustand@5.0.1:
     resolution: {integrity: sha512-pRET7Lao2z+n5R/HduXMio35TncTlSW68WsYBq2Lg1ASspsNGjpwLAsij3RpouyV6+kHMwwwzP0bZPD70/Jx/w==}
@@ -2624,6 +2636,8 @@ snapshots:
 
   ignore@5.3.0: {}
 
+  immer@10.1.1: {}
+
   import-fresh@3.3.0:
     dependencies:
       parent-module: 1.0.1
@@ -3255,4 +3269,8 @@ snapshots:
 
   yocto-queue@1.1.1: {}
 
-  zustand@5.0.1: {}
+  zod@3.23.8: {}
+
+  zustand@5.0.1(immer@10.1.1):
+    optionalDependencies:
+      immer: 10.1.1

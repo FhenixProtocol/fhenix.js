@@ -54,8 +54,8 @@ export class FhenixClientV2 {
   public chainId: string | undefined;
   public securityZones: number[] = [];
 
-  private send: SendFn;
-  private signTypedData: SignTypedDataFn;
+  private send: SendFn | undefined;
+  private signTypedData: SignTypedDataFn | undefined;
 
   public fhevmInitialized: boolean = false;
   public fhePublicKeysInitialized: boolean = false;
@@ -345,6 +345,11 @@ export class FhenixClientV2 {
     if (this.account == null || this.chainId == null)
       throw new Error("Cannot generate permit without chainId or account");
 
+    if (this.send == null || this.signTypedData == null)
+      throw new Error(
+        "Cannot generate permit, `send` or `signTypedData` is null",
+      );
+
     const permit = await PermitV2.create(options);
     await permit.sign(this.chainId, this.signTypedData);
 
@@ -496,7 +501,7 @@ export class FhenixClientV2 {
   static async getFheKeyFromProvider(
     chainId: string | undefined,
     securityZone: number = 0,
-    send: SendFn,
+    send: SendFn | undefined,
   ): Promise<TfheCompactPublicKey> {
     const storedKey = getFheKey(chainId, securityZone);
     if (storedKey != null) return storedKey;
@@ -506,15 +511,15 @@ export class FhenixClientV2 {
 
     const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
 
-    const publicKeyP = send("eth_call", callParams).catch((err: Error) => {
-      throw Error(
-        `Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(
-          err,
-        )}`,
-      );
-    });
-
-    const [publicKey] = await Promise.all([publicKeyP]);
+    const publicKey = await send?.("eth_call", callParams).catch(
+      (err: Error) => {
+        throw Error(
+          `Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(
+            err,
+          )}`,
+        );
+      },
+    );
 
     const chainIdNum: number = parseInt(chainId ?? "NaN", 16);
     if (isNaN(chainIdNum)) {

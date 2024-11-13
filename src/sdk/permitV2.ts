@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { keccak256, ZeroAddress } from "ethers";
+import { getAddress, id, ZeroAddress } from "ethers";
 import {
   getSignatureTypesAndMessage,
   SignatureTypes,
@@ -202,8 +202,9 @@ export class PermitV2 implements PermitV2Interface {
    * Is used in the store as each permit's key in the permit map.
    */
   getHash = () =>
-    keccak256(
+    id(
       JSON.stringify({
+        type: this.type,
         issuer: this.issuer,
         contracts: this.contracts,
         projects: this.projects,
@@ -308,9 +309,17 @@ export class PermitV2 implements PermitV2Interface {
       : S extends SealedAddress
         ? string
         : never => {
-    if (isSealedBool(sealed)) return true as any; // Return a boolean for SealedBool
-    if (isSealedAddress(sealed)) return "hello" as any; // Return a string for SealedAddress
-    if (isSealedUint(sealed)) return 5n as any; // Return a bigint for SealedUint
+    const bn = this.sealingPair.unseal(sealed.data);
+
+    if (isSealedBool(sealed)) {
+      return Boolean(bn).valueOf() as any; // Return a boolean for SealedBool
+    }
+    if (isSealedAddress(sealed)) {
+      return getAddress(`0x${bn.toString(16).slice(-40)}`) as any; // Return a string for SealedAddress
+    }
+    if (isSealedUint(sealed)) {
+      return bn as any; // Return a bigint for SealedUint
+    }
 
     throw new Error("Unsupported type");
   };

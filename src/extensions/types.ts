@@ -91,9 +91,35 @@ export type PermitV2Core = Expand<
       >
     >
 >;
-export type PermitV2Options = Expand<
-  Partial<PermitV2Interface> & Pick<PermitV2Interface, "type" | "issuer">
->;
+// export type PermitV2Options = Expand<
+//   Partial<PermitV2Interface> & Pick<PermitV2Interface, "type" | "issuer">
+// >;
+
+export type PermitV2Options =
+  // Self permit requires at minimum `issuer`, excludes `recipient` and `recipientSignature`
+  | Expand<
+      Partial<Omit<PermitV2Interface, "recipient" | "recipientSignature">> & {
+        type: "self";
+        issuer: string;
+      }
+    >
+  // Sharing permit requires at minimum `issuer` and `recipient`, excludes `recipientSignature`
+  | Expand<
+      Partial<Omit<PermitV2Interface, "recipientSignature">> & {
+        type: "sharing";
+        issuer: string;
+        recipient: string;
+      }
+    >
+  // Recipient permit requires the full issuer's permit
+  | Expand<
+      Partial<PermitV2Interface> & {
+        type: "recipient";
+        issuer: string;
+        recipient: string;
+        issuerSignature: string;
+      }
+    >;
 
 export type SerializedPermitV2 = Omit<PermitV2Interface, "sealingPair"> & {
   sealingPair: {

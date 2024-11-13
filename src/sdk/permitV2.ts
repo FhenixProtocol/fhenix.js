@@ -224,25 +224,20 @@ export class PermitV2 implements PermitV2Interface {
    * @param {SignTypedDataFn} signTypedData - fn prompting the user's wallet signature
    */
   sign = async (chainId: string, signTypedData: SignTypedDataFn) => {
+    const domain = {
+      name: "Fhenix Permission v2.0.0",
+      version: "v2.0.0",
+      chainId,
+      verifyingContract: ZeroAddress,
+    };
+
     if (this.type === "self") {
       const { types, message } = getSignatureTypesAndMessage(
         "PermissionedV2IssuerSelf",
         SignatureTypes.PermissionedV2IssuerSelf,
         this.getPermission(),
       );
-
-      this.issuerSignature = await signTypedData(
-        {
-          name: "Fhenix Permission v2.0.0",
-          version: "v2.0.0",
-          chainId,
-          verifyingContract: ZeroAddress,
-        },
-        types,
-        message,
-      );
-
-      return;
+      this.issuerSignature = await signTypedData(domain, types, message);
     }
 
     if (this.type === "sharing") {
@@ -251,19 +246,7 @@ export class PermitV2 implements PermitV2Interface {
         SignatureTypes.PermissionedV2IssuerShared,
         this.getPermission(),
       );
-
-      this.issuerSignature = await signTypedData(
-        {
-          name: "Fhenix Permission v2.0.0",
-          version: "v2.0.0",
-          chainId,
-          verifyingContract: ZeroAddress,
-        },
-        types,
-        message,
-      );
-
-      return;
+      this.issuerSignature = await signTypedData(domain, types, message);
     }
 
     if (this.type === "recipient") {
@@ -272,17 +255,7 @@ export class PermitV2 implements PermitV2Interface {
         SignatureTypes["PermissionedV2Receiver"],
         this.getPermission(),
       );
-
-      this.recipientSignature = await signTypedData(
-        {
-          name: "Fhenix Permission v2.0.0",
-          version: "v2.0.0",
-          chainId,
-          verifyingContract: ZeroAddress,
-        },
-        types,
-        message,
-      );
+      this.recipientSignature = await signTypedData(domain, types, message);
     }
   };
 

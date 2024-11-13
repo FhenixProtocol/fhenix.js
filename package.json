@@ -54,6 +54,7 @@
     "immer": "^10.1.1",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
+    "type-fest": "^4.26.1",
     "zod": "^3.23.8",
     "zustand": "^5.0.1"
   },

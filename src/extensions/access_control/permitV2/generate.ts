@@ -57,7 +57,7 @@ export const getSignatureTypesAndMessage = <
 
   const message: EIP712Message = {};
   for (const field in fields) {
-    message[field] = values[field];
+    message[field] = (values as unknown as PermissionV2)[field as T] as string;
   }
 
   return { types, message };

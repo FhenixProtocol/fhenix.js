@@ -1,14 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  PermissionV2,
-  PermitV2,
-  PermitV2Core,
-  SerializedPermitV2,
-} from "./types";
-import { SealingKey } from "../sdk/sealing";
-import { keccak256, ZeroAddress } from "ethers";
+import { SerializedPermitV2 } from "./types";
 import { TfheCompactPublicKey } from "../sdk/fhe/fhe";
+import { PermitV2 } from "../sdk/permitV2";
 
 type AccountRecord<T> = Record<string, T>;
 type HashRecord<T> = Record<string, T>;
@@ -21,6 +15,8 @@ type PersistState = {
   fheKeys: ChainRecord<SecurityZoneRecord<Uint8Array | undefined>>;
 };
 
+// Stores generated permits for each user, a hash indicating the active permit for each user, and a list of fheKeys as a cache
+// Can be used to create reactive hooks
 export const useFhenixStore = create<PersistState>()(
   persist(
     () => ({
@@ -32,47 +28,6 @@ export const useFhenixStore = create<PersistState>()(
   ),
 );
 
-const extractPermitPermission = ({
-  sealingPair,
-  ...permit
-}: PermitV2): PermissionV2 => {
-  return {
-    ...permit,
-    sealingKey: `0x${sealingPair.publicKey}`,
-  };
-};
-
-const serializePermitV2 = (permitV2: PermitV2): SerializedPermitV2 => ({
-  ...permitV2,
-  sealingPair: {
-    publicKey: permitV2.sealingPair.publicKey,
-    privateKey: permitV2.sealingPair.privateKey,
-  },
-});
-
-const parsePermitV2 = (permit: SerializedPermitV2): PermitV2 => {
-  return {
-    ...permit,
-    sealingPair: new SealingKey(
-      permit.sealingPair.privateKey,
-      permit.sealingPair.publicKey,
-    ),
-  };
-};
-
-export const getPermitV2Hash = (permitV2: PermitV2Core): string => {
-  return keccak256(
-    JSON.stringify({
-      issuer: permitV2.issuer,
-      contracts: permitV2.contracts ?? [],
-      projects: permitV2.projects ?? [],
-      recipient: permitV2.recipient ?? ZeroAddress,
-      validatorId: permitV2.validatorId ?? 0,
-      validatorContract: permitV2.validatorContract ?? ZeroAddress,
-    }),
-  );
-};
-
 export const getPermit = (
   account: string | undefined,
   hash: string | undefined,
@@ -82,7 +37,7 @@ export const getPermit = (
   const savedPermit = useFhenixStore.getState().permits[account]?.[hash];
   if (savedPermit == null) return;
 
-  return parsePermitV2(savedPermit);
+  return PermitV2.deserialize(savedPermit);
 };
 
 export const getActivePermit = (
@@ -92,27 +47,6 @@ export const getActivePermit = (
 
   const activePermitHash = useFhenixStore.getState().activePermitHash[account];
   return getPermit(account, activePermitHash);
-};
-
-export const getActivePermission = (
-  account: string | undefined,
-): PermissionV2 | undefined => {
-  const permit = getActivePermit(account);
-  if (permit == null) return;
-
-  return extractPermitPermission(permit);
-};
-
-export const getPermission = (
-  account: string | undefined,
-  hash: string | undefined,
-): PermissionV2 | undefined => {
-  if (hash == null) return getActivePermission(account);
-
-  const permit = getPermit(account, hash);
-  if (permit == null) return;
-
-  return extractPermitPermission(permit);
 };
 
 export const getPermits = (
@@ -125,20 +59,19 @@ export const getPermits = (
   ).reduce(
     (acc, [hash, permit]) => {
       if (permit == undefined) return acc;
-      return { ...acc, [hash]: parsePermitV2(permit) };
+      return { ...acc, [hash]: PermitV2.deserialize(permit) };
     },
     {} as Record<string, PermitV2>,
   );
 };
 
 export const setPermit = (account: string, permitV2: PermitV2) => {
-  const hash = getPermitV2Hash(permitV2);
   useFhenixStore.setState((state) => ({
     permits: {
       ...state.permits,
       [account]: {
         ...state.permits[account],
-        [hash]: serializePermitV2(permitV2),
+        [permitV2.getHash()]: permitV2.serialize(),
       },
     },
   }));

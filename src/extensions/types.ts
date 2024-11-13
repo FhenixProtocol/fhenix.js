@@ -10,7 +10,14 @@ export type SignTypedDataFn = (
 /**
  * Type representing the full PermitV2
  */
-export type PermitV2 = {
+export type PermitV2Interface = {
+  /**
+   * The type of the PermitV2 (self / sharing)
+   * (self) Permit that will be signed and used by the issuer
+   * (sharing) Permit that is signed by the issuer, but intended to be shared with recipient
+   * (recipient) Permit that has been received, and signed by the recipient
+   */
+  type: "self" | "sharing" | "recipient";
   /**
    * (base) User that initially created the permission, target of data fetching
    */
@@ -63,15 +70,19 @@ export type PermitV2 = {
   recipientSignature: string;
 };
 
+export type PickPartial<T, F extends keyof T> = Expand<
+  Omit<T, F> & Partial<Pick<T, F>>
+>;
+
 export type PermitV2Satisfiers = Expand<
-  Pick<PermitV2, "contracts" | "projects">
+  Pick<PermitV2Interface, "contracts" | "projects">
 >;
 
 export type PermitV2Core = Expand<
-  Pick<PermitV2, "issuer"> &
+  Pick<PermitV2Interface, "issuer"> &
     Partial<
       Pick<
-        PermitV2,
+        PermitV2Interface,
         | "contracts"
         | "projects"
         | "recipient"
@@ -81,13 +92,10 @@ export type PermitV2Core = Expand<
     >
 >;
 export type PermitV2Options = Expand<
-  Partial<
-    Omit<PermitV2, "sealingPair" | "issuerSignature" | "recipientSignature">
-  > &
-    Pick<PermitV2, "issuer">
+  Partial<PermitV2Interface> & Pick<PermitV2Interface, "type" | "issuer">
 >;
 
-export type SerializedPermitV2 = Omit<PermitV2, "sealingPair"> & {
+export type SerializedPermitV2 = Omit<PermitV2Interface, "sealingPair"> & {
   sealingPair: {
     privateKey: string;
     publicKey: string;
@@ -98,7 +106,7 @@ export type SerializedPermitV2 = Omit<PermitV2, "sealingPair"> & {
  * A type representing the PermissionV2 struct that is passed to PermissionedV2.sol to grant encrypted data access.
  */
 export type PermissionV2 = Expand<
-  Omit<PermitV2, "sealingPair"> & {
+  Omit<PermitV2Interface, "type" | "sealingPair"> & {
     sealingKey: string;
   }
 >;

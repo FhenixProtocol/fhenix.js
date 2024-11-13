@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import {
   fromHexString,
@@ -15,6 +16,9 @@ import {
   EncryptedUint64,
   EncryptedUint8,
   EncryptionTypes,
+  FheUType,
+  isEncryptableItem,
+  MappedEncryptedTypes,
   Result,
   ResultErr,
   ResultOk,
@@ -328,6 +332,55 @@ export class FhenixClientV2 {
     }
 
     return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
+  }
+
+  encryptTyped<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
+  encryptTyped<T>(item: T): MappedEncryptedTypes<T>;
+  encryptTyped<T>(item: T) {
+    // Permission
+    if (item === "permission") {
+      return this.getPermission();
+    }
+
+    // EncryptableItem
+    if (isEncryptableItem(item)) {
+      switch (item.utype) {
+        case FheUType.bool:
+          return this.encrypt_bool(item.data, item.securityZone);
+        case FheUType.uint8:
+          return this.encrypt_uint8(item.data, item.securityZone);
+        case FheUType.uint16:
+          return this.encrypt_uint16(item.data, item.securityZone);
+        case FheUType.uint32:
+          return this.encrypt_uint32(item.data, item.securityZone);
+        case FheUType.uint64:
+          return this.encrypt_uint64(item.data, item.securityZone);
+        case FheUType.uint128:
+          return this.encrypt_uint128(item.data, item.securityZone);
+        case FheUType.uint256:
+          return this.encrypt_uint256(item.data, item.securityZone);
+        case FheUType.address:
+          return this.encrypt_address(item.data, item.securityZone);
+      }
+    }
+
+    // Object | Array
+    if (typeof item === "object" && item !== null) {
+      if (Array.isArray(item)) {
+        // Array - recurse
+        return item.map((nestedItem) => this.encryptTyped(nestedItem));
+      } else {
+        // Object - recurse
+        const result: any = {};
+        for (const key in item) {
+          result[key] = this.encryptTyped(item[key]);
+        }
+        return result;
+      }
+    }
+
+    // Primitive
+    return item;
   }
 
   // Permits & Unsealing

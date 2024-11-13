@@ -311,24 +311,24 @@ export class PermitV2 implements PermitV2Interface {
     | { satisfies: true; unsatisfiedContracts: null; unsatisfiedProjects: null }
     | {
         satisfies: false;
-        unsatisfiedContracts: Record<string, boolean>;
-        unsatisfiedProjects: Record<string, boolean>;
+        unsatisfiedContracts: string[];
+        unsatisfiedProjects: string[];
       } => {
     let contractsSatisfied: boolean = true;
-    const unsatisfiedContracts: Record<string, boolean> = {};
+    const unsatisfiedContracts: string[] = [];
     for (const contract in requirements.contracts) {
       if (!this.contracts.includes(contract)) {
         contractsSatisfied = false;
-        unsatisfiedContracts[contract] = true;
+        unsatisfiedContracts.push(contract);
       }
     }
 
     let projectsSatisfied: boolean = true;
-    const unsatisfiedProjects: Record<string, boolean> = {};
+    const unsatisfiedProjects: string[] = [];
     for (const project in requirements.projects) {
       if (!this.projects.includes(project)) {
         projectsSatisfied = false;
-        unsatisfiedProjects[project] = true;
+        unsatisfiedProjects.push(project);
       }
     }
 

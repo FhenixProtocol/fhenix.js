@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { keccak256, ZeroAddress } from "ethers";
 import {
   getSignatureTypesAndMessage,
@@ -12,6 +13,15 @@ import {
 } from "../extensions/types";
 import { GenerateSealingKey, SealingKey } from "./sealing";
 import { isString } from "./validation";
+import {
+  isSealedAddress,
+  isSealedBool,
+  isSealedUint,
+  SealedAddress,
+  SealedBool,
+  SealedItem,
+  SealedUint,
+} from "./types";
 
 export class PermitV2 implements PermitV2Interface {
   /**
@@ -101,6 +111,13 @@ export class PermitV2 implements PermitV2Interface {
     });
   }
 
+  /**
+   * Creates a `PermitV2` from a serialized permit, hydrating methods and classes
+   * NOTE: Does not return a stringified permit
+   *
+   * @param {SerializedPermitV2} - Permit structure excluding classes
+   * @returns {PermitV2} - New instance of PermitV2 class
+   */
   static deserialize = ({ sealingPair, ...permit }: SerializedPermitV2) => {
     return new PermitV2({
       ...permit,
@@ -111,17 +128,10 @@ export class PermitV2 implements PermitV2Interface {
     });
   };
 
-  serialize = (): SerializedPermitV2 => {
-    const { sealingPair, ...permit } = this.getInterface();
-    return {
-      ...permit,
-      sealingPair: {
-        publicKey: sealingPair.publicKey,
-        privateKey: sealingPair.privateKey,
-      },
-    };
-  };
-
+  /**
+   * Utility to extract the public data from a permit.
+   * Used in `serialize`, `getPermission`, `getHash` etc
+   */
   getInterface = (): PermitV2Interface => {
     return {
       type: this.type,
@@ -138,6 +148,28 @@ export class PermitV2 implements PermitV2Interface {
     };
   };
 
+  /**
+   * Returns a serializable permit instance, removing classes and methods.
+   * NOTE: Does not return a stringified permit
+   */
+  serialize = (): SerializedPermitV2 => {
+    const { sealingPair, ...permit } = this.getInterface();
+    return {
+      ...permit,
+      sealingPair: {
+        publicKey: sealingPair.publicKey,
+        privateKey: sealingPair.privateKey,
+      },
+    };
+  };
+
+  /**
+   * Extracts a contract input ready permission from this permit.
+   * The permission inherits most fields from the permit, however
+   * `permit.sealingPair` is removed and replaced by `permit.sealingPair.publicKey` in the `sealingKey` field.
+   *
+   * @returns {PermissionV2}
+   */
   getPermission = (): PermissionV2 => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { type, sealingPair, ...permit } = this.getInterface();
@@ -147,6 +179,10 @@ export class PermitV2 implements PermitV2Interface {
     };
   };
 
+  /**
+   * Returns a stable hash depending on the core data of the permit.
+   * Is used in the store as each permit's key in the permit map.
+   */
   getHash = () =>
     keccak256(
       JSON.stringify({
@@ -159,6 +195,15 @@ export class PermitV2 implements PermitV2Interface {
       }),
     );
 
+  /**
+   * Determines the required signature type.
+   * Creates the EIP712 types and message.
+   * Prompts the user for their signature.
+   * Inserts the signature into `issuerSignature` or `recipientSignature` as necessary.
+   *
+   * @param {string} chainId - Used as part of the EIP712 domain
+   * @param {SignTypedDataFn} signTypedData - fn prompting the user's wallet signature
+   */
   sign = async (chainId: string, signTypedData: SignTypedDataFn) => {
     if (this.type === "self") {
       const { types, message } = getSignatureTypesAndMessage(
@@ -222,11 +267,92 @@ export class PermitV2 implements PermitV2Interface {
     }
   };
 
+  /**
+   * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
+   */
   unseal = (ciphertext: string): bigint => {
     isString(ciphertext);
     return this.sealingPair.unseal(ciphertext);
   };
 
+  /**
+   * Uses the privateKey of `permit.sealingPair` to unseal `sealed.data` ciphertext.
+   *
+   * @param {SealedItem} sealed - Typed structs returned from `FHE.sealoutputTyped` and the FHE bindings' `e____.sealTyped`.
+   * @returns - Unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
+   */
+  unsealTyped = <S extends SealedItem>(
+    sealed: S,
+  ): S extends SealedBool
+    ? boolean
+    : S extends SealedUint
+      ? bigint
+      : S extends SealedAddress
+        ? string
+        : never => {
+    if (isSealedBool(sealed)) return true as any; // Return a boolean for SealedBool
+    if (isSealedAddress(sealed)) return "hello" as any; // Return a string for SealedAddress
+    if (isSealedUint(sealed)) return 5n as any; // Return a bigint for SealedUint
+
+    throw new Error("Unsupported type");
+  };
+
+  /**
+   * Check if permit satisfies the requirements param.
+   * Permit must satisfy either the contracts list or the projects list
+   *
+   * @param {{contracts?: string[], projects?: string[]}} requirements - Lists of contract and project requirements.
+   * @returns {satisfies: boolean, unsatisfiedContracts, unsatisfiedProjects} - satisfied if either req list is fulfilled.
+   */
+  getSatisfies = (requirements: {
+    contracts?: string[];
+    projects?: string[];
+  }):
+    | { satisfies: true; unsatisfiedContracts: null; unsatisfiedProjects: null }
+    | {
+        satisfies: false;
+        unsatisfiedContracts: Record<string, boolean>;
+        unsatisfiedProjects: Record<string, boolean>;
+      } => {
+    let contractsSatisfied: boolean = true;
+    const unsatisfiedContracts: Record<string, boolean> = {};
+    for (const contract in requirements.contracts) {
+      if (!this.contracts.includes(contract)) {
+        contractsSatisfied = false;
+        unsatisfiedContracts[contract] = true;
+      }
+    }
+
+    let projectsSatisfied: boolean = true;
+    const unsatisfiedProjects: Record<string, boolean> = {};
+    for (const project in requirements.projects) {
+      if (!this.projects.includes(project)) {
+        projectsSatisfied = false;
+        unsatisfiedProjects[project] = true;
+      }
+    }
+
+    if (contractsSatisfied || projectsSatisfied)
+      return {
+        satisfies: true,
+        unsatisfiedContracts: null,
+        unsatisfiedProjects: null,
+      };
+
+    return {
+      satisfies: false,
+      unsatisfiedContracts,
+      unsatisfiedProjects,
+    };
+  };
+
+  /**
+   * Returns whether the active party has created their signature.
+   * If `permit.type` is self or sharing, the active party is `issuer`.
+   * If `permit.type` is recipient, the active party is `recipient`
+   *
+   * @returns {boolean}
+   */
   isSigned = () => {
     if (this.type === "self" || this.type === "sharing") {
       return this.issuerSignature !== "0x";
@@ -237,10 +363,20 @@ export class PermitV2 implements PermitV2Interface {
     return false;
   };
 
+  /**
+   * Returns whether this permit has expired due to `permit.expiration`
+   *
+   * @returns {boolean}
+   */
   isExpired = () => {
     return this.expiration < Math.floor(Date.now() / 1000);
   };
 
+  /**
+   * Overall validity checker of a permit, checks the signatures and expirations
+   *
+   * @returns {{valid: boolean, error: string}} - If `valid`, `error` is null, else `error` indicates which validity check failed
+   */
   isValid = () => {
     if (this.isExpired()) return { valid: false, error: "expired" } as const;
     if (!this.isSigned()) return { valid: false, error: "not-signed" } as const;

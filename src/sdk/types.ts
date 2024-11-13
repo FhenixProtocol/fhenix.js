@@ -144,6 +144,36 @@ export type SealedAddress = {
 };
 export type SealedItem = SealedBool | SealedUint | SealedAddress;
 
+// Type guard for SealedBool
+export function isSealedBool(value: SealedItem): value is SealedBool {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.data === "string" &&
+    value.utype === 13
+  );
+}
+
+// Type guard for SealedUint
+export function isSealedUint(value: SealedItem): value is SealedUint {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.data === "string" &&
+    [0, 1, 2, 3, 4, 5].includes(value.utype)
+  );
+}
+
+// Type guard for SealedAddress
+export function isSealedAddress(value: SealedItem): value is SealedAddress {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.data === "string" &&
+    value.utype === 12
+  );
+}
+
 export type Result<T, E = string> =
   | { success: true; data: T; error: null }
   | { success: false; data: null; error: E };

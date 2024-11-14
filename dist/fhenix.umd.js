@@ -8910,27 +8910,19 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       static getFheKeyFromProvider(provider_1) {
           return __awaiter(this, arguments, void 0, function* (provider, securityZone = 0) {
               const requestMethod = determineRequestMethod(provider);
-              const chainIdP = requestMethod(provider, "eth_chainId").catch((err) => {
-                  throw Error(`Error while requesting chainId from provider: ${err}`);
-              });
               const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
               const callData = funcSig + toABIEncodedUint32(securityZone);
               const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
               const publicKeyP = requestMethod(provider, "eth_call", callParams).catch((err) => {
                   throw Error(`Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(err)}`);
               });
-              const [chainId, publicKey] = yield Promise.all([chainIdP, publicKeyP]);
-              const chainIdNum = parseInt(chainId, 16);
-              if (isNaN(chainIdNum)) {
-                  throw new Error(`received non-hex number from chainId request: "${chainId}"`);
-              }
+              const publicKey = yield publicKeyP;
               if (typeof publicKey !== "string") {
                   throw new Error("Error using publicKey from provider: expected string");
               }
               if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
                   throw new Error(`Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`);
               }
-              // todo (eshel) verify this
               // magically know how to decode rlp or w/e returns from the evm json-rpc
               const buff = fromHexString(publicKey.slice(130));
               try {
@@ -8965,8 +8957,11 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
               }
           });
           // In the future the default array can be updated to include additional security zones
-          // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption
-          this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) => FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone));
+          // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption.
+          // By default, doesn't skip fetching the public key
+          if (params.skipPubKeyFetch !== true) {
+              this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) => FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone));
+          }
       }
       _getPublicKey(securityZone) {
           return __awaiter(this, void 0, void 0, function* () {
@@ -9095,6 +9090,9 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       static create(params) {
           return __awaiter(this, void 0, void 0, function* () {
               isPlainObject(params);
+              if (params.skipPubKeyFetch === true) {
+                  console.warn("warning: FhenixClientSync doesn't support skipping public key fetching on creation");
+              }
               const { provider, ignoreErrors, securityZones = [0] } = params;
               if (!provider) {
                   throw new Error("Failed to initialize Fhenix Client - must include a web3 provider");

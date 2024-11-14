@@ -156,8 +156,6 @@ const clientSync = await FhenixClientSync.create({
 });
 ```
 
-
-
 ### Permits & Access Control
 
 We recommend the helper `Permit` structure, which is a built-in method for providing access control for your FHE-enabled view functions.
@@ -168,4 +166,4 @@ This project is based on [fhevmjs](https://github.com/zama-ai/fhevmjs) by Zama a
 
 #### Need support?
 
-Open an issue or Pull Request on Github! Or reach out to us on Discord or Telegram
+Open an issue or Pull Request on Github! Or reach out to us on [Discord](https://discord.com/invite/FuVgxrvJMY) or Telegram.

@@ -347,12 +347,6 @@ abstract class FhenixClientBase {
   ): Promise<TfheCompactPublicKey> {
     const requestMethod = determineRequestMethod(provider);
 
-    const chainIdP = requestMethod(provider, "eth_chainId").catch(
-      (err: Error) => {
-        throw Error(`Error while requesting chainId from provider: ${err}`);
-      },
-    );
-
     const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
     const callData = funcSig + toABIEncodedUint32(securityZone);
 
@@ -368,14 +362,7 @@ abstract class FhenixClientBase {
       },
     );
 
-    const [chainId, publicKey] = await Promise.all([chainIdP, publicKeyP]);
-
-    const chainIdNum: number = parseInt(chainId, 16);
-    if (isNaN(chainIdNum)) {
-      throw new Error(
-        `received non-hex number from chainId request: "${chainId}"`,
-      );
-    }
+    const publicKey = await publicKeyP;
 
     if (typeof publicKey !== "string") {
       throw new Error("Error using publicKey from provider: expected string");
@@ -387,7 +374,6 @@ abstract class FhenixClientBase {
       );
     }
 
-    // todo (eshel) verify this
     // magically know how to decode rlp or w/e returns from the evm json-rpc
     const buff = fromHexString(publicKey.slice(130));
 
@@ -426,10 +412,13 @@ export class FhenixClient extends FhenixClientBase {
     });
 
     // In the future the default array can be updated to include additional security zones
-    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption
-    this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
-      FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
-    );
+    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption.
+    // By default, doesn't skip fetching the public key
+    if (params.skipPubKeyFetch !== true) {
+      this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
+        FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+      );
+    }
   }
 
   private async _getPublicKey(
@@ -604,6 +593,12 @@ export class FhenixClientSync extends FhenixClientBase {
     params: InstanceParams & { securityZones?: number[] },
   ): Promise<FhenixClientSync> {
     isPlainObject(params);
+
+    if (params.skipPubKeyFetch === true) {
+      console.warn(
+        "warning: FhenixClientSync doesn't support skipping public key fetching on creation",
+      );
+    }
 
     const { provider, ignoreErrors, securityZones = [0] } = params;
 

@@ -273,8 +273,9 @@ export class PermitV2 implements PermitV2Interface {
    * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
    * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
    */
-  unsealTyped<T extends any[]>(item: [...T]): [...MappedUnsealedTypes<T>];
   unsealTyped<T>(item: T): MappedUnsealedTypes<T>;
+  unsealTyped<T extends any[]>(...item: [...T]): [...MappedUnsealedTypes<T>];
+  unsealTyped<T extends any[]>(item: [...T]): [...MappedUnsealedTypes<T>];
   unsealTyped<T>(item: T) {
     // SealedItem
     if (isSealedItem(item)) {

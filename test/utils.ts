@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { JsonRpcProvider, AbiCoder } from "ethers";
+import { JsonRpcProvider, AbiCoder, ethers } from "ethers";
+
+export const BobWallet = ethers.Wallet.createRandom();
+export const AdaWallet = ethers.Wallet.createRandom();
 
 // Initialize genesis accounts
 const mnemonics = [
@@ -35,23 +38,32 @@ export async function waitForChainToStart(url: string) {
 }
 
 export class MockSigner {
-  async _signTypedData(domain: any, types: any, value: any): Promise<any> {
-    return "0x123";
+  wallet: ethers.HDNodeWallet;
+  constructor(wallet: ethers.HDNodeWallet) {
+    this.wallet = wallet;
   }
-  async getAddress(): Promise<string> {
-    return "0x123456789";
-  }
+  signTypedData = async (domain: any, types: any, value: any): Promise<any> => {
+    return this.wallet.signTypedData(domain, types, value);
+  };
+  getAddress = async (): Promise<string> => {
+    return this.wallet.address;
+  };
 }
 
 export class MockProvider {
   publicKey: any;
+  wallet: ethers.HDNodeWallet;
   chainId: any;
 
-  constructor(pk: any, chainId?: any) {
+  constructor(pk: any, wallet?: ethers.HDNodeWallet, chainId?: any) {
     this.publicKey = pk;
+    this.wallet = wallet ?? ethers.Wallet.createRandom();
     this.chainId = chainId || "0x10";
   }
-  async send(method: string, params: unknown[] | undefined): Promise<any> {
+  send = async (
+    method: string,
+    params: unknown[] | undefined,
+  ): Promise<any> => {
     return new Promise((resolve, reject) => {
       if (method === "eth_chainId") {
         resolve(this.chainId);
@@ -69,9 +81,9 @@ export class MockProvider {
         reject("method not implemented");
       }
     });
-  }
+  };
 
   async getSigner(): Promise<MockSigner> {
-    return new MockSigner();
+    return new MockSigner(this.wallet);
   }
 }

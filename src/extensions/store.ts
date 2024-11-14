@@ -18,7 +18,7 @@ type PersistState = {
 
 // Stores generated permits for each user, a hash indicating the active permit for each user, and a list of fheKeys as a cache
 // Can be used to create reactive hooks
-export const fhenixStore = createStore<PersistState>()(
+export const fhenixjsStore = createStore<PersistState>()(
   persist(
     () => ({
       permits: {},
@@ -35,7 +35,7 @@ export const getPermit = (
 ): PermitV2 | undefined => {
   if (account == null || hash == null) return;
 
-  const savedPermit = fhenixStore.getState().permits[account]?.[hash];
+  const savedPermit = fhenixjsStore.getState().permits[account]?.[hash];
   if (savedPermit == null) return;
 
   return PermitV2.deserialize(savedPermit);
@@ -46,7 +46,7 @@ export const getActivePermit = (
 ): PermitV2 | undefined => {
   if (account == null) return;
 
-  const activePermitHash = fhenixStore.getState().activePermitHash[account];
+  const activePermitHash = fhenixjsStore.getState().activePermitHash[account];
   return getPermit(account, activePermitHash);
 };
 
@@ -55,7 +55,7 @@ export const getPermits = (
 ): Record<string, PermitV2> => {
   if (account == null) return {};
 
-  return Object.entries(fhenixStore.getState().permits[account] ?? {}).reduce(
+  return Object.entries(fhenixjsStore.getState().permits[account] ?? {}).reduce(
     (acc, [hash, permit]) => {
       if (permit == undefined) return acc;
       return { ...acc, [hash]: PermitV2.deserialize(permit) };
@@ -65,7 +65,7 @@ export const getPermits = (
 };
 
 export const setPermit = (account: string, permitV2: PermitV2) => {
-  fhenixStore.setState(
+  fhenixjsStore.setState(
     produce<PersistState>((state) => {
       if (state.permits[account] == null) state.permits[account] = {};
       state.permits[account][permitV2.getHash()] = permitV2.serialize();
@@ -74,7 +74,7 @@ export const setPermit = (account: string, permitV2: PermitV2) => {
 };
 
 export const removePermit = (account: string, hash: string) => {
-  fhenixStore.setState(
+  fhenixjsStore.setState(
     produce<PersistState>((state) => {
       state.permits[account][hash] = undefined;
     }),
@@ -85,11 +85,11 @@ export const getActivePermitHash = (
   account: string | undefined,
 ): string | undefined => {
   if (account == null) return undefined;
-  return fhenixStore.getState().activePermitHash[account];
+  return fhenixjsStore.getState().activePermitHash[account];
 };
 
 export const setActivePermitHash = (account: string, hash: string) => {
-  fhenixStore.setState(
+  fhenixjsStore.setState(
     produce<PersistState>((state) => {
       state.activePermitHash[account] = hash;
     }),
@@ -97,7 +97,7 @@ export const setActivePermitHash = (account: string, hash: string) => {
 };
 
 export const removeActivePermitHash = (account: string) => {
-  fhenixStore.setState(
+  fhenixjsStore.setState(
     produce<PersistState>((state) => {
       state.activePermitHash[account] = undefined;
     }),
@@ -110,7 +110,7 @@ export const getFheKey = (
 ): TfheCompactPublicKey | undefined => {
   if (chainId == null || securityZone == null) return undefined;
 
-  const serialized = fhenixStore.getState().fheKeys[chainId]?.[securityZone];
+  const serialized = fhenixjsStore.getState().fheKeys[chainId]?.[securityZone];
   if (serialized == null) return undefined;
 
   return TfheCompactPublicKey.deserialize(serialized);
@@ -123,7 +123,7 @@ export const setFheKey = (
 ) => {
   if (chainId == null || securityZone == null) return;
 
-  fhenixStore.setState(
+  fhenixjsStore.setState(
     produce<PersistState>((state) => {
       if (state.fheKeys[chainId] == null) state.fheKeys[chainId] = {};
       state.fheKeys[chainId][securityZone] = fheKey?.serialize();
@@ -137,7 +137,7 @@ export const removeFheKey = (
 ) => {
   if (chainId == null || securityZone == null) return;
 
-  fhenixStore.setState(
+  fhenixjsStore.setState(
     produce<PersistState>((state) => {
       state.fheKeys[chainId][securityZone] = undefined;
     }),

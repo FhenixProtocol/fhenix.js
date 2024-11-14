@@ -20,7 +20,7 @@ import {
   SealedUint,
 } from "../src/sdk/types";
 import { PermissionV2 } from "../src/extensions/types";
-import { fhenixStore } from "../src/extensions/store";
+import { fhenixjsStore } from "../src/extensions/store";
 import { PermitV2 } from "../src/sdk/permitV2";
 import { Primitive } from "type-fest";
 import { SealingKey } from "../src/fhenix";
@@ -194,10 +194,10 @@ describe("FhenixClientV2 Tests", () => {
 
     const PermissionSlot = "permission" as const;
 
-    const injectedPermission = client.encryptTyped(PermissionSlot);
+    const injectedPermission = client.encrypt(PermissionSlot);
     expectTypeOf(injectedPermission).toEqualTypeOf<PermissionV2>();
 
-    const nestedEncrypt = client.encryptTyped([
+    const nestedEncrypt = client.encrypt([
       PermissionSlot,
       { a: Encryptable.bool(false), b: Encryptable.uint64(10n), c: "hello" },
       ["hello", 20n, Encryptable.address(contractAddress)],
@@ -215,7 +215,7 @@ describe("FhenixClientV2 Tests", () => {
       nestedEncrypt,
     );
 
-    const inlineEncrypt = client.encryptTyped(
+    const inlineEncrypt = client.encrypt(
       PermissionSlot,
       {
         a: Encryptable.bool(false),
@@ -309,7 +309,7 @@ describe("FhenixClientV2 Tests", () => {
     // Permit established in store
 
     const storePermitSerialized =
-      fhenixStore.getState().permits[bobAddress]?.[permit.getHash()];
+      fhenixjsStore.getState().permits[bobAddress]?.[permit.getHash()];
     expect(storePermitSerialized).to.not.be.null;
 
     const storePermit = PermitV2.deserialize(storePermitSerialized!);
@@ -318,7 +318,7 @@ describe("FhenixClientV2 Tests", () => {
     // Is active permit
 
     const storeActivePermitHash =
-      fhenixStore.getState().activePermitHash[bobAddress];
+      fhenixjsStore.getState().activePermitHash[bobAddress];
     expect(storeActivePermitHash).to.eq(permit.getHash());
 
     // Creating new permit
@@ -330,7 +330,7 @@ describe("FhenixClientV2 Tests", () => {
     });
 
     const storeActivePermitHash2 =
-      fhenixStore.getState().activePermitHash[bobAddress];
+      fhenixjsStore.getState().activePermitHash[bobAddress];
     expect(storeActivePermitHash2).to.eq(permit2.getHash());
   });
 
@@ -358,7 +358,7 @@ describe("FhenixClientV2 Tests", () => {
       boolValue ? 1 : 0,
       permit.sealingPair.publicKey,
     );
-    const boolCleartext = permit.unseal(boolCiphertext);
+    const boolCleartext = permit.unsealCiphertext(boolCiphertext);
     expect(boolCleartext).to.eq(boolValue ? 1n : 0n);
 
     // Uint
@@ -367,7 +367,7 @@ describe("FhenixClientV2 Tests", () => {
       uintValue,
       permit.sealingPair.publicKey,
     );
-    const uintCleartext = permit.unseal(uintCiphertext);
+    const uintCleartext = permit.unsealCiphertext(uintCiphertext);
     expect(uintCleartext).to.eq(BigInt(uintValue));
 
     // Address
@@ -378,7 +378,7 @@ describe("FhenixClientV2 Tests", () => {
       BigInt(addressValue),
       permit.sealingPair.publicKey,
     );
-    const addressCleartext = permit.unseal(addressCiphertext);
+    const addressCleartext = permit.unsealCiphertext(addressCiphertext);
     expect(bnToAddress(addressCleartext)).to.eq(addressValue);
   });
   it("unsealTyped", async () => {
@@ -411,7 +411,7 @@ describe("FhenixClientV2 Tests", () => {
     };
 
     // Array - Nested
-    const nestedCleartext = permit.unsealTyped([
+    const nestedCleartext = permit.unseal([
       boolCipherStruct,
       uintCipherStruct,
       addressCipherStruct,

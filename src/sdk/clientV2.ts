@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
-import { fromHexString, toABIEncodedUint32 } from "./utils.js";
 import {
+  fromHexString,
+  toABIEncodedUint32,
+  ValidateUintInRange,
+} from "./utils.js";
+import {
+  EncryptedNumber,
+  EncryptionTypes,
   FheUType,
   isEncryptableItem,
   MappedEncryptedTypes,
@@ -10,9 +16,15 @@ import {
   ResultOk,
 } from "./types.js";
 
-import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "./consts.js";
+import {
+  FheOpsAddress,
+  MAX_UINT16,
+  MAX_UINT32,
+  MAX_UINT8,
+  PUBLIC_KEY_LENGTH_MIN,
+} from "./consts.js";
 import * as tfheEncrypt from "./encrypt.js";
-import { isString } from "./validation.js";
+import { isNumber, isString } from "./validation.js";
 import { InitFhevm } from "./init.js";
 import {
   getPermit as getPermitFromStore,
@@ -140,6 +152,53 @@ export class FhenixClientV2 {
     }
 
     return key;
+  }
+
+  /**
+   * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
+   * @param {number} value - The numeric value to encrypt.
+   * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
+   * @param securityZone - The security zone for which to encrypt the value (default 0).
+   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
+   */
+  encryptValue(
+    value: number,
+    type?: EncryptionTypes,
+    securityZone: number = 0,
+  ): EncryptedNumber {
+    isNumber(value);
+
+    let outputSize = type;
+
+    const fhePublicKey = this._getPublicKey(securityZone);
+
+    // choose the most efficient ciphertext size if not selected
+    if (!outputSize) {
+      if (value < MAX_UINT8) {
+        outputSize = EncryptionTypes.uint8;
+      } else if (value < MAX_UINT16) {
+        outputSize = EncryptionTypes.uint16;
+      } else if (value < MAX_UINT32) {
+        outputSize = EncryptionTypes.uint32;
+      } else {
+        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
+      }
+    }
+
+    switch (outputSize) {
+      case EncryptionTypes.uint8:
+        ValidateUintInRange(value, MAX_UINT8, 0);
+        break;
+      case EncryptionTypes.uint16:
+        ValidateUintInRange(value, MAX_UINT16, 0);
+        break;
+      case EncryptionTypes.uint32:
+        ValidateUintInRange(value, MAX_UINT32, 0);
+        break;
+      default:
+    }
+
+    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 
   encrypt<T>(item: T): MappedEncryptedTypes<T>;
@@ -316,7 +375,11 @@ export class FhenixClientV2 {
    * @param {string} hash - The hash of the permit to use for this operation, defaults to active permitV2 hash
    * @returns bigint - The unsealed message.
    */
-  unseal(ciphertext: string, account?: string, hash?: string): bigint {
+  unsealCiphertext(
+    ciphertext: string,
+    account?: string,
+    hash?: string,
+  ): bigint {
     isString(ciphertext);
     const resolvedAccount = account ?? this.account;
     const resolvedHash = hash ?? getActivePermitHashFromStore(resolvedAccount);
@@ -344,7 +407,7 @@ export class FhenixClientV2 {
    * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
    * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
    */
-  unsealTyped<T>(item: T, account?: string, hash?: string) {
+  unseal<T>(item: T, account?: string, hash?: string) {
     const resolvedAccount = account ?? this.account;
     const resolvedHash = hash ?? getActivePermitHashFromStore(resolvedAccount);
     if (resolvedAccount == null || resolvedHash == null) {

@@ -143,3 +143,37 @@ export const removeFheKey = (
     }),
   );
 };
+
+/*
+Ideal fhenix sdk:
+
+fhenixjs.config.ts = {
+
+}
+
+// fhenixsdk would be a highly opinionated set of interactions
+// uses localstorage, holds account / chainId / send / signTypedData
+export fhenixsdk = {
+  init: initialize the fhevm, fetch fhe keys
+
+  createPermit: creates a new permit from options
+  createAndSignPermit: creates a new permit from options and immediately signs it
+  importPermit: imports a fully formed and signed permit
+  selectActivePermit: pass in a hash to select that permit
+  getPermit: returns active permit
+  getPermission: returns permission of active permit
+  getAllPermits: for listing possible options
+
+  encrypt: inject active permission, encrypt Encryptables
+  
+  unseal: unseal SealedItems using active permit
+}
+
+export PermitV2
+export Encryptable
+export fhenixjsStore
+export useFhenixJsStore
+export unsealCiphertext
+
+
+*/

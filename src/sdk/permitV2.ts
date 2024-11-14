@@ -123,6 +123,16 @@ export class PermitV2 implements PermitV2Interface {
     });
   }
 
+  static async createAndSign(
+    options: PermitV2Options,
+    chainId: string | undefined,
+    signTypedData: SignTypedDataFn | undefined,
+  ) {
+    const permit = await PermitV2.create(options);
+    await permit.sign(chainId, signTypedData);
+    return permit;
+  }
+
   /**
    * Creates a `PermitV2` from a serialized permit, hydrating methods and classes
    * NOTE: Does not return a stringified permit
@@ -218,10 +228,18 @@ export class PermitV2 implements PermitV2Interface {
    * Prompts the user for their signature.
    * Inserts the signature into `issuerSignature` or `recipientSignature` as necessary.
    *
-   * @param {string} chainId - Used as part of the EIP712 domain
-   * @param {SignTypedDataFn} signTypedData - fn prompting the user's wallet signature
+   * @param {string} chainId - Used as part of the EIP712 domain, throws if undefined
+   * @param {SignTypedDataFn} signTypedData - fn prompting the user's wallet signature, throws if undefined
    */
-  sign = async (chainId: string, signTypedData: SignTypedDataFn) => {
+  sign = async (
+    chainId: string | undefined,
+    signTypedData: SignTypedDataFn | undefined,
+  ) => {
+    if (chainId == null || signTypedData == null)
+      throw new Error(
+        "Cannot sign permit without chainId and signTypedData function",
+      );
+
     const domain = {
       name: "Fhenix Permission v2.0.0",
       version: "v2.0.0",
@@ -260,7 +278,7 @@ export class PermitV2 implements PermitV2Interface {
   /**
    * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
    */
-  unseal = (ciphertext: string): bigint => {
+  unsealCiphertext = (ciphertext: string): bigint => {
     isString(ciphertext);
     return this.sealingPair.unseal(ciphertext);
   };
@@ -273,9 +291,9 @@ export class PermitV2 implements PermitV2Interface {
    * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
    * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
    */
-  unsealTyped<T>(item: T): MappedUnsealedTypes<T>;
-  unsealTyped<T extends any[]>(item: [...T]): [...MappedUnsealedTypes<T>];
-  unsealTyped<T>(item: T) {
+  unseal<T>(item: T): MappedUnsealedTypes<T>;
+  unseal<T extends any[]>(item: [...T]): [...MappedUnsealedTypes<T>];
+  unseal<T>(item: T) {
     // SealedItem
     if (isSealedItem(item)) {
       const bn = this.sealingPair.unseal(item.data);
@@ -297,12 +315,12 @@ export class PermitV2 implements PermitV2Interface {
     if (typeof item === "object" && item !== null) {
       if (Array.isArray(item)) {
         // Array - recurse
-        return item.map((nestedItem) => this.unsealTyped(nestedItem));
+        return item.map((nestedItem) => this.unseal(nestedItem));
       } else {
         // Object - recurse
         const result: any = {};
         for (const key in item) {
-          result[key] = this.unsealTyped(item[key]);
+          result[key] = this.unseal(item[key]);
         }
         return result;
       }

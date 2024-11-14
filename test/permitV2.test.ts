@@ -79,7 +79,7 @@ describe("PermitV2 Tests", () => {
     // Sealing pair can decrypt
     const value = 937387;
     const ciphertext = SealingKey.seal(value, permit.sealingPair.publicKey);
-    const cleartext = permit.unseal(ciphertext);
+    const cleartext = permit.unsealCiphertext(ciphertext);
     expect(cleartext).to.eq(BigInt(value));
   });
   it("create (sharing)", async () => {
@@ -216,7 +216,7 @@ describe("PermitV2 Tests", () => {
       boolValue ? 1 : 0,
       permit.sealingPair.publicKey,
     );
-    const boolCleartext = permit.unseal(boolCiphertext);
+    const boolCleartext = permit.unsealCiphertext(boolCiphertext);
     expect(boolCleartext).to.eq(boolValue ? 1n : 0n);
 
     // Uint
@@ -225,7 +225,7 @@ describe("PermitV2 Tests", () => {
       uintValue,
       permit.sealingPair.publicKey,
     );
-    const uintCleartext = permit.unseal(uintCiphertext);
+    const uintCleartext = permit.unsealCiphertext(uintCiphertext);
     expect(uintCleartext).to.eq(BigInt(uintValue));
 
     // Address
@@ -236,7 +236,7 @@ describe("PermitV2 Tests", () => {
       BigInt(addressValue),
       permit.sealingPair.publicKey,
     );
-    const addressCleartext = permit.unseal(addressCiphertext);
+    const addressCleartext = permit.unsealCiphertext(addressCiphertext);
     expect(bnToAddress(addressCleartext)).to.eq(addressValue);
   });
   it("unsealTyped", async () => {
@@ -253,7 +253,7 @@ describe("PermitV2 Tests", () => {
       data: SealingKey.seal(boolValue ? 1 : 0, permit.sealingPair.publicKey),
       utype: 13,
     };
-    const boolCleartext = permit.unsealTyped(boolCipherStruct);
+    const boolCleartext = permit.unseal(boolCipherStruct);
     expect(boolCleartext).to.eq(boolValue);
 
     // Uint
@@ -262,7 +262,7 @@ describe("PermitV2 Tests", () => {
       data: SealingKey.seal(uintValue, permit.sealingPair.publicKey),
       utype: 4,
     };
-    const uintCleartext = permit.unsealTyped(uintCipherStruct);
+    const uintCleartext = permit.unseal(uintCipherStruct);
     expect(uintCleartext).to.eq(uintValue);
 
     // Address
@@ -271,11 +271,11 @@ describe("PermitV2 Tests", () => {
       data: SealingKey.seal(BigInt(addressValue), permit.sealingPair.publicKey),
       utype: 12,
     };
-    const addressCleartext = permit.unsealTyped(addressCipherStruct);
+    const addressCleartext = permit.unseal(addressCipherStruct);
     expect(addressCleartext).to.eq(addressValue);
 
     // Array - Nested
-    const nestedCleartext = permit.unsealTyped([
+    const nestedCleartext = permit.unseal([
       boolCipherStruct,
       ["hello", "world"],
       uintCipherStruct,

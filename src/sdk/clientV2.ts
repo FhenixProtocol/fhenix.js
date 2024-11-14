@@ -1,21 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
+import { fromHexString, toABIEncodedUint32 } from "./utils.js";
 import {
-  fromHexString,
-  ValidateUintInRange,
-  toABIEncodedUint32,
-} from "./utils.js";
-import {
-  EncryptedAddress,
-  EncryptedBool,
-  EncryptedNumber,
-  EncryptedUint128,
-  EncryptedUint16,
-  EncryptedUint256,
-  EncryptedUint32,
-  EncryptedUint64,
-  EncryptedUint8,
-  EncryptionTypes,
   FheUType,
   isEncryptableItem,
   MappedEncryptedTypes,
@@ -24,15 +10,9 @@ import {
   ResultOk,
 } from "./types.js";
 
-import {
-  FheOpsAddress,
-  MAX_UINT16,
-  MAX_UINT32,
-  MAX_UINT8,
-  PUBLIC_KEY_LENGTH_MIN,
-} from "./consts.js";
+import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "./consts.js";
 import * as tfheEncrypt from "./encrypt.js";
-import { isBigIntOrHexString, isNumber, isString } from "./validation.js";
+import { isString } from "./validation.js";
 import { InitFhevm } from "./init.js";
 import {
   getPermit as getPermitFromStore,
@@ -162,184 +142,10 @@ export class FhenixClientV2 {
     return key;
   }
 
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
-  encrypt_bool(value: boolean, securityZone: number = 0): EncryptedBool {
-    const fhePublicKey = this._getPublicKey(securityZone);
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint8(value: number, securityZone: number = 0): EncryptedUint8 {
-    isNumber(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT8, 0);
-
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint16 value using the stored public key.
-   * @param {number} value - The Uint16 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint16(value: number, securityZone: number = 0): EncryptedUint16 {
-    isNumber(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT16, 0);
-    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint32 value using the stored public key.
-   * @param {number} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint32(value: number, securityZone: number = 0): EncryptedUint32 {
-    isNumber(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint64 value using the stored public key.
-   * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint64(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedUint64 {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint128 value using the stored public key.
-   * @param {bigint | string} value - The Uint128 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint128(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedUint128 {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a Uint256 value using the stored public key.
-   * @param {bigint | string} value - The Uint256 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
-   */
-  encrypt_uint256(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedUint256 {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts an Address (Uint160) value using the stored public key.
-   * @param {bigint | string} value - The Address (Uint160) value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
-   */
-  encrypt_address(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedAddress {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
-  }
-
-  /**
-   * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
-   * @param {number} value - The numeric value to encrypt.
-   * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
-   */
-  encrypt(
-    value: number,
-    type?: EncryptionTypes,
-    securityZone: number = 0,
-  ): EncryptedNumber {
-    isNumber(value);
-
-    let outputSize = type;
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // choose the most efficient ciphertext size if not selected
-    if (!outputSize) {
-      if (value < MAX_UINT8) {
-        outputSize = EncryptionTypes.uint8;
-      } else if (value < MAX_UINT16) {
-        outputSize = EncryptionTypes.uint16;
-      } else if (value < MAX_UINT32) {
-        outputSize = EncryptionTypes.uint32;
-      } else {
-        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
-      }
-    }
-
-    switch (outputSize) {
-      case EncryptionTypes.uint8:
-        ValidateUintInRange(value, MAX_UINT8, 0);
-        break;
-      case EncryptionTypes.uint16:
-        ValidateUintInRange(value, MAX_UINT16, 0);
-        break;
-      case EncryptionTypes.uint32:
-        ValidateUintInRange(value, MAX_UINT32, 0);
-        break;
-      default:
-    }
-
-    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
-  }
-
-  encryptTyped<T>(item: T): MappedEncryptedTypes<T>;
-  encryptTyped<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
-  encryptTyped<T extends any[]>(...item: [...T]): [...MappedEncryptedTypes<T>];
-  encryptTyped<T>(item: T) {
+  encrypt<T>(item: T): MappedEncryptedTypes<T>;
+  encrypt<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
+  encrypt<T extends any[]>(...item: [...T]): [...MappedEncryptedTypes<T>];
+  encrypt<T>(item: T) {
     // Permission
     if (item === "permission") {
       return this.getPermission();
@@ -347,23 +153,21 @@ export class FhenixClientV2 {
 
     // EncryptableItem
     if (isEncryptableItem(item)) {
-      switch (item.utype) {
-        case FheUType.bool:
-          return this.encrypt_bool(item.data, item.securityZone);
-        case FheUType.uint8:
-          return this.encrypt_uint8(item.data, item.securityZone);
-        case FheUType.uint16:
-          return this.encrypt_uint16(item.data, item.securityZone);
-        case FheUType.uint32:
-          return this.encrypt_uint32(item.data, item.securityZone);
-        case FheUType.uint64:
-          return this.encrypt_uint64(item.data, item.securityZone);
-        case FheUType.uint128:
-          return this.encrypt_uint128(item.data, item.securityZone);
-        case FheUType.uint256:
-          return this.encrypt_uint256(item.data, item.securityZone);
-        case FheUType.address:
-          return this.encrypt_address(item.data, item.securityZone);
+      const fhePublicKey = this._getPublicKey(item.securityZone ?? 0);
+
+      // Prevent wrapping taking up too much vertical space
+      // prettier-ignore
+      {
+        switch (item.utype) {
+          case FheUType.bool: return tfheEncrypt.encrypt_bool(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint8: return tfheEncrypt.encrypt_uint8(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint16: return tfheEncrypt.encrypt_uint16(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint32: return tfheEncrypt.encrypt_uint32(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint64: return tfheEncrypt.encrypt_uint64(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint128: return tfheEncrypt.encrypt_uint128(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint256: return tfheEncrypt.encrypt_uint256(item.data, fhePublicKey, item.securityZone);
+          case FheUType.address: return tfheEncrypt.encrypt_address(item.data, fhePublicKey, item.securityZone);
+        }
       }
     }
 
@@ -371,12 +175,12 @@ export class FhenixClientV2 {
     if (typeof item === "object" && item !== null) {
       if (Array.isArray(item)) {
         // Array - recurse
-        return item.map((nestedItem) => this.encryptTyped(nestedItem));
+        return item.map((nestedItem) => this.encrypt(nestedItem));
       } else {
         // Object - recurse
         const result: any = {};
         for (const key in item) {
-          result[key] = this.encryptTyped(item[key]);
+          result[key] = this.encrypt(item[key]);
         }
         return result;
       }
@@ -529,7 +333,7 @@ export class FhenixClientV2 {
       );
     }
 
-    return permit.unseal(ciphertext);
+    return permit.unsealCiphertext(ciphertext);
   }
 
   /**
@@ -556,7 +360,7 @@ export class FhenixClientV2 {
       );
     }
 
-    return permit.unsealTyped(item);
+    return permit.unseal(item);
   }
 
   // Helpers

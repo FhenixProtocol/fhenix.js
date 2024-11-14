@@ -334,8 +334,9 @@ export class FhenixClientV2 {
     return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
   }
 
-  encryptTyped<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
   encryptTyped<T>(item: T): MappedEncryptedTypes<T>;
+  encryptTyped<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
+  encryptTyped<T extends any[]>(...item: [...T]): [...MappedEncryptedTypes<T>];
   encryptTyped<T>(item: T) {
     // Permission
     if (item === "permission") {

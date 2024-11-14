@@ -5,30 +5,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import {
-  FhenixClient,
-  FhenixClientSync,
-  GenerateSealingKey,
-  getPermit,
-  Permit,
-  SealingKey,
-} from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
 import { MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
-import { getAllExistingPermits } from "../src/fhenix";
 import { FhenixClientV2 } from "../src/sdk/clientV2";
-import { PermitV2 } from "../src/sdk/permitV2";
-import { getAddress, hexlify, ZeroAddress } from "ethers";
 import {
   Encryptable,
   EncryptedAddress,
   EncryptedBool,
   EncryptedUint64,
   EncryptedUint8,
-  SealedAddress,
-  SealedBool,
-  SealedUint,
 } from "../src/sdk/types";
 import { PermissionV2 } from "../src/extensions/types";
 
@@ -118,7 +104,22 @@ describe("PermitV2 Tests", () => {
       EncryptedUint8,
     ];
 
-    expectTypeOf<ExpectedEncryptedType>().toEqualTypeOf(nestedEncrypt);
+    expectTypeOf<Readonly<ExpectedEncryptedType>>().toEqualTypeOf(
+      nestedEncrypt,
+    );
+
+    const inlineEncrypt = client.encryptTyped(
+      PermissionSlot,
+      {
+        a: Encryptable.bool(false),
+        b: Encryptable.uint64(10n),
+        c: "hello",
+      } as const,
+      ["hello", 20n, Encryptable.address(contractAddress)] as const,
+      Encryptable.uint8(10),
+    );
+
+    expectTypeOf<ExpectedEncryptedType>().toEqualTypeOf(inlineEncrypt);
   });
   it("createPermit");
   it("importPermit");

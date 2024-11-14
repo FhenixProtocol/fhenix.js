@@ -594,7 +594,7 @@ export class FhenixClientSync extends FhenixClientBase {
   ): Promise<FhenixClientSync> {
     isPlainObject(params);
 
-    if (params.skipPubKeyFetch !== false) {
+    if (params.skipPubKeyFetch === true) {
       console.warn(
         "warning: FhenixClientSync doesn't support skipping public key fetching on creation",
       );

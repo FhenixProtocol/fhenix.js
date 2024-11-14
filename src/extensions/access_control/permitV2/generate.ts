@@ -1,4 +1,4 @@
-import { Expand, PermissionV2 } from "../../types";
+import { PermissionV2 } from "../../types";
 import { EIP712Types, EIP712Message } from "../EIP712";
 
 const PermitV2SignatureAllFields = [
@@ -47,7 +47,7 @@ export const getSignatureTypesAndMessage = <
 >(
   typeName: SignatureIdentifier,
   fields: T[] | readonly T[],
-  values: Expand<Pick<PermissionV2, T> & Partial<PermissionV2>>,
+  values: Pick<PermissionV2, T> & Partial<PermissionV2>,
 ): { types: EIP712Types; message: EIP712Message } => {
   const types = {
     [typeName]: PermitV2SignatureAllFields.filter((fieldType) =>
@@ -55,10 +55,13 @@ export const getSignatureTypesAndMessage = <
     ),
   };
 
-  const message: EIP712Message = {};
-  for (const field in fields) {
-    message[field] = (values as unknown as PermissionV2)[field as T] as string;
-  }
+  const message: Record<T, string | string[] | number | number[]> =
+    {} as Record<T, string | string[] | number | number[]>;
+  fields.forEach((field) => {
+    if (field in values) {
+      message[field] = values[field];
+    }
+  });
 
-  return { types, message };
+  return { types, message: message as EIP712Message };
 };

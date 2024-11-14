@@ -1,9 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { JsonRpcProvider, AbiCoder, ethers } from "ethers";
+import * as crypto from "crypto";
 
-export const BobWallet = ethers.Wallet.createRandom();
-export const AdaWallet = ethers.Wallet.createRandom();
+// Vitest  and ethers randomness don't play nicely together
+// https://github.com/ethers-io/ethers.js/issues/4365#issuecomment-1721313836
+// This is a "polyfill" of sorts to get them working together
+// the `ethers.Wallet.fromPhrase` relies on this (added as part of FhenixClientV2 & PermitV2)
+// If that dependency is removed, this can be removed as well
+// @architect-dev 2024-11-14
+ethers.sha256.register((data) => {
+  return new Uint8Array(crypto.createHash("sha256").update(data).digest());
+});
 
 // Initialize genesis accounts
 const mnemonics = [
@@ -11,6 +19,9 @@ const mnemonics = [
   "jelly shadow frog dirt dragon use armed praise universe win jungle close inmate rain oil canvas beauty pioneer chef soccer icon dizzy thunder meadow", // account b
   "chair love bleak wonder skirt permit say assist aunt credit roast size obtain minute throw sand usual age smart exact enough room shadow charge", // account c
 ];
+
+export const BobWallet = ethers.Wallet.fromPhrase(mnemonics[1]);
+export const AdaWallet = ethers.Wallet.fromPhrase(mnemonics[2]);
 
 export const fromHexString = (hexString: string): Uint8Array => {
   const arr = hexString.replace(/^(0x)/, "").match(/.{1,2}/g);
@@ -43,10 +54,10 @@ export class MockSigner {
     this.wallet = wallet;
   }
   signTypedData = async (domain: any, types: any, value: any): Promise<any> => {
-    return this.wallet.signTypedData(domain, types, value);
+    return await this.wallet.signTypedData(domain, types, value);
   };
   getAddress = async (): Promise<string> => {
-    return this.wallet.address;
+    return this.wallet.getAddress();
   };
 }
 
@@ -57,7 +68,7 @@ export class MockProvider {
 
   constructor(pk: any, wallet?: ethers.HDNodeWallet, chainId?: any) {
     this.publicKey = pk;
-    this.wallet = wallet ?? ethers.Wallet.createRandom();
+    this.wallet = wallet ?? ethers.Wallet.fromPhrase(mnemonics[0]);
     this.chainId = chainId || "0x10";
   }
   send = async (

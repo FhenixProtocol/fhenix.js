@@ -108,7 +108,7 @@ describe("Instance", () => {
   it("fails to create an instance", async () => {
     await expect(
       new FhenixClient({
-        provider: new MockProvider(tfhePublicKey, "not a number"),
+        provider: new MockProvider(tfhePublicKey, undefined, "not a number"),
       }).fhePublicKeys[0],
     ).rejects.toThrow(
       `received non-hex number from chainId request: "not a number"`,
@@ -123,7 +123,7 @@ describe("Instance", () => {
 
     await expect(
       FhenixClientSync.create({
-        provider: new MockProvider(tfhePublicKey, "not a number"),
+        provider: new MockProvider(tfhePublicKey, undefined, "not a number"),
       }),
     ).rejects.toThrow(
       `received non-hex number from chainId request: "not a number"`,

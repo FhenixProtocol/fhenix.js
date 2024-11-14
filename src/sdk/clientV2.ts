@@ -53,6 +53,14 @@ import {
 } from "../extensions/types.js";
 import { PermitV2 } from "./permitV2.js";
 
+export type FhenixClientV2InitParams = {
+  account: string;
+  send: SendFn;
+  signTypedData: SignTypedDataFn;
+  securityZones?: number[];
+  ignoreErrors?: boolean;
+};
+
 export class FhenixClientV2 {
   public account: string | undefined;
   public chainId: string | undefined;
@@ -73,13 +81,7 @@ export class FhenixClientV2 {
 
   // Called when initializing or updating the provider
   // Should re-initialize when account or chain changes
-  public async initialize(params: {
-    account: string;
-    send: SendFn;
-    signTypedData: SignTypedDataFn;
-    securityZones?: number[];
-    ignoreErrors?: boolean;
-  }): Promise<void> {
+  public async initialize(params: FhenixClientV2InitParams): Promise<void> {
     const {
       account,
       send,

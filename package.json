@@ -59,6 +59,7 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "happy-dom": "^15.11.6",
     "@rollup/plugin-commonjs": "25.0.8",
     "@rollup/plugin-node-resolve": "15.2.3",
     "@rollup/plugin-wasm": "6.2.2",

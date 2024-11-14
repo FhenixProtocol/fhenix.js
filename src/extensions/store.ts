@@ -67,6 +67,7 @@ export const getPermits = (
 export const setPermit = (account: string, permitV2: PermitV2) => {
   fhenixStore.setState(
     produce<PersistState>((state) => {
+      if (state.permits[account] == null) state.permits[account] = {};
       state.permits[account][permitV2.getHash()] = permitV2.serialize();
     }),
   );
@@ -124,6 +125,7 @@ export const setFheKey = (
 
   fhenixStore.setState(
     produce<PersistState>((state) => {
+      if (state.fheKeys[chainId] == null) state.fheKeys[chainId] = {};
       state.fheKeys[chainId][securityZone] = fheKey?.serialize();
     }),
   );

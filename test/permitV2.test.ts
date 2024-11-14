@@ -1,5 +1,5 @@
 /**
- * @vitest-environment jsdom
+ * @vitest-environment happy-dom
  */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -7,7 +7,7 @@
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
 import { SealingKey } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
-import { MockProvider, MockSigner } from "./utils";
+import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import { PermitV2 } from "../src/sdk/permitV2";
 import { getAddress, ZeroAddress } from "ethers";
@@ -31,12 +31,12 @@ describe("PermitV2 Tests", () => {
 
   beforeAll(async () => {
     bobPublicKey = createTfhePublicKey();
-    bobProvider = new MockProvider(bobPublicKey);
+    bobProvider = new MockProvider(bobPublicKey, BobWallet);
     bobSigner = await bobProvider.getSigner();
     bobAddress = await bobSigner.getAddress();
 
     adaPublicKey = createTfhePublicKey();
-    adaProvider = new MockProvider(adaPublicKey);
+    adaProvider = new MockProvider(adaPublicKey, AdaWallet);
     adaSigner = await adaProvider.getSigner();
     adaAddress = await adaSigner.getAddress();
   });
@@ -45,7 +45,7 @@ describe("PermitV2 Tests", () => {
     localStorage.clear();
   });
 
-  it("should be in jsdom environment", async () => {
+  it("should be in happy-dom environment", async () => {
     expect(typeof window).not.toBe("undefined");
   });
 
@@ -117,7 +117,7 @@ describe("PermitV2 Tests", () => {
       projects: [counterProjectId],
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner._signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
 
     expect(permit.issuerSignature).to.not.eq("0x");
     expect(permit.recipientSignature).to.eq("0x");
@@ -131,7 +131,7 @@ describe("PermitV2 Tests", () => {
       recipient: adaAddress,
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner._signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
 
     expect(permit.issuerSignature).to.not.eq("0x");
     expect(permit.recipientSignature).to.eq("0x");
@@ -148,7 +148,7 @@ describe("PermitV2 Tests", () => {
     expect(bobPermit.issuerSignature).to.eq("0x");
     expect(bobPermit.recipientSignature).to.eq("0x");
 
-    await bobPermit.sign(bobProvider.chainId, bobSigner._signTypedData);
+    await bobPermit.sign(bobProvider.chainId, bobSigner.signTypedData);
 
     expect(bobPermit.issuerSignature).to.not.eq("0x");
     expect(bobPermit.recipientSignature).to.eq("0x");
@@ -161,7 +161,7 @@ describe("PermitV2 Tests", () => {
     expect(adaPermit.issuerSignature).to.not.eq("0x");
     expect(adaPermit.recipientSignature).to.eq("0x");
 
-    await adaPermit.sign(adaProvider.chainId, adaSigner._signTypedData);
+    await adaPermit.sign(adaProvider.chainId, adaSigner.signTypedData);
 
     expect(adaPermit.issuerSignature).to.not.eq("0x");
     expect(adaPermit.recipientSignature).to.not.eq("0x");
@@ -175,7 +175,7 @@ describe("PermitV2 Tests", () => {
       projects: [counterProjectId],
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner._signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
 
     const { type, sealingPair, ...iface } = permit.getInterface();
     const { sealingKey, ...permission } = permit.getPermission();
@@ -289,23 +289,25 @@ describe("PermitV2 Tests", () => {
         address: addressCipherStruct,
         clear: "clear",
       },
-    ]);
+    ] as const);
 
-    type ExpectedCleartextType = [
-      boolean,
-      string[],
-      bigint,
-      number,
-      string,
-      boolean,
-      bigint,
-      {
-        bool: boolean;
-        uint: bigint;
-        address: string;
-        clear: string;
-      },
-    ];
+    type ExpectedCleartextType = Readonly<
+      [
+        boolean,
+        readonly [string, string],
+        bigint,
+        number,
+        string,
+        boolean,
+        bigint,
+        {
+          readonly bool: boolean;
+          readonly uint: bigint;
+          readonly address: string;
+          readonly clear: string;
+        },
+      ]
+    >;
 
     const expectedCleartext: ExpectedCleartextType = [
       boolValue,
@@ -354,7 +356,7 @@ describe("PermitV2 Tests", () => {
       projects: [counterProjectId],
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner._signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
 
     const serialized = permit.serialize();
 

@@ -249,8 +249,6 @@ describe("Sdk Tests", () => {
       contracts: [contractAddress2],
     });
 
-    const state = fhenixsdk.store.getState();
-
     const dumpLocalStorage = (): { [key: string]: object } => {
       const dump: { [key: string]: object } = {};
       for (let i = 0; i < localStorage.length; i++) {

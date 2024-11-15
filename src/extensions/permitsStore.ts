@@ -169,6 +169,7 @@ export fhenixsdk = {
   unseal: unseal SealedItems using active permit
 }
 
+
 export PermitV2
 export Encryptable
 export fhenixjsStore

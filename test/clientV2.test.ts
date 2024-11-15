@@ -20,7 +20,7 @@ import {
   SealedUint,
 } from "../src/sdk/types";
 import { PermissionV2 } from "../src/extensions/types";
-import { fhenixjsStore } from "../src/extensions/store";
+import { fhenixjsStore } from "../src/extensions/permitsStore";
 import { PermitV2 } from "../src/sdk/permitV2";
 import { Primitive } from "type-fest";
 import { SealingKey } from "../src/fhenix";

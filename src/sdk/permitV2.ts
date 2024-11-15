@@ -4,13 +4,6 @@ import {
   getSignatureTypesAndMessage,
   SignatureTypes,
 } from "../extensions/access_control/permitV2/generate";
-import {
-  PermissionV2,
-  PermitV2Interface,
-  PermitV2Options,
-  SerializedPermitV2,
-  SignTypedDataFn,
-} from "../extensions/types";
 import { GenerateSealingKey, SealingKey } from "./sealing";
 import { isString } from "./validation";
 import {
@@ -19,6 +12,11 @@ import {
   isSealedItem,
   isSealedUint,
   MappedUnsealedTypes,
+  PermissionV2,
+  PermitV2Interface,
+  PermitV2Options,
+  SerializedPermitV2,
+  SignTypedDataFn,
 } from "./types";
 import { PermitV2OptionsValidator, PermitV2Validator } from "./permitV2.z";
 

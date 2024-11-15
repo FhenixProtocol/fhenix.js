@@ -32,7 +32,7 @@ import {
   setActivePermitHash as setActivePermitHashInStore,
   getPermits as getPermitsFromStore,
   getActivePermitHash as getActivePermitHashFromStore,
-  getFheKey,
+  getFheKey as getFheKeyFromStore,
   setFheKey,
   getActivePermit as getActivePermitFromStore,
 } from "../extensions/permitsStore.js";
@@ -53,7 +53,7 @@ export type FhenixClientV2InitParams = {
   ignoreErrors?: boolean;
 };
 
-export class FhenixClientV2 {
+export class FhenixSdk {
   public account: string | undefined;
   public chainId: string | undefined;
   public securityZones: number[] = [];
@@ -61,6 +61,7 @@ export class FhenixClientV2 {
   private send: SendFn | undefined;
   private signTypedData: SignTypedDataFn | undefined;
 
+  public initialized: boolean = false;
   public fhevmInitialized: boolean = false;
   public fhePublicKeysInitialized: boolean = false;
 
@@ -81,6 +82,8 @@ export class FhenixClientV2 {
       ignoreErrors = false,
       securityZones = [0],
     } = params;
+
+    this.initialized = false;
 
     // FHEVM
 
@@ -124,27 +127,22 @@ export class FhenixClientV2 {
 
     await Promise.all(
       securityZones.map((securityZone) =>
-        FhenixClientV2.getFheKeyFromProvider(
-          this.chainId,
-          securityZone,
-          this.send,
-        ),
+        FhenixSdk.getFheKeyFromProvider(this.chainId, securityZone, this.send),
       ),
     );
     this.fhePublicKeysInitialized = true;
+
+    this.initialized = true;
   }
 
   // Encrypt
 
-  private _getPublicKey(securityZone: number) {
-    if (!this.fhevmInitialized) {
-      throw new Error("FHEVM not initialized");
-    }
-    if (!this.fhePublicKeysInitialized) {
-      throw new Error("FHE Public Keys not initialized");
+  private _getFheKey(securityZone: number) {
+    if (!this.initialized) {
+      throw new Error("FhenixSdk not initialized");
     }
 
-    const key = getFheKey(this.chainId, securityZone);
+    const key = getFheKeyFromStore(this.chainId, securityZone);
     if (!key) {
       throw new Error(
         `Public key for security zone ${securityZone} not initialized`,
@@ -170,7 +168,7 @@ export class FhenixClientV2 {
 
     let outputSize = type;
 
-    const fhePublicKey = this._getPublicKey(securityZone);
+    const fhePublicKey = this._getFheKey(securityZone);
 
     // choose the most efficient ciphertext size if not selected
     if (!outputSize) {
@@ -212,7 +210,7 @@ export class FhenixClientV2 {
 
     // EncryptableItem
     if (isEncryptableItem(item)) {
-      const fhePublicKey = this._getPublicKey(item.securityZone ?? 0);
+      const fhePublicKey = this._getFheKey(item.securityZone ?? 0);
 
       // Prevent wrapping taking up too much vertical space
       // prettier-ignore
@@ -453,7 +451,7 @@ export class FhenixClientV2 {
     securityZone: number = 0,
     send: SendFn | undefined,
   ): Promise<TfheCompactPublicKey> {
-    const storedKey = getFheKey(chainId, securityZone);
+    const storedKey = getFheKeyFromStore(chainId, securityZone);
     if (storedKey != null) return storedKey;
 
     const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"

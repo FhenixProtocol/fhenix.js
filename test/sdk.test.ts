@@ -8,7 +8,6 @@ import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
 import { createTfhePublicKey } from "./keygen";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
-import { FhenixClientV2, FhenixClientV2InitParams } from "../src/sdk/clientV2";
 import {
   Encryptable,
   EncryptedAddress,
@@ -18,15 +17,14 @@ import {
   SealedAddress,
   SealedBool,
   SealedUint,
+  PermissionV2,
 } from "../src/sdk/types";
-import { PermissionV2 } from "../src/extensions/types";
-import { fhenixjsStore } from "../src/extensions/permitsStore";
-import { PermitV2 } from "../src/sdk/permitV2";
-import { Primitive } from "type-fest";
-import { SealingKey } from "../src/fhenix";
+import { permitsStore } from "../src/extensions/store/permits";
+import { fhenixsdk, PermitV2, SealingKey } from "../src/fhenix";
 import { getAddress } from "ethers";
+import { InitParams } from "../src/extensions/store/sdk";
 
-describe("FhenixClientV2 Tests", () => {
+describe("Sdk Tests", () => {
   let bobPublicKey: string;
   let bobProvider: MockProvider;
   let bobSigner: MockSigner;
@@ -42,23 +40,19 @@ describe("FhenixClientV2 Tests", () => {
   const counterProjectId = "COUNTER";
   const uniswapProjectId = "UNISWAP";
 
-  const initBobClient = async () => {
-    const client = new FhenixClientV2();
-    await client.initialize({
+  const initSdkWithBob = async () => {
+    await fhenixsdk.initialize({
       account: bobAddress,
       send: bobProvider.send,
       signTypedData: bobSigner.signTypedData,
     });
-    return client;
   };
-  const initAdaClient = async () => {
-    const client = new FhenixClientV2();
-    await client.initialize({
-      account: bobAddress,
-      send: bobProvider.send,
-      signTypedData: bobSigner.signTypedData,
+  const initSdkWithAda = async () => {
+    await fhenixsdk.initialize({
+      account: adaAddress,
+      send: adaProvider.send,
+      signTypedData: adaSigner.signTypedData,
     });
-    return client;
   };
 
   beforeAll(async () => {
@@ -75,62 +69,58 @@ describe("FhenixClientV2 Tests", () => {
 
   afterEach(() => {
     localStorage.clear();
+    fhenixsdk.store.setState(fhenixsdk.store.getInitialState());
   });
 
   it("should be in happy-dom environment", async () => {
     expect(typeof window).not.toBe("undefined");
   });
 
-  it("constructor", async () => {
-    const client = new FhenixClientV2();
-    expect(client).to.not.be.null;
-  });
-
   it("initialize", async () => {
-    const successClient = await initBobClient();
-    expect(successClient.fhevmInitialized).to.eq(true);
-    expect(successClient.fhePublicKeysInitialized).to.eq(true);
+    expect(fhenixsdk.store.getState().initialized).toEqual(false);
+    expect(fhenixsdk.store.getState().fhevmInitialized).toEqual(false);
+    expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(false);
 
-    const client = new FhenixClientV2();
+    await initSdkWithBob();
+    expect(fhenixsdk.store.getState().initialized).toEqual(true);
+    expect(fhenixsdk.store.getState().fhevmInitialized).toEqual(true);
+    expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(true);
+
     expect(
-      client.initialize({
+      fhenixsdk.initialize({
         // account: bobAddress, <== Missing
         send: bobProvider.send,
         signTypedData: bobSigner.signTypedData,
-      } as unknown as FhenixClientV2InitParams),
-    ).rejects.toThrow(
-      "Failed to initialize Fhenix Client - must include account, send function, and signTypedData functions",
-    );
+      } as unknown as InitParams),
+    ).rejects.toThrow("initialize :: missing account");
     expect(
-      client.initialize({
+      fhenixsdk.initialize({
         account: bobAddress,
         // send: bobProvider.send, <== Missing
         signTypedData: bobSigner.signTypedData,
-      } as unknown as FhenixClientV2InitParams),
-    ).rejects.toThrow(
-      "Failed to initialize Fhenix Client - must include account, send function, and signTypedData functions",
-    );
+      } as unknown as InitParams),
+    ).rejects.toThrow("initialize :: missing send function");
     expect(
-      client.initialize({
+      fhenixsdk.initialize({
         account: bobAddress,
         send: bobProvider.send,
         // signTypedData: bobSigner.signTypedData, <== Missing
-      } as unknown as FhenixClientV2InitParams),
-    ).rejects.toThrow(
-      "Failed to initialize Fhenix Client - must include account, send function, and signTypedData functions",
-    );
+      } as unknown as InitParams),
+    ).rejects.toThrow("initialize :: missing signTypedData function");
   });
 
   it("re-initialize (change account)", async () => {
-    const client = await initBobClient();
+    await initSdkWithBob();
 
     // Bob doesn't have an active permit before it is created
 
-    let bobFetchedPermit = await client.getPermit();
-    expect(bobFetchedPermit.success).to.eq(false);
-    expect(bobFetchedPermit.error).to.eq("active permit not found");
+    let bobFetchedPermit = await fhenixsdk.getPermit();
+    expect(bobFetchedPermit.success).toEqual(false);
+    expect(bobFetchedPermit.error).toEqual(
+      "getPermit :: active permit not found",
+    );
 
-    const bobCreatedPermit = await client.createPermit({
+    const bobCreatedPermit = await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       projects: [counterProjectId],
@@ -138,23 +128,23 @@ describe("FhenixClientV2 Tests", () => {
 
     // Bob's new permit is the active permit
 
-    bobFetchedPermit = await client.getPermit();
-    expect(bobFetchedPermit.success).to.eq(true);
-    expect(bobFetchedPermit.data?.getHash()).to.eq(bobCreatedPermit.getHash());
+    bobFetchedPermit = await fhenixsdk.getPermit();
+    expect(bobFetchedPermit.success).toEqual(true);
+    expect(bobFetchedPermit.data?.getHash()).toEqual(
+      bobCreatedPermit.getHash(),
+    );
 
-    await client.initialize({
-      account: adaAddress,
-      send: adaProvider.send,
-      signTypedData: adaSigner.signTypedData,
-    });
+    await initSdkWithAda();
 
     // Ada does not have an active permit
 
-    let adaFetchedPermit = await client.getPermit();
-    expect(adaFetchedPermit.success).to.eq(false);
-    expect(adaFetchedPermit.error).to.eq("active permit not found");
+    let adaFetchedPermit = await fhenixsdk.getPermit();
+    expect(adaFetchedPermit.success).toEqual(false);
+    expect(adaFetchedPermit.error).toEqual(
+      "getPermit :: active permit not found",
+    );
 
-    const adaCreatedPermit = await client.createPermit({
+    const adaCreatedPermit = await fhenixsdk.createPermit({
       type: "self",
       issuer: adaAddress,
       projects: [counterProjectId],
@@ -162,13 +152,15 @@ describe("FhenixClientV2 Tests", () => {
 
     // Adas active permit set
 
-    adaFetchedPermit = await client.getPermit();
-    expect(adaFetchedPermit.success).to.eq(true);
-    expect(adaFetchedPermit.data?.getHash()).to.eq(adaCreatedPermit.getHash());
+    adaFetchedPermit = await fhenixsdk.getPermit();
+    expect(adaFetchedPermit.success).toEqual(true);
+    expect(adaFetchedPermit.data?.getHash()).toEqual(
+      adaCreatedPermit.getHash(),
+    );
 
     // Switch back to bob
 
-    await client.initialize({
+    await fhenixsdk.initialize({
       account: bobAddress,
       send: bobProvider.send,
       signTypedData: bobSigner.signTypedData,
@@ -176,17 +168,19 @@ describe("FhenixClientV2 Tests", () => {
 
     // Bob's active permit is pulled from the store and exists
 
-    bobFetchedPermit = await client.getPermit();
-    expect(bobFetchedPermit.success).to.eq(true);
-    expect(bobFetchedPermit.data?.getHash()).to.eq(bobCreatedPermit.getHash());
+    bobFetchedPermit = await fhenixsdk.getPermit();
+    expect(bobFetchedPermit.success).toEqual(true);
+    expect(bobFetchedPermit.data?.getHash()).toEqual(
+      bobCreatedPermit.getHash(),
+    );
   });
 
   it("encrypt");
 
   it("encryptTyped", async () => {
-    const client = await initBobClient();
+    await initSdkWithBob();
 
-    await client.createPermit({
+    await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       projects: [counterProjectId],
@@ -194,10 +188,10 @@ describe("FhenixClientV2 Tests", () => {
 
     const PermissionSlot = "permission" as const;
 
-    const injectedPermission = client.encrypt(PermissionSlot);
+    const injectedPermission = fhenixsdk.encrypt(PermissionSlot);
     expectTypeOf(injectedPermission).toEqualTypeOf<PermissionV2>();
 
-    const nestedEncrypt = client.encrypt([
+    const nestedEncrypt = fhenixsdk.encrypt([
       PermissionSlot,
       { a: Encryptable.bool(false), b: Encryptable.uint64(10n), c: "hello" },
       ["hello", 20n, Encryptable.address(contractAddress)],
@@ -215,7 +209,7 @@ describe("FhenixClientV2 Tests", () => {
       nestedEncrypt,
     );
 
-    const inlineEncrypt = client.encrypt(
+    const inlineEncrypt = fhenixsdk.encrypt(
       PermissionSlot,
       {
         a: Encryptable.bool(false),
@@ -242,18 +236,20 @@ describe("FhenixClientV2 Tests", () => {
     // FhenixClientV2 leverages a persisted zustand store to handle localstorage
     // zustand persist is heavily tested, this test is just to ensure that its working in our implementation
 
-    const client = await initBobClient();
-    const permit1 = await client.createPermit({
+    await initSdkWithBob();
+    const permit1 = await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       projects: [counterProjectId],
     });
-    const permit2 = await client.createPermit({
+    const permit2 = await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       projects: [counterProjectId, uniswapProjectId],
       contracts: [contractAddress2],
     });
+
+    const state = fhenixsdk.store.getState();
 
     const dumpLocalStorage = (): { [key: string]: object } => {
       const dump: { [key: string]: object } = {};
@@ -266,13 +262,15 @@ describe("FhenixClientV2 Tests", () => {
       return dump;
     };
 
-    // Store
+    // Sdk Store
     const dumped = dumpLocalStorage();
-    expect(dumped).to.have.key("fhenix.js");
+    expect(dumped).to.have.keys(["fhenix.js"]);
+
+    // Permits store
+
     expect(dumped["fhenix.js"]["state"]).to.have.keys(
       "permits",
       "activePermitHash",
-      "fheKeys",
     );
 
     // Permits
@@ -284,23 +282,21 @@ describe("FhenixClientV2 Tests", () => {
     );
 
     // ActivePermit
-    expect(dumped["fhenix.js"]["state"]["activePermitHash"][bobAddress]).to.eq(
-      permit2.getHash(),
-    );
+    expect(
+      dumped["fhenix.js"]["state"]["activePermitHash"][bobAddress],
+    ).toEqual(permit2.getHash());
   });
   it("createPermit", async () => {
-    let client = new FhenixClientV2();
-
     expect(
-      client.createPermit({
+      fhenixsdk.createPermit({
         type: "self",
         issuer: bobAddress,
         projects: [counterProjectId],
       }),
-    ).rejects.toThrow("Cannot generate permit without chainId or account");
+    ).rejects.toThrow("createPermit :: fhenixsdk not initialized");
 
-    client = await initBobClient();
-    const permit = await client.createPermit({
+    await initSdkWithBob();
+    const permit = await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       projects: [counterProjectId],
@@ -309,29 +305,29 @@ describe("FhenixClientV2 Tests", () => {
     // Permit established in store
 
     const storePermitSerialized =
-      fhenixjsStore.getState().permits[bobAddress]?.[permit.getHash()];
+      permitsStore.getState().permits[bobAddress]?.[permit.getHash()];
     expect(storePermitSerialized).to.not.be.null;
 
     const storePermit = PermitV2.deserialize(storePermitSerialized!);
-    expect(storePermit.getHash()).to.eq(permit.getHash());
+    expect(storePermit.getHash()).toEqual(permit.getHash());
 
     // Is active permit
 
     const storeActivePermitHash =
-      fhenixjsStore.getState().activePermitHash[bobAddress];
-    expect(storeActivePermitHash).to.eq(permit.getHash());
+      permitsStore.getState().activePermitHash[bobAddress];
+    expect(storeActivePermitHash).toEqual(permit.getHash());
 
     // Creating new permit
 
-    const permit2 = await client.createPermit({
+    const permit2 = await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       projects: [counterProjectId],
     });
 
     const storeActivePermitHash2 =
-      fhenixjsStore.getState().activePermitHash[bobAddress];
-    expect(storeActivePermitHash2).to.eq(permit2.getHash());
+      permitsStore.getState().activePermitHash[bobAddress];
+    expect(storeActivePermitHash2).toEqual(permit2.getHash());
   });
 
   // The remaining functions rely on the same logic:
@@ -344,8 +340,8 @@ describe("FhenixClientV2 Tests", () => {
   // UNSEAL
 
   it("unseal", async () => {
-    const client = await initBobClient();
-    const permit = await client.createPermit({
+    await initSdkWithBob();
+    const permit = await fhenixsdk.createPermit({
       type: "self",
       issuer: bobAddress,
       contracts: [contractAddress, contractAddress2],
@@ -359,7 +355,7 @@ describe("FhenixClientV2 Tests", () => {
       permit.sealingPair.publicKey,
     );
     const boolCleartext = permit.unsealCiphertext(boolCiphertext);
-    expect(boolCleartext).to.eq(boolValue ? 1n : 0n);
+    expect(boolCleartext).toEqual(boolValue ? 1n : 0n);
 
     // Uint
     const uintValue = 937387;
@@ -368,7 +364,7 @@ describe("FhenixClientV2 Tests", () => {
       permit.sealingPair.publicKey,
     );
     const uintCleartext = permit.unsealCiphertext(uintCiphertext);
-    expect(uintCleartext).to.eq(BigInt(uintValue));
+    expect(uintCleartext).toEqual(BigInt(uintValue));
 
     // Address
     const bnToAddress = (bn: bigint) =>
@@ -379,7 +375,7 @@ describe("FhenixClientV2 Tests", () => {
       permit.sealingPair.publicKey,
     );
     const addressCleartext = permit.unsealCiphertext(addressCiphertext);
-    expect(bnToAddress(addressCleartext)).to.eq(addressValue);
+    expect(bnToAddress(addressCleartext)).toEqual(addressValue);
   });
   it("unsealTyped", async () => {
     const permit = await PermitV2.create({
@@ -423,6 +419,6 @@ describe("FhenixClientV2 Tests", () => {
 
     expectTypeOf(nestedCleartext).toEqualTypeOf<ExpectedCleartextType>();
 
-    expect(nestedCleartext).to.deep.eq(expectedCleartext);
+    expect(nestedCleartext).toEqual(expectedCleartext);
   });
 });

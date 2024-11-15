@@ -1,4 +1,4 @@
-import { PermissionV2 } from "../../types";
+import { PermissionV2 } from "../../../sdk/types";
 import { EIP712Types, EIP712Message } from "../EIP712";
 
 const PermitV2SignatureAllFields = [

@@ -3,10 +3,11 @@ import { getAddress, id, ZeroAddress } from "ethers";
 import {
   getSignatureTypesAndMessage,
   SignatureTypes,
-} from "../extensions/access_control/permitV2/generate";
-import { GenerateSealingKey, SealingKey } from "./sealing";
-import { isString } from "./validation";
+} from "../../extensions/access_control/permitV2/generate";
+import { GenerateSealingKey, SealingKey } from "../sealing";
+import { isString } from "../validation";
 import {
+  AbstractSigner,
   isSealedAddress,
   isSealedBool,
   isSealedItem,
@@ -16,9 +17,11 @@ import {
   PermitV2Interface,
   PermitV2Options,
   SerializedPermitV2,
-  SignTypedDataFn,
-} from "./types";
-import { PermitV2OptionsValidator, PermitV2Validator } from "./permitV2.z";
+} from "../types";
+import {
+  FullyFormedPermitV2Validator,
+  PermitV2ParamsValidator,
+} from "./permitV2.z";
 
 export class PermitV2 implements PermitV2Interface {
   /**
@@ -98,12 +101,12 @@ export class PermitV2 implements PermitV2Interface {
       success,
       data: parsed,
       error,
-    } = PermitV2OptionsValidator.safeParse(options);
+    } = PermitV2ParamsValidator.safeParse(options);
 
     if (!success) {
-      console.log("Error parsing PermitV2Options", options, error);
       throw new Error(
-        "Parsing PermitV2Options failed " + JSON.stringify(error, null, 2),
+        "PermitV2 :: create :: Parsing PermitV2Options failed " +
+          JSON.stringify(error, null, 2),
       );
     }
 
@@ -124,10 +127,10 @@ export class PermitV2 implements PermitV2Interface {
   static async createAndSign(
     options: PermitV2Options,
     chainId: string | undefined,
-    signTypedData: SignTypedDataFn | undefined,
+    signer: AbstractSigner | undefined,
   ) {
     const permit = await PermitV2.create(options);
-    await permit.sign(chainId, signTypedData);
+    await permit.sign(chainId, signer);
     return permit;
   }
 
@@ -149,7 +152,7 @@ export class PermitV2 implements PermitV2Interface {
   };
 
   static validate = (permit: PermitV2) => {
-    return PermitV2Validator.safeParse(permit);
+    return FullyFormedPermitV2Validator.safeParse(permit);
   };
 
   /**
@@ -192,11 +195,25 @@ export class PermitV2 implements PermitV2Interface {
    * The permission inherits most fields from the permit, however
    * `permit.sealingPair` is removed and replaced by `permit.sealingPair.publicKey` in the `sealingKey` field.
    *
+   * @permit {boolean} skipValidation - Flag to prevent running validation on the permit before returning the extracted permission. Used internally.
    * @returns {PermissionV2}
    */
-  getPermission = (): PermissionV2 => {
+  getPermission = (skipValidation: boolean = false): PermissionV2 => {
+    const permitData = this.getInterface();
+
+    if (!skipValidation) {
+      const validationResult =
+        FullyFormedPermitV2Validator.safeParse(permitData);
+
+      if (!validationResult.success) {
+        throw new Error(
+          `PermitV2 :: getPermission :: permit validation failed - ${JSON.stringify(validationResult.error, null, 2)} ${JSON.stringify(permitData, null, 2)}`,
+        );
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { type, sealingPair, ...permit } = this.getInterface();
+    const { type, sealingPair, ...permit } = permitData;
     return {
       ...permit,
       sealingKey: `0x${sealingPair.publicKey}`,
@@ -227,15 +244,19 @@ export class PermitV2 implements PermitV2Interface {
    * Inserts the signature into `issuerSignature` or `recipientSignature` as necessary.
    *
    * @param {string} chainId - Used as part of the EIP712 domain, throws if undefined
-   * @param {SignTypedDataFn} signTypedData - fn prompting the user's wallet signature, throws if undefined
+   * @param {AbstractSigner} signer - Signer responsible for signing the EIP712 permit signature, throws if undefined
    */
   sign = async (
     chainId: string | undefined,
-    signTypedData: SignTypedDataFn | undefined,
+    signer: AbstractSigner | undefined,
   ) => {
-    if (chainId == null || signTypedData == null)
+    if (chainId == null)
       throw new Error(
-        "Cannot sign permit without chainId and signTypedData function",
+        "PermitV2 :: sign - chainId undefined, cannot sign a permit with an unknown chainId",
+      );
+    if (signer == null)
+      throw new Error(
+        "PermitV2 :: sign - signer undefined, you must pass in a `signer` for the connected user to create a permitV2 signature",
       );
 
     const domain = {
@@ -249,27 +270,31 @@ export class PermitV2 implements PermitV2Interface {
       const { types, message } = getSignatureTypesAndMessage(
         "PermissionedV2IssuerSelf",
         SignatureTypes.PermissionedV2IssuerSelf,
-        this.getPermission(),
+        this.getPermission(true),
       );
-      this.issuerSignature = await signTypedData(domain, types, message);
+      this.issuerSignature = await signer.signTypedData(domain, types, message);
     }
 
     if (this.type === "sharing") {
       const { types, message } = getSignatureTypesAndMessage(
         "PermissionedV2IssuerShared",
         SignatureTypes.PermissionedV2IssuerShared,
-        this.getPermission(),
+        this.getPermission(true),
       );
-      this.issuerSignature = await signTypedData(domain, types, message);
+      this.issuerSignature = await signer.signTypedData(domain, types, message);
     }
 
     if (this.type === "recipient") {
       const { types, message } = getSignatureTypesAndMessage(
         "PermissionedV2Receiver",
         SignatureTypes["PermissionedV2Receiver"],
-        this.getPermission(),
+        this.getPermission(true),
       );
-      this.recipientSignature = await signTypedData(domain, types, message);
+      this.recipientSignature = await signer.signTypedData(
+        domain,
+        types,
+        message,
+      );
     }
   };
 

@@ -9,11 +9,11 @@ import { SealingKey } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
-import { PermitV2 } from "../src/sdk/permitV2";
+import { PermitV2 } from "../src/sdk/permitV2/permitV2";
 import { getAddress, ZeroAddress } from "ethers";
 import { SealedAddress, SealedBool, SealedUint } from "../src/sdk/types";
 
-describe("PermitV2 Tests", () => {
+describe.only("PermitV2 Tests", () => {
   let bobPublicKey: string;
   let bobProvider: MockProvider;
   let bobSigner: MockSigner;
@@ -117,7 +117,7 @@ describe("PermitV2 Tests", () => {
       projects: [counterProjectId],
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner);
 
     expect(permit.issuerSignature).to.not.eq("0x");
     expect(permit.recipientSignature).to.eq("0x");
@@ -131,7 +131,7 @@ describe("PermitV2 Tests", () => {
       recipient: adaAddress,
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner);
 
     expect(permit.issuerSignature).to.not.eq("0x");
     expect(permit.recipientSignature).to.eq("0x");
@@ -148,7 +148,7 @@ describe("PermitV2 Tests", () => {
     expect(bobPermit.issuerSignature).to.eq("0x");
     expect(bobPermit.recipientSignature).to.eq("0x");
 
-    await bobPermit.sign(bobProvider.chainId, bobSigner.signTypedData);
+    await bobPermit.sign(bobProvider.chainId, bobSigner);
 
     expect(bobPermit.issuerSignature).to.not.eq("0x");
     expect(bobPermit.recipientSignature).to.eq("0x");
@@ -161,7 +161,7 @@ describe("PermitV2 Tests", () => {
     expect(adaPermit.issuerSignature).to.not.eq("0x");
     expect(adaPermit.recipientSignature).to.eq("0x");
 
-    await adaPermit.sign(adaProvider.chainId, adaSigner.signTypedData);
+    await adaPermit.sign(adaProvider.chainId, adaSigner);
 
     expect(adaPermit.issuerSignature).to.not.eq("0x");
     expect(adaPermit.recipientSignature).to.not.eq("0x");
@@ -175,7 +175,7 @@ describe("PermitV2 Tests", () => {
       projects: [counterProjectId],
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner);
 
     const { type, sealingPair, ...iface } = permit.getInterface();
     const { sealingKey, ...permission } = permit.getPermission();
@@ -356,7 +356,7 @@ describe("PermitV2 Tests", () => {
       projects: [counterProjectId],
     });
 
-    await permit.sign(bobProvider.chainId, bobSigner.signTypedData);
+    await permit.sign(bobProvider.chainId, bobSigner);
 
     const serialized = permit.serialize();
 

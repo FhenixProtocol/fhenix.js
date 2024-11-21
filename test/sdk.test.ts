@@ -19,7 +19,7 @@ import {
   SealedUint,
   PermissionV2,
 } from "../src/sdk/types";
-import { permitsStore } from "../src/extensions/store/permits";
+import { permitsStore } from "../src/sdk/permitV2/store";
 import { fhenixsdk, PermitV2, SealingKey } from "../src/fhenix";
 import { getAddress } from "ethers";
 import { InitParams } from "../src/extensions/store/sdk";
@@ -42,16 +42,14 @@ describe("Sdk Tests", () => {
 
   const initSdkWithBob = async () => {
     await fhenixsdk.initialize({
-      account: bobAddress,
-      send: bobProvider.send,
-      signTypedData: bobSigner.signTypedData,
+      provider: bobProvider,
+      signer: bobSigner,
     });
   };
   const initSdkWithAda = async () => {
     await fhenixsdk.initialize({
-      account: adaAddress,
-      send: adaProvider.send,
-      signTypedData: adaSigner.signTypedData,
+      provider: adaProvider,
+      signer: adaSigner,
     });
   };
 
@@ -88,25 +86,19 @@ describe("Sdk Tests", () => {
 
     expect(
       fhenixsdk.initialize({
-        // account: bobAddress, <== Missing
-        send: bobProvider.send,
-        signTypedData: bobSigner.signTypedData,
+        // provider: bobProvider,
+        // signer: bobSigner,
       } as unknown as InitParams),
-    ).rejects.toThrow("initialize :: missing account");
+    ).rejects.toThrow(
+      "initialize :: missing provider - Please provide an EthersV6 Provider",
+    );
     expect(
       fhenixsdk.initialize({
-        account: bobAddress,
-        // send: bobProvider.send, <== Missing
-        signTypedData: bobSigner.signTypedData,
+        provider: bobProvider,
+        signer: bobSigner,
+        securityZones: [],
       } as unknown as InitParams),
-    ).rejects.toThrow("initialize :: missing send function");
-    expect(
-      fhenixsdk.initialize({
-        account: bobAddress,
-        send: bobProvider.send,
-        // signTypedData: bobSigner.signTypedData, <== Missing
-      } as unknown as InitParams),
-    ).rejects.toThrow("initialize :: missing signTypedData function");
+    ).rejects.toThrow("initialize :: no securityZones provided");
   });
 
   it("re-initialize (change account)", async () => {
@@ -160,11 +152,7 @@ describe("Sdk Tests", () => {
 
     // Switch back to bob
 
-    await fhenixsdk.initialize({
-      account: bobAddress,
-      send: bobProvider.send,
-      signTypedData: bobSigner.signTypedData,
-    });
+    await initSdkWithBob();
 
     // Bob's active permit is pulled from the store and exists
 

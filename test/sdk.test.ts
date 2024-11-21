@@ -96,7 +96,9 @@ describe("Sdk Tests", () => {
         signer: bobSigner,
         securityZones: [],
       } as unknown as InitParams),
-    ).rejects.toThrow("initialize :: no securityZones provided");
+    ).rejects.toThrow(
+      "initialize :: a list of securityZones was provided, but it is empty",
+    );
   });
 
   it("re-initialize (change account)", async () => {

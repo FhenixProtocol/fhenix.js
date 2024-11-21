@@ -42,18 +42,31 @@ import {
   encrypt_uint256 as tfhe_encrypt_uint256,
   encrypt_address as tfhe_encrypt_address,
 } from "./encrypt.js";
+import { InitFhevm } from "./init.js";
 
-const initialize = async (init: InitParams) => {
-  const { provider, securityZones = [0] } = init;
+const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
+  // Initialize the fhevm
+  await InitFhevm().catch((err: unknown) => {
+    if (params.ignoreErrors) {
+      return undefined;
+    } else {
+      throw new Error(
+        `initialize :: failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
+      );
+    }
+  });
 
-  if (provider == null)
+  if (params.provider == null)
     throw new Error(
       "initialize :: missing provider - Please provide an EthersV6 Provider",
     );
-  if (securityZones.length === 0)
-    throw new Error("initialize :: no securityZones provided");
 
-  await _store_initialize(init);
+  if (params.securityZones != null && params.securityZones.length === 0)
+    throw new Error(
+      "initialize :: a list of securityZones was provided, but it is empty",
+    );
+
+  await _store_initialize(params);
 };
 
 // Permit
@@ -71,13 +84,14 @@ const createPermit = async (options: PermitV2Options): Promise<PermitV2> => {
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("createPermit :: fhenixsdk not initialized");
-  if (state.account == null) throw new Error("createPermit :: missing account");
-  if (state.chainId == null) throw new Error("createPermit :: missing chainId");
-  if (state.signer == null)
     throw new Error(
-      "createPermit :: not initialized with signer - Creating a permit requires signing an EIP712 signature, which can only be done by a signer. Ensure that an EthersV6 signer exists and has been passed to the `initialize` function.",
+      "createPermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
     );
+  if (state.signer == null || state.account == null)
+    throw new Error(
+      "createPermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
+    );
+  if (state.chainId == null) throw new Error("createPermit :: missing chainId");
 
   const permit = await PermitV2.createAndSign(
     options,
@@ -103,8 +117,13 @@ const importPermit = async (imported: PermitV2Interface) => {
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("importPermit :: fhenixsdk not initialized");
-  if (state.account == null) throw new Error("importPermit :: missing account");
+    throw new Error(
+      "importPermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
+    );
+  if (state.signer == null || state.account == null)
+    throw new Error(
+      "importPermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
+    );
 
   const permit = await PermitV2.create(imported);
 
@@ -128,9 +147,13 @@ const selectActivePermit = (hash: string) => {
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("selectActivePermit :: fhenixsdk not initialized");
-  if (state.account == null)
-    throw new Error("selectActivePermit :: missing account");
+    throw new Error(
+      "selectActivePermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
+    );
+  if (state.signer == null || state.account == null)
+    throw new Error(
+      "selectActivePermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
+    );
 
   const permit = getPermitFromStore(state.account, hash);
   if (permit == null) return;
@@ -149,8 +172,13 @@ const getPermit = (hash?: string): Result<PermitV2> => {
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("getPermit :: fhenixsdk not initialized");
-  if (state.account == null) throw new Error("getPermit :: missing account");
+    throw new Error(
+      "getPermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
+    );
+  if (state.signer == null || state.account == null)
+    throw new Error(
+      "getPermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
+    );
 
   if (hash == null) {
     const permit = getActivePermit(state.account);
@@ -190,9 +218,13 @@ const getAllPermits = (): Result<Record<string, PermitV2>> => {
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("getAllPermits :: fhenixsdk not initialized");
-  if (state.account == null)
-    throw new Error("getAllPermits :: missing account");
+    throw new Error(
+      "getAllPermits :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
+    );
+  if (state.signer == null || state.account == null)
+    throw new Error(
+      "getAllPermits :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
+    );
 
   return ResultOk(getPermitsFromStore(state.account));
 };
@@ -214,7 +246,9 @@ const encryptValue = (
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("encryptValue :: fhenixsdk not initialized");
+    throw new Error(
+      "encryptValue :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
+    );
   if (state.chainId == null) throw new Error("encryptValue :: missing chainId");
 
   const fhePublicKey = _store_getFheKey(state.chainId, securityZone);
@@ -325,7 +359,9 @@ const unsealCiphertext = (
   const state = _sdkStore.getState();
 
   if (!state.initialized)
-    throw new Error("unsealCiphertext :: fhenixsdk not initialized");
+    throw new Error(
+      "unsealCiphertext :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
+    );
   if (state.chainId == null)
     throw new Error("unsealCiphertext :: missing chainId");
 

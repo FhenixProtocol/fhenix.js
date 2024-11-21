@@ -2,7 +2,6 @@
 import { createStore } from "zustand/vanilla";
 import { produce } from "immer";
 import { TfheCompactPublicKey } from "../../sdk/fhe/fhe";
-import { InitFhevm } from "../../sdk/init";
 import { fromHexString, toABIEncodedUint32 } from "../../sdk/utils";
 import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "../../sdk/consts";
 import { AbstractProvider, AbstractSigner } from "../../sdk/types";
@@ -40,6 +39,8 @@ export const _sdkStore = createStore<SdkStore>(
       chainId: undefined,
     }) as SdkStore,
 );
+
+// Store getters / setters
 
 export const _store_getFheKey = (
   chainId: string | undefined,
@@ -93,35 +94,24 @@ const getChainIdFromProvider = async (
   return chainId;
 };
 
+// External functionality
+
 export type InitParams = {
   provider: AbstractProvider;
   signer?: AbstractSigner;
   securityZones?: number[];
-  ignoreErrors?: boolean;
 };
 
 export const _store_initialize = async (init: InitParams) => {
-  const { provider, signer, securityZones = [0], ignoreErrors } = init;
+  const { provider, signer, securityZones = [0] } = init;
 
   _sdkStore.setState({ initialized: false });
 
-  // FHEVM
-
-  if (!_sdkStore.getState().fhevmInitialized) {
-    await InitFhevm().catch((err: unknown) => {
-      if (ignoreErrors) {
-        return undefined;
-      } else {
-        throw new Error(
-          `initialize :: failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-        );
-      }
-    });
-    _sdkStore.setState({ fhevmInitialized: true });
-  }
-
   // PROVIDER
 
+  // Account is fetched and stored here, the `account` field in the store is used to index which permits belong to which users
+  // In sdk functions, `state.account != null` is validated, this is a check to ensure that a valid signer has been provided
+  //   which is necessary to interact with permits
   const account = await signer?.getAddress();
   _sdkStore.setState({ provider, signer, account });
 

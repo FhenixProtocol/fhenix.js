@@ -13,7 +13,7 @@ import { PermitV2 } from "../src/sdk/permitV2/permitV2";
 import { getAddress, ZeroAddress } from "ethers";
 import { SealedAddress, SealedBool, SealedUint } from "../src/sdk/types";
 
-describe.only("PermitV2 Tests", () => {
+describe("PermitV2 Tests", () => {
   let bobPublicKey: string;
   let bobProvider: MockProvider;
   let bobSigner: MockSigner;

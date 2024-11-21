@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "./consts.js";
 import { ValidateUintInRange } from "./utils.js";
-import * as tfheEncrypt from "./encrypt.js";
-import { PermitV2 } from "./permitV2.js";
+import { PermitV2 } from "./permitV2/permitV2.js";
 import {
   EncryptedNumber,
   EncryptionTypes,
@@ -23,7 +22,7 @@ import {
   setActivePermitHash,
   setPermit,
   getActivePermitHash,
-} from "../extensions/store/permits.js";
+} from "./permitV2/store.js";
 import { isString } from "./validation.js";
 import {
   _sdkStore,
@@ -32,14 +31,25 @@ import {
   _store_initialize,
   InitParams,
 } from "../extensions/store/sdk.js";
+import {
+  encrypt as tfhe_encrypt,
+  encrypt_bool as tfhe_encrypt_bool,
+  encrypt_uint8 as tfhe_encrypt_uint8,
+  encrypt_uint16 as tfhe_encrypt_uint16,
+  encrypt_uint32 as tfhe_encrypt_uint32,
+  encrypt_uint64 as tfhe_encrypt_uint64,
+  encrypt_uint128 as tfhe_encrypt_uint128,
+  encrypt_uint256 as tfhe_encrypt_uint256,
+  encrypt_address as tfhe_encrypt_address,
+} from "./encrypt.js";
 
 const initialize = async (init: InitParams) => {
-  const { account, send, signTypedData, securityZones = [0] } = init;
+  const { provider, securityZones = [0] } = init;
 
-  if (account == null) throw new Error("initialize :: missing account");
-  if (send == null) throw new Error("initialize :: missing send function");
-  if (signTypedData == null)
-    throw new Error("initialize :: missing signTypedData function");
+  if (provider == null)
+    throw new Error(
+      "initialize :: missing provider - Please provide an EthersV6 Provider",
+    );
   if (securityZones.length === 0)
     throw new Error("initialize :: no securityZones provided");
 
@@ -64,13 +74,16 @@ const createPermit = async (options: PermitV2Options): Promise<PermitV2> => {
     throw new Error("createPermit :: fhenixsdk not initialized");
   if (state.account == null) throw new Error("createPermit :: missing account");
   if (state.chainId == null) throw new Error("createPermit :: missing chainId");
-  if (state.send == null)
-    throw new Error("createPermit :: missing send function");
-  if (state.signTypedData == null)
-    throw new Error("createPermit :: missing signTypedData function");
+  if (state.signer == null)
+    throw new Error(
+      "createPermit :: not initialized with signer - Creating a permit requires signing an EIP712 signature, which can only be done by a signer. Ensure that an EthersV6 signer exists and has been passed to the `initialize` function.",
+    );
 
-  const permit = await PermitV2.create(options);
-  await permit.sign(state.chainId, state.signTypedData);
+  const permit = await PermitV2.createAndSign(
+    options,
+    state.chainId,
+    state.signer,
+  );
 
   setPermit(state.account, permit);
   setActivePermitHash(state.account, permit.getHash());
@@ -238,7 +251,7 @@ const encryptValue = (
     default:
   }
 
-  return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
+  return tfhe_encrypt(value, fhePublicKey, type, securityZone);
 };
 
 function encrypt<T>(item: T): MappedEncryptedTypes<T>;
@@ -262,14 +275,14 @@ function encrypt<T>(item: T) {
     // prettier-ignore
     {
         switch (item.utype) {
-          case FheUType.bool: return tfheEncrypt.encrypt_bool(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint8: return tfheEncrypt.encrypt_uint8(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint16: return tfheEncrypt.encrypt_uint16(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint32: return tfheEncrypt.encrypt_uint32(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint64: return tfheEncrypt.encrypt_uint64(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint128: return tfheEncrypt.encrypt_uint128(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint256: return tfheEncrypt.encrypt_uint256(item.data, fhePublicKey, item.securityZone);
-          case FheUType.address: return tfheEncrypt.encrypt_address(item.data, fhePublicKey, item.securityZone);
+          case FheUType.bool: return tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint8: return tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint16: return tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint32: return tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint64: return tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint128: return tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
+          case FheUType.uint256: return tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
+          case FheUType.address: return tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
         }
       }
   }

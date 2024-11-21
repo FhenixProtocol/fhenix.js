@@ -359,12 +359,19 @@ export const ResultOk = <T, E>(data: T): Result<T, E> => ({
 
 // Permit V2 Types
 
-export type SendFn = (method: string, params?: unknown[]) => Promise<unknown>;
-export type SignTypedDataFn = (
-  domain: object,
-  types: object,
-  value: object,
-) => Promise<string>;
+export interface AbstractProvider {
+  getChainId(): Promise<string>;
+  call(tx: { to: string; data: string }): Promise<string>;
+}
+
+export interface AbstractSigner {
+  getAddress(): Promise<string>;
+  signTypedData(
+    domain: object,
+    types: Record<string, Array<object>>,
+    value: object,
+  ): Promise<string>;
+}
 
 /**
  * Type representing the full PermitV2

@@ -5,7 +5,7 @@ import { TfheCompactPublicKey } from "../../sdk/fhe/fhe";
 import { InitFhevm } from "../../sdk/init";
 import { fromHexString, toABIEncodedUint32 } from "../../sdk/utils";
 import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "../../sdk/consts";
-import { SendFn, SignTypedDataFn } from "../../sdk/types";
+import { AbstractProvider, AbstractSigner } from "../../sdk/types";
 
 type ChainRecord<T> = Record<string, T>;
 type SecurityZoneRecord<T> = Record<number, T>;
@@ -18,10 +18,10 @@ type SdkStore = {
   securityZones: number[];
   fheKeys: ChainRecord<SecurityZoneRecord<Uint8Array | undefined>>;
 
+  provider?: AbstractProvider;
+  signer?: AbstractSigner;
   account?: string;
   chainId?: string;
-  send?: SendFn;
-  signTypedData?: SignTypedDataFn;
 };
 
 export const _sdkStore = createStore<SdkStore>(
@@ -34,10 +34,10 @@ export const _sdkStore = createStore<SdkStore>(
       securityZones: [0],
       fheKeys: {},
 
+      provider: undefined,
+      signer: undefined,
       account: undefined,
       chainId: undefined,
-      send: undefined,
-      signTypedData: undefined,
     }) as SdkStore,
 );
 
@@ -82,36 +82,26 @@ export const _store_setFheKey = (
   );
 };
 
-const getChainIdFromProvider = async (send: SendFn): Promise<string> => {
-  const chainId = (await send("eth_chainId").catch((err: Error) => {
-    throw Error(`Error while requesting chainId from provider: ${err}`);
-  })) as string;
-
-  if (isNaN(parseInt(chainId, 16))) {
+const getChainIdFromProvider = async (
+  provider: AbstractProvider,
+): Promise<string> => {
+  const chainId = await provider.getChainId();
+  if (chainId == null)
     throw new Error(
-      `received non-hex number from chainId request: "${chainId}"`,
+      "sdk :: getChainIdFromProvider :: provider.getChainId returned a null result, ensure that your provider is connected to a network",
     );
-  }
-
   return chainId;
 };
 
 export type InitParams = {
-  account: string;
-  send: SendFn;
-  signTypedData: SignTypedDataFn;
+  provider: AbstractProvider;
+  signer?: AbstractSigner;
   securityZones?: number[];
   ignoreErrors?: boolean;
 };
 
 export const _store_initialize = async (init: InitParams) => {
-  const {
-    account,
-    send,
-    signTypedData,
-    securityZones = [0],
-    ignoreErrors,
-  } = init;
+  const { provider, signer, securityZones = [0], ignoreErrors } = init;
 
   _sdkStore.setState({ initialized: false });
 
@@ -132,9 +122,12 @@ export const _store_initialize = async (init: InitParams) => {
 
   // PROVIDER
 
-  _sdkStore.setState({ account, send, signTypedData });
-  const chainId = await getChainIdFromProvider(send);
+  const account = await signer?.getAddress();
+  _sdkStore.setState({ provider, signer, account });
 
+  const chainId = await getChainIdFromProvider(provider);
+
+  // If chainId or securityZones changes, update the store and flag fheKeys for re-initialization
   if (
     chainId !== _sdkStore.getState().chainId ||
     securityZones !== _sdkStore.getState().securityZones
@@ -149,7 +142,7 @@ export const _store_initialize = async (init: InitParams) => {
 
   await Promise.all(
     securityZones.map((securityZone) =>
-      _store_fetchFheKey(chainId, securityZone, send),
+      _store_fetchFheKey(chainId, provider, securityZone),
     ),
   );
 
@@ -159,14 +152,15 @@ export const _store_initialize = async (init: InitParams) => {
 /**
  * Retrieves the FHE public key from the provider.
  * If the key already exists in the store it is returned, else it is fetched, stored, and returned
- * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+ * @param {string} chainId - The chain to fetch the FHE key for, if no chainId provided, undefined is returned
+ * @param {Provider} provider - EthersV6 Provider that performs the key fetch.
  * @param securityZone - The security zone for which to retrieve the key (default 0).
  * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
  */
 export const _store_fetchFheKey = async (
-  chainId: string | undefined,
+  chainId: string,
+  provider: AbstractProvider,
   securityZone: number = 0,
-  send: SendFn | undefined,
 ): Promise<TfheCompactPublicKey> => {
   const storedKey = _store_getFheKey(chainId, securityZone);
   if (storedKey != null) return storedKey;
@@ -174,22 +168,15 @@ export const _store_fetchFheKey = async (
   const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
   const callData = funcSig + toABIEncodedUint32(securityZone);
 
-  const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
-
-  const publicKey = await send?.("eth_call", callParams).catch((err: Error) => {
-    throw Error(
-      `Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(
-        err,
-      )}`,
-    );
-  });
-
-  const chainIdNum: number = parseInt(chainId ?? "NaN", 16);
-  if (isNaN(chainIdNum)) {
-    throw new Error(
-      `received non-hex number from chainId request: "${chainId}"`,
-    );
-  }
+  const publicKey = await provider
+    .call({ to: FheOpsAddress, data: callData })
+    .catch((err: Error) => {
+      throw Error(
+        `Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(
+          err,
+        )}`,
+      );
+    });
 
   if (typeof publicKey !== "string") {
     throw new Error("Error using publicKey from provider: expected string");

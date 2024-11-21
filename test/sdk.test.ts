@@ -76,12 +76,10 @@ describe("Sdk Tests", () => {
 
   it("initialize", async () => {
     expect(fhenixsdk.store.getState().initialized).toEqual(false);
-    expect(fhenixsdk.store.getState().fhevmInitialized).toEqual(false);
     expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(false);
 
     await initSdkWithBob();
     expect(fhenixsdk.store.getState().initialized).toEqual(true);
-    expect(fhenixsdk.store.getState().fhevmInitialized).toEqual(true);
     expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(true);
 
     expect(

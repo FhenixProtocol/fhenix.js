@@ -11,7 +11,6 @@ type SecurityZoneRecord<T> = Record<number, T>;
 
 type SdkStore = {
   initialized: boolean;
-  fhevmInitialized: boolean;
   fheKeysInitialized: boolean;
 
   securityZones: number[];
@@ -27,7 +26,6 @@ export const _sdkStore = createStore<SdkStore>(
   () =>
     ({
       initialized: false,
-      fhevmInitialized: false,
       fheKeysInitialized: false,
 
       securityZones: [0],

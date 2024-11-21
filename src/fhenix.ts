@@ -5,7 +5,6 @@
 
 export { FhenixClient, FhenixClientSync } from "./sdk/index.js";
 
-export { fhenixsdk } from "./sdk/sdk-permitV2.js";
 export { PermitV2 } from "./sdk/permitV2/permitV2.js";
 
 export {

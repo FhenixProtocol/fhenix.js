@@ -22,7 +22,7 @@ import {
   FullyFormedPermitV2Validator,
   PermitV2ParamsValidator,
 } from "./permitV2.z";
-import { GenerateSealingKey, SealingKey } from "fhenixjs";
+import { GenerateSealingKey, SealingKey } from "../sealing";
 
 export class PermitV2 implements PermitV2Interface {
   /**

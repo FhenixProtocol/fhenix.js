@@ -1,4 +1,7 @@
-import { EIP712Message, EIP712Types } from "fhenixjs";
+import {
+  EIP712Message,
+  EIP712Types,
+} from "../../extensions/access_control/EIP712";
 import { PermissionV2 } from "../types";
 import { ZeroAddress } from "ethers";
 

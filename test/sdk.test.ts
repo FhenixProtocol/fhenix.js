@@ -250,18 +250,18 @@ describe("Sdk Tests", () => {
 
     // Sdk Store
     const dumped = dumpLocalStorage();
-    expect(dumped).to.have.keys(["fhenix.js"]);
+    expect(dumped).to.have.keys(["fhenixjs-permits"]);
 
     // Permits store
 
-    expect(dumped["fhenix.js"]["state"]).to.have.keys(
+    expect(dumped["fhenixjs-permits"]["state"]).to.have.keys(
       "permits",
       "activePermitHash",
     );
 
     // Permits
     const bobsPermitsDumped =
-      dumped["fhenix.js"]["state"]["permits"][bobAddress];
+      dumped["fhenixjs-permits"]["state"]["permits"][bobAddress];
     expect(bobsPermitsDumped).to.have.keys(
       permit1.getHash(),
       permit2.getHash(),
@@ -269,7 +269,7 @@ describe("Sdk Tests", () => {
 
     // ActivePermit
     expect(
-      dumped["fhenix.js"]["state"]["activePermitHash"][bobAddress],
+      dumped["fhenixjs-permits"]["state"]["activePermitHash"][bobAddress],
     ).toEqual(permit2.getHash());
   });
   it("createPermit", async () => {

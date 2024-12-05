@@ -20,7 +20,7 @@ export const permitsStore = createStore<PermitsStore>()(
       permits: {},
       activePermitHash: {},
     }),
-    { name: "fhenix.js" },
+    { name: "fhenixjs-permits" },
   ),
 );
 

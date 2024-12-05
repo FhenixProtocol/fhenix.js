@@ -347,10 +347,7 @@ export class PermitV2 implements PermitV2Interface {
    * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
    */
   unsealCiphertext = (ciphertext: string): bigint => {
-    // NOTE: the returned type is currently a stringified number
-    // it does not need to be unsealed using the sealingPair privateKey
-    // return this.sealingPair.unseal(ciphertext);
-    return BigInt(ciphertext);
+    return this.sealingPair.unseal(ciphertext);
   };
 
   /**
@@ -366,10 +363,7 @@ export class PermitV2 implements PermitV2Interface {
   unseal<T>(item: T) {
     // SealedItem
     if (isSealedItem(item)) {
-      // NOTE: the returned type is currently a stringified number
-      // it does not need to be unsealed using the sealingPair privateKey
-      // const bn = this.sealingPair.unseal(item.data);
-      const bn = BigInt(item.data);
+      const bn = this.sealingPair.unseal(item.data);
       if (isSealedBool(item)) {
         // Return a boolean for SealedBool
         return Boolean(bn).valueOf() as any;

@@ -169,9 +169,7 @@ describe("Sdk Tests", () => {
     );
   });
 
-  it("encrypt");
-
-  it("encryptTyped", async () => {
+  it("encrypt", async () => {
     await initSdkWithBob();
 
     await fhenixsdk.createPermit({

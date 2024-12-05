@@ -86,41 +86,24 @@ const _checkSignerInitialized = (state: SdkStore, fnName: string) => {
  * The created PermitV2 will be inserted into the store and marked as the active permit.
  * NOTE: This is a wrapper around `PermitV2.create` and `PermitV2.sign`
  *
- * @param {PermitV2Options} options - Partial PermitV2 fields to create the Permit with
+ * @param {PermitV2Options} options - Partial PermitV2 fields to create the Permit with, if no options provided will be filled with the defaults:
+ * { type: "self", issuer: initializedUserAddress, projects: initializedProjects, contracts: initializedContracts }
  * @returns {PermitV2} - Newly created PermitV2
  */
-const createPermit = async (options: PermitV2Options): Promise<PermitV2> => {
+const createPermit = async (options?: PermitV2Options): Promise<PermitV2> => {
   const state = _sdkStore.getState();
   _checkSignerInitialized(state, createPermit.name);
 
-  const permit = await PermitV2.createAndSign(
-    options,
-    state.chainId,
-    state.signer,
-  );
-
-  permitStore.setPermit(state.account!, permit);
-  permitStore.setActivePermitHash(state.account!, permit.getHash());
-
-  return permit;
-};
-
-/**
- * Creates a simple "self" permit that satisfies the initialized project, does not take any options
- * Permit has a 1 week expiration, and has access to the contracts and projects passed into the `initialize` function
- */
-const createMinimalPermit = async (): Promise<PermitV2> => {
-  const state = _sdkStore.getState();
-  _checkSignerInitialized(state, createPermit.name);
+  const optionsWithDefaults: PermitV2Options = {
+    type: "self",
+    issuer: state.account,
+    contracts: state.accessRequirements.contracts,
+    projects: state.accessRequirements.projects,
+    ...options,
+  };
 
   const permit = await PermitV2.createAndSign(
-    {
-      type: "self",
-      issuer: state.account!,
-      expiration: 7 * 24 * 60 * 60, // 1 week
-      contracts: state.accessRequirements.contracts,
-      projects: state.accessRequirements.projects,
-    },
+    optionsWithDefaults,
     state.chainId,
     state.signer,
   );
@@ -430,7 +413,6 @@ export const fhenixsdk = {
   initialize,
 
   createPermit,
-  createMinimalPermit,
   importPermit,
   selectActivePermit,
   getPermit,

@@ -1,5 +1,6 @@
-import { PermissionV2 } from "../../../sdk/types";
-import { EIP712Types, EIP712Message } from "../EIP712";
+import { EIP712Message, EIP712Types } from "fhenixjs";
+import { PermissionV2 } from "../types";
+import { ZeroAddress } from "ethers";
 
 const PermitV2SignatureAllFields = [
   { name: "issuer", type: "address" },
@@ -35,22 +36,22 @@ export const SignatureTypes = {
     "validatorId",
     "validatorContract",
   ] satisfies PermitV2SignatureFieldOption[],
-  PermissionedV2Receiver: [
+  PermissionedV2Recipient: [
     "sealingKey",
     "issuerSignature",
   ] satisfies PermitV2SignatureFieldOption[],
 } as const;
-type SignatureIdentifier = keyof typeof SignatureTypes;
+export type PermitV2SignaturePrimaryType = keyof typeof SignatureTypes;
 
 export const getSignatureTypesAndMessage = <
   T extends PermitV2SignatureFieldOption,
 >(
-  typeName: SignatureIdentifier,
+  primaryType: PermitV2SignaturePrimaryType,
   fields: T[] | readonly T[],
   values: Pick<PermissionV2, T> & Partial<PermissionV2>,
-): { types: EIP712Types; message: EIP712Message } => {
+): { types: EIP712Types; primaryType: string; message: EIP712Message } => {
   const types = {
-    [typeName]: PermitV2SignatureAllFields.filter((fieldType) =>
+    [primaryType]: PermitV2SignatureAllFields.filter((fieldType) =>
       fields.includes(fieldType.name as T),
     ),
   };
@@ -63,5 +64,12 @@ export const getSignatureTypesAndMessage = <
     }
   });
 
-  return { types, message: message as EIP712Message };
+  return { types, primaryType, message: message as EIP712Message };
 };
+
+export const getSignatureDomain = (chainId: string) => ({
+  name: "Fhenix Permission v2.0.0",
+  version: "v2.0.0",
+  chainId: parseInt(chainId),
+  verifyingContract: ZeroAddress,
+});

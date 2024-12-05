@@ -17,7 +17,7 @@ import {
   getSignatureTypesAndMessage,
   PermitV2SignaturePrimaryType,
   SignatureTypes,
-} from "./generate";
+} from "./permitV2.generate";
 import {
   FullyFormedPermitV2Validator,
   PermitV2ParamsValidator,
@@ -328,12 +328,7 @@ export class PermitV2 implements PermitV2Interface {
       chainId,
       primaryType,
     );
-    const signature = await signer.signTypedData(
-      domain,
-      types,
-      primaryType,
-      message,
-    );
+    const signature = await signer.signTypedData(domain, types, message);
 
     if (this.type === "self" || this.type === "sharing") {
       this.issuerSignature = signature;

@@ -9,6 +9,9 @@ import { createTfhePublicKey } from "./keygen";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import {
+  fhenixsdk,
+  PermitV2,
+  SealingKey,
   Encryptable,
   EncryptedAddress,
   EncryptedBool,
@@ -18,11 +21,10 @@ import {
   SealedBool,
   SealedUint,
   PermissionV2,
-} from "../src/sdk/types";
-import { permitsStore } from "../src/sdk/permitV2/store";
-import { fhenixsdk, PermitV2, SealingKey } from "../src/fhenix";
+  permitStore,
+} from "../src";
 import { getAddress } from "ethers";
-import { InitParams } from "../src/extensions/store/sdk";
+import { InitParams } from "../src/sdk/v2/sdk.store";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;
@@ -44,12 +46,14 @@ describe("Sdk Tests", () => {
     await fhenixsdk.initialize({
       provider: bobProvider,
       signer: bobSigner,
+      projects: [counterProjectId],
     });
   };
   const initSdkWithAda = async () => {
     await fhenixsdk.initialize({
       provider: adaProvider,
       signer: adaSigner,
+      projects: [counterProjectId],
     });
   };
 
@@ -75,11 +79,13 @@ describe("Sdk Tests", () => {
   });
 
   it("initialize", async () => {
-    expect(fhenixsdk.store.getState().initialized).toEqual(false);
+    expect(fhenixsdk.store.getState().providerInitialized).toEqual(false);
+    expect(fhenixsdk.store.getState().signerInitialized).toEqual(false);
     expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(false);
 
     await initSdkWithBob();
-    expect(fhenixsdk.store.getState().initialized).toEqual(true);
+    expect(fhenixsdk.store.getState().providerInitialized).toEqual(true);
+    expect(fhenixsdk.store.getState().signerInitialized).toEqual(true);
     expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(true);
 
     expect(
@@ -88,7 +94,7 @@ describe("Sdk Tests", () => {
         // signer: bobSigner,
       } as unknown as InitParams),
     ).rejects.toThrow(
-      "initialize :: missing provider - Please provide an EthersV6 Provider",
+      "initialize :: missing provider - Please provide an AbstractProvider interface",
     );
     expect(
       fhenixsdk.initialize({
@@ -279,7 +285,9 @@ describe("Sdk Tests", () => {
         issuer: bobAddress,
         projects: [counterProjectId],
       }),
-    ).rejects.toThrow("createPermit :: fhenixsdk not initialized");
+    ).rejects.toThrow(
+      "createPermit :: fhenixsdk provider not initialized, use `fhenixsdk.initialize(...)` with a valid AbstractProvider",
+    );
 
     await initSdkWithBob();
     const permit = await fhenixsdk.createPermit({
@@ -291,7 +299,7 @@ describe("Sdk Tests", () => {
     // Permit established in store
 
     const storePermitSerialized =
-      permitsStore.getState().permits[bobAddress]?.[permit.getHash()];
+      permitStore.store.getState().permits[bobAddress]?.[permit.getHash()];
     expect(storePermitSerialized).to.not.be.null;
 
     const storePermit = PermitV2.deserialize(storePermitSerialized!);
@@ -300,7 +308,7 @@ describe("Sdk Tests", () => {
     // Is active permit
 
     const storeActivePermitHash =
-      permitsStore.getState().activePermitHash[bobAddress];
+      permitStore.store.getState().activePermitHash[bobAddress];
     expect(storeActivePermitHash).toEqual(permit.getHash());
 
     // Creating new permit
@@ -312,7 +320,7 @@ describe("Sdk Tests", () => {
     });
 
     const storeActivePermitHash2 =
-      permitsStore.getState().activePermitHash[bobAddress];
+      permitStore.store.getState().activePermitHash[bobAddress];
     expect(storeActivePermitHash2).toEqual(permit2.getHash());
   });
 

@@ -9,9 +9,9 @@ import { SealingKey } from "../lib/esm";
 import { createTfhePublicKey } from "./keygen";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
-import { PermitV2 } from "../src/sdk/permitV2/permitV2";
 import { getAddress, ZeroAddress } from "ethers";
 import { SealedAddress, SealedBool, SealedUint } from "../src/sdk/types";
+import { PermitV2 } from "../src";
 
 describe("PermitV2 Tests", () => {
   let bobPublicKey: string;
@@ -169,6 +169,7 @@ describe("PermitV2 Tests", () => {
 
   it("getPermission", async () => {
     const permit = await PermitV2.create({
+      name: "Test Bob Permit",
       type: "self",
       issuer: bobAddress,
       contracts: [contractAddress, contractAddress2],
@@ -177,9 +178,10 @@ describe("PermitV2 Tests", () => {
 
     await permit.sign(bobProvider.chainId, bobSigner);
 
-    const { type, sealingPair, ...iface } = permit.getInterface();
+    const { name, type, sealingPair, ...iface } = permit.getInterface();
     const { sealingKey, ...permission } = permit.getPermission();
 
+    expect(name).to.eq("Test Bob Permit");
     expect(iface).to.deep.eq(permission);
     expect(`0x${sealingPair.publicKey}`).to.eq(sealingKey);
   });

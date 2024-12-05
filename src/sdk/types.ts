@@ -369,7 +369,6 @@ export interface AbstractSigner {
   signTypedData(
     domain: object,
     types: Record<string, Array<object>>,
-    primaryType: string,
     value: object,
   ): Promise<string>;
 }

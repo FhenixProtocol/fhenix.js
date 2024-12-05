@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "./consts.js";
-import { ValidateUintInRange } from "./utils.js";
-import { PermitV2 } from "./permitV2/permitV2.js";
+import { MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "../consts.js";
+import { ValidateUintInRange } from "../utils.js";
+import { PermitV2 } from "./permitV2.js";
 import {
   EncryptedNumber,
   EncryptionTypes,
@@ -14,23 +14,17 @@ import {
   PermissionV2,
   PermitV2Interface,
   PermitV2Options,
-} from "./types.js";
-import {
-  getActivePermit,
-  getPermits as getPermitsFromStore,
-  getPermit as getPermitFromStore,
-  setActivePermitHash,
-  setPermit,
-  getActivePermitHash,
-} from "./permitV2/store.js";
-import { isString } from "./validation.js";
+} from "../types.js";
+import { permitStore } from "./permitV2.store.js";
+import { isString } from "../validation.js";
 import {
   _sdkStore,
   _store_getConnectedChainFheKey,
   _store_getFheKey,
   _store_initialize,
   InitParams,
-} from "../extensions/store/sdk.js";
+  SdkStore,
+} from "./sdk.store.js";
 import {
   encrypt as tfhe_encrypt,
   encrypt_bool as tfhe_encrypt_bool,
@@ -41,8 +35,9 @@ import {
   encrypt_uint128 as tfhe_encrypt_uint128,
   encrypt_uint256 as tfhe_encrypt_uint256,
   encrypt_address as tfhe_encrypt_address,
-} from "./encrypt.js";
-import { InitFhevm } from "./init.js";
+} from "../encrypt.js";
+import { InitFhevm } from "../init.js";
+import { PermitV2ParamsValidator } from "./permitV2.z.js";
 
 const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
   // Initialize the fhevm
@@ -58,7 +53,7 @@ const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
 
   if (params.provider == null)
     throw new Error(
-      "initialize :: missing provider - Please provide an EthersV6 Provider",
+      "initialize :: missing provider - Please provide an AbstractProvider interface",
     );
 
   if (params.securityZones != null && params.securityZones.length === 0)
@@ -67,6 +62,21 @@ const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
     );
 
   await _store_initialize(params);
+};
+
+/**
+ * Internal reusable initialization checker
+ */
+const _checkSignerInitialized = (state: SdkStore, fnName: string) => {
+  if (!state.providerInitialized)
+    throw new Error(
+      `${fnName} :: fhenixsdk provider not initialized, use \`fhenixsdk.initialize(...)\` with a valid AbstractProvider`,
+    );
+
+  if (!state.signerInitialized)
+    throw new Error(
+      `${fnName} :: fhenixsdk signer not initialized, use \`fhenixsdk.initialize(...)\` with a valid AbstractSigner`,
+    );
 };
 
 // Permit
@@ -82,16 +92,7 @@ const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
  */
 const createPermit = async (options: PermitV2Options): Promise<PermitV2> => {
   const state = _sdkStore.getState();
-
-  if (!state.initialized)
-    throw new Error(
-      "createPermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.signer == null || state.account == null)
-    throw new Error(
-      "createPermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
-    );
-  if (state.chainId == null) throw new Error("createPermit :: missing chainId");
+  _checkSignerInitialized(state, createPermit.name);
 
   const permit = await PermitV2.createAndSign(
     options,
@@ -99,8 +100,34 @@ const createPermit = async (options: PermitV2Options): Promise<PermitV2> => {
     state.signer,
   );
 
-  setPermit(state.account, permit);
-  setActivePermitHash(state.account, permit.getHash());
+  permitStore.setPermit(state.account!, permit);
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
+
+  return permit;
+};
+
+/**
+ * Creates a simple "self" permit that satisfies the initialized project, does not take any options
+ * Permit has a 1 week expiration, and has access to the contracts and projects passed into the `initialize` function
+ */
+const createMinimalPermit = async (): Promise<PermitV2> => {
+  const state = _sdkStore.getState();
+  _checkSignerInitialized(state, createPermit.name);
+
+  const permit = await PermitV2.createAndSign(
+    {
+      type: "self",
+      issuer: state.account!,
+      expiration: 7 * 24 * 60 * 60, // 1 week
+      contracts: state.accessRequirements.contracts,
+      projects: state.accessRequirements.projects,
+    },
+    state.chainId,
+    state.signer,
+  );
+
+  permitStore.setPermit(state.account!, permit);
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
 
   return permit;
 };
@@ -111,29 +138,54 @@ const createPermit = async (options: PermitV2Options): Promise<PermitV2> => {
  * Will throw an error if the imported permit is invalid, see `PermitV2.isValid`.
  * The imported PermitV2 will be inserted into the store and marked as the active permit.
  *
- * @param {PermitV2Interface} imported - Existing permit
+ * @param {string | PermitV2Interface} imported - Permit to import as a text string or PermitV2Interface
  */
-const importPermit = async (imported: PermitV2Interface) => {
+const importPermit = async (imported: string | PermitV2Interface) => {
   const state = _sdkStore.getState();
+  _checkSignerInitialized(state, importPermit.name);
 
-  if (!state.initialized)
-    throw new Error(
-      "importPermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.signer == null || state.account == null)
-    throw new Error(
-      "importPermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
-    );
+  // Import validation
+  if (typeof imported === "string") {
+    try {
+      imported = JSON.parse(imported);
+    } catch (e) {
+      throw new Error(`importPermit :: json parsing failed - ${e}`);
+    }
+  }
 
-  const permit = await PermitV2.create(imported);
+  const {
+    success,
+    data: parsedPermit,
+    error: permitParsingError,
+  } = PermitV2ParamsValidator.safeParse(imported as PermitV2Interface);
+  if (!success) {
+    const errorString = Object.entries(permitParsingError.flatten().fieldErrors)
+      .map(([field, err]) => `- ${field}: ${err}`)
+      .join("\n");
+    throw new Error(`importPermit :: invalid permit data - ${errorString}`);
+  }
+  if (parsedPermit.type !== "self") {
+    if (parsedPermit.issuer === state.account) parsedPermit.type = "sharing";
+    else if (parsedPermit.recipient === state.account)
+      parsedPermit.type = "recipient";
+    else {
+      throw new Error(
+        `importPermit :: invalid Permit - connected account <${state.account}> is not issuer or recipient`,
+      );
+    }
+  }
+
+  const permit = await PermitV2.create(parsedPermit as PermitV2Interface);
 
   const { valid, error } = permit.isValid();
   if (!valid) {
-    throw new Error(`Imported permit is invalid: ${error}`);
+    throw new Error(
+      `importPermit :: newly imported permit is invalid - ${error}`,
+    );
   }
 
-  setPermit(state.account, permit);
-  setActivePermitHash(state.account, permit.getHash());
+  permitStore.setPermit(state.account!, permit);
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
 };
 
 /**
@@ -145,20 +197,12 @@ const importPermit = async (imported: PermitV2Interface) => {
  */
 const selectActivePermit = (hash: string) => {
   const state = _sdkStore.getState();
+  _checkSignerInitialized(state, selectActivePermit.name);
 
-  if (!state.initialized)
-    throw new Error(
-      "selectActivePermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.signer == null || state.account == null)
-    throw new Error(
-      "selectActivePermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
-    );
-
-  const permit = getPermitFromStore(state.account, hash);
+  const permit = permitStore.getPermit(state.account, hash);
   if (permit == null) return;
 
-  setActivePermitHash(state.account, permit.getHash());
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
 };
 
 /**
@@ -170,25 +214,17 @@ const selectActivePermit = (hash: string) => {
  */
 const getPermit = (hash?: string): Result<PermitV2> => {
   const state = _sdkStore.getState();
-
-  if (!state.initialized)
-    throw new Error(
-      "getPermit :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.signer == null || state.account == null)
-    throw new Error(
-      "getPermit :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
-    );
+  _checkSignerInitialized(state, getPermit.name);
 
   if (hash == null) {
-    const permit = getActivePermit(state.account);
+    const permit = permitStore.getActivePermit(state.account);
     if (permit == null)
       return ResultErr(`getPermit :: active permit not found`);
 
     return ResultOk(permit);
   }
 
-  const permit = getPermitFromStore(state.account, hash);
+  const permit = permitStore.getPermit(state.account, hash);
   if (permit == null)
     return ResultErr(`getPermit :: permit with hash <${hash}> not found`);
 
@@ -216,17 +252,9 @@ const getPermission = (hash?: string): Result<PermissionV2> => {
  */
 const getAllPermits = (): Result<Record<string, PermitV2>> => {
   const state = _sdkStore.getState();
+  _checkSignerInitialized(state, getAllPermits.name);
 
-  if (!state.initialized)
-    throw new Error(
-      "getAllPermits :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.signer == null || state.account == null)
-    throw new Error(
-      "getAllPermits :: fhenixsdk not initialized with a signer - permits require a valid signer to be provided during initialization",
-    );
-
-  return ResultOk(getPermitsFromStore(state.account));
+  return ResultOk(permitStore.getPermits(state.account));
 };
 
 // Encrypt
@@ -244,12 +272,7 @@ const encryptValue = (
   securityZone: number = 0,
 ): EncryptedNumber => {
   const state = _sdkStore.getState();
-
-  if (!state.initialized)
-    throw new Error(
-      "encryptValue :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.chainId == null) throw new Error("encryptValue :: missing chainId");
+  _checkSignerInitialized(state, encryptValue.name);
 
   const fhePublicKey = _store_getFheKey(state.chainId, securityZone);
   if (fhePublicKey == null)
@@ -357,22 +380,16 @@ const unsealCiphertext = (
   hash?: string,
 ): bigint => {
   const state = _sdkStore.getState();
-
-  if (!state.initialized)
-    throw new Error(
-      "unsealCiphertext :: fhenixsdk not initialized, use `fhenixsdk.initialize(...)` before interacting",
-    );
-  if (state.chainId == null)
-    throw new Error("unsealCiphertext :: missing chainId");
+  _checkSignerInitialized(state, unsealCiphertext.name);
 
   isString(ciphertext);
   const resolvedAccount = account ?? state.account;
-  const resolvedHash = hash ?? getActivePermitHash(resolvedAccount);
+  const resolvedHash = hash ?? permitStore.getActivePermitHash(resolvedAccount);
   if (resolvedAccount == null || resolvedHash == null) {
     throw new Error(`PermitV2 hash not provided and active PermitV2 not found`);
   }
 
-  const permit = getPermitFromStore(resolvedAccount, resolvedHash);
+  const permit = permitStore.getPermit(resolvedAccount, resolvedHash);
   if (permit == null) {
     throw new Error(
       `PermitV2 with account <${account}> and hash <${hash}> not found`,
@@ -392,12 +409,12 @@ const unsealCiphertext = (
  */
 function unseal<T>(item: T, account?: string, hash?: string) {
   const resolvedAccount = account ?? _sdkStore.getState().account;
-  const resolvedHash = hash ?? getActivePermitHash(resolvedAccount);
+  const resolvedHash = hash ?? permitStore.getActivePermitHash(resolvedAccount);
   if (resolvedAccount == null || resolvedHash == null) {
     throw new Error(`PermitV2 hash not provided and active PermitV2 not found`);
   }
 
-  const permit = getPermitFromStore(resolvedAccount, resolvedHash);
+  const permit = permitStore.getPermit(resolvedAccount, resolvedHash);
   if (permit == null) {
     throw new Error(
       `PermitV2 with account <${account}> and hash <${hash}> not found`,
@@ -414,6 +431,7 @@ export const fhenixsdk = {
   initialize,
 
   createPermit,
+  createMinimalPermit,
   importPermit,
   selectActivePermit,
   getPermit,

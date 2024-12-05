@@ -5,8 +5,8 @@
 
 export { FhenixClient, FhenixClientSync } from "./sdk/index.js";
 
-export { fhenixsdk } from "./sdk/sdk-permitV2.js";
-export { PermitV2 } from "./sdk/permitV2/permitV2.js";
+export { fhenixsdk } from "./sdk/v2/sdk.js";
+export { PermitV2 } from "./sdk/v2/permitV2.js";
 
 export {
   ContractPermits,
@@ -22,6 +22,27 @@ export {
   EncryptedBool,
   EncryptedNumber,
   EncryptedAddress,
+  AbstractProvider,
+  AbstractSigner,
+  EncryptableBool,
+  EncryptableUint8,
+  EncryptableUint16,
+  EncryptableUint32,
+  EncryptableUint64,
+  EncryptableUint128,
+  EncryptableUint256,
+  EncryptableAddress,
+  Encryptable,
+  EncryptableItem,
+  SealedBool,
+  SealedUint,
+  SealedAddress,
+  SealedItem,
+  PermitV2Interface,
+  PermitV2Core,
+  PermitV2Options,
+  SerializedPermitV2,
+  PermissionV2,
 } from "./sdk/types.js";
 
 export * from "./extensions/access_control/index.js";

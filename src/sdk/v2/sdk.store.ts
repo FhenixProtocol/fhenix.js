@@ -1,40 +1,84 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createStore } from "zustand/vanilla";
 import { produce } from "immer";
-import { TfheCompactPublicKey } from "../../sdk/fhe/fhe";
-import { fromHexString, toABIEncodedUint32 } from "../../sdk/utils";
-import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "../../sdk/consts";
-import { AbstractProvider, AbstractSigner } from "../../sdk/types";
+import { TfheCompactPublicKey } from "../fhe/fhe";
+import { fromHexString, toABIEncodedUint32 } from "../utils";
+import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "../consts";
+import { AbstractProvider, AbstractSigner } from "../types";
 
 type ChainRecord<T> = Record<string, T>;
 type SecurityZoneRecord<T> = Record<number, T>;
 
-type SdkStore = {
-  initialized: boolean;
-  fheKeysInitialized: boolean;
-
-  securityZones: number[];
-  fheKeys: ChainRecord<SecurityZoneRecord<Uint8Array | undefined>>;
-
-  provider?: AbstractProvider;
-  signer?: AbstractSigner;
-  account?: string;
-  chainId?: string;
+type PermitV2AccessRequirements = {
+  contracts: string[];
+  projects: string[];
 };
+
+type PermitV2AccessRequirementsParams =
+  | {
+      contracts?: never[];
+      projects: string[];
+    }
+  | {
+      contracts: string[];
+      projects?: never[];
+    };
+
+type SdkStoreProviderInitialization =
+  | {
+      providerInitialized: false;
+      signer: never;
+      account: never;
+    }
+  | {
+      providerInitialized: true;
+      provider: AbstractProvider;
+      chainId: string;
+    };
+
+type SdkStoreSignerInitialization =
+  | {
+      signerInitialized: false;
+      signer: never;
+      account: never;
+    }
+  | {
+      signerInitialized: true;
+      signer: AbstractSigner;
+      account: string;
+    };
+
+export type SdkStore = SdkStoreProviderInitialization &
+  SdkStoreSignerInitialization & {
+    provider: AbstractProvider;
+    chainId: string;
+
+    fheKeysInitialized: boolean;
+
+    securityZones: number[];
+    fheKeys: ChainRecord<SecurityZoneRecord<Uint8Array | undefined>>;
+    accessRequirements: PermitV2AccessRequirements;
+  };
 
 export const _sdkStore = createStore<SdkStore>(
   () =>
     ({
-      initialized: false,
       fheKeysInitialized: false,
 
       securityZones: [0],
       fheKeys: {},
+      accessRequirements: {
+        contracts: [],
+        projects: [],
+      },
 
-      provider: undefined,
-      signer: undefined,
-      account: undefined,
-      chainId: undefined,
+      providerInitialized: false,
+      provider: undefined as never,
+      chainId: undefined as never,
+
+      signerInitialized: false,
+      signer: undefined as never,
+      account: undefined as never,
     }) as SdkStore,
 );
 
@@ -98,43 +142,66 @@ export type InitParams = {
   provider: AbstractProvider;
   signer?: AbstractSigner;
   securityZones?: number[];
-};
+} & PermitV2AccessRequirementsParams;
 
 export const _store_initialize = async (init: InitParams) => {
-  const { provider, signer, securityZones = [0] } = init;
+  const {
+    provider,
+    signer,
+    securityZones = [0],
+    contracts: contractRequirements = [],
+    projects: projectRequirements = [],
+  } = init;
 
-  _sdkStore.setState({ initialized: false });
+  _sdkStore.setState({
+    providerInitialized: false,
+    signerInitialized: false,
+    accessRequirements: {
+      contracts: contractRequirements,
+      projects: projectRequirements,
+    },
+  });
 
   // PROVIDER
+
+  // Fetch chain Id from provider
+  const chainId = await getChainIdFromProvider(provider);
+  const chainIdChanged =
+    chainId != null && chainId !== _sdkStore.getState().chainId;
+  if (chainId != null && provider != null) {
+    _sdkStore.setState({ providerInitialized: true, provider, chainId });
+  }
+
+  // SIGNER
 
   // Account is fetched and stored here, the `account` field in the store is used to index which permits belong to which users
   // In sdk functions, `state.account != null` is validated, this is a check to ensure that a valid signer has been provided
   //   which is necessary to interact with permits
   const account = await signer?.getAddress();
-  _sdkStore.setState({ provider, signer, account });
+  if (account != null && signer != null) {
+    _sdkStore.setState({ signerInitialized: true, account, signer });
+  }
 
-  const chainId = await getChainIdFromProvider(provider);
-
-  // If chainId or securityZones changes, update the store and flag fheKeys for re-initialization
-  if (
-    chainId !== _sdkStore.getState().chainId ||
-    securityZones !== _sdkStore.getState().securityZones
-  )
+  // If chainId or securityZones changes, update the store and update fheKeys for re-initialization
+  const securityZonesChanged =
+    securityZones !== _sdkStore.getState().securityZones;
+  if (chainIdChanged || securityZonesChanged) {
     _sdkStore.setState({
-      chainId,
       securityZones,
       fheKeysInitialized: false,
     });
+  }
 
   // FHE KEYS
+  if (!_sdkStore.getState().fheKeysInitialized) {
+    await Promise.all(
+      securityZones.map((securityZone) =>
+        _store_fetchFheKey(chainId, provider, securityZone),
+      ),
+    );
+  }
 
-  await Promise.all(
-    securityZones.map((securityZone) =>
-      _store_fetchFheKey(chainId, provider, securityZone),
-    ),
-  );
-
-  _sdkStore.setState({ fheKeysInitialized: true, initialized: true });
+  _sdkStore.setState({ fheKeysInitialized: true });
 };
 
 /**

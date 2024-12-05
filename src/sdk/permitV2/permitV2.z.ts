@@ -1,4 +1,4 @@
-import { ZeroAddress } from "ethers";
+import { isAddress, ZeroAddress } from "ethers";
 import { z } from "zod";
 
 const SerializedSealingPair = z.object({
@@ -7,16 +7,34 @@ const SerializedSealingPair = z.object({
 });
 
 const zPermitV2WithDefaults = z.object({
+  name: z.string().optional().default("Unnamed Permit"),
   type: z.enum(["self", "sharing", "recipient"]),
-  issuer: z.string().refine((val) => val !== ZeroAddress, {
-    message: "PermitV2 issuer :: must not be ZeroAddress",
-  }),
+  issuer: z
+    .string()
+    .refine((val) => isAddress(val), {
+      message: "PermitV2 issuer :: invalid address",
+    })
+    .refine((val) => val !== ZeroAddress, {
+      message: "PermitV2 issuer :: must not be zeroAddress",
+    }),
   expiration: z.number().optional().default(1000000000000),
   contracts: z.array(z.string()).optional().default([]),
   projects: z.array(z.string()).optional().default([]),
-  recipient: z.string().optional().default(ZeroAddress),
+  recipient: z
+    .string()
+    .optional()
+    .default(ZeroAddress)
+    .refine((val) => isAddress(val), {
+      message: "PermitV2 recipient :: invalid address",
+    }),
   validatorId: z.number().optional().default(0),
-  validatorContract: z.string().optional().default(ZeroAddress),
+  validatorContract: z
+    .string()
+    .optional()
+    .default(ZeroAddress)
+    .refine((val) => isAddress(val), {
+      message: "PermitV2 validatorContract :: invalid address",
+    }),
   sealingPair: SerializedSealingPair.optional(),
   issuerSignature: z.string().optional().default("0x"),
   recipientSignature: z.string().optional().default("0x"),
@@ -69,14 +87,14 @@ const PermitV2SignaturesSuperRefinement = (options: {
 }) => {
   return (data: zPermitV2Type, ctx: z.RefinementCtx) => {
     // Check Recipient
-    //    If type <self | sharing>, `PermitV2.recipient` must be ZeroAddress
-    //    If type <recipient>, `PermitV2.recipient` must not be ZeroAddress
+    //    If type <self | sharing>, `PermitV2.recipient` must be zeroAddress
+    //    If type <recipient>, `PermitV2.recipient` must not be zeroAddress
     if (options.checkRecipient) {
       if (data.type === "self" && data.recipient !== ZeroAddress)
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["recipient"],
-          message: `PermitV2 (type '${data.type}') recipient :: must be empty (ZeroAddress)`,
+          message: `PermitV2 (type '${data.type}') recipient :: must be empty (zeroAddress)`,
         });
       if (
         (data.type === "recipient" || data.type === "sharing") &&

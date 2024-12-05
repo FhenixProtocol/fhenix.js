@@ -1,11 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getAddress, id, ZeroAddress } from "ethers";
-import {
-  getSignatureTypesAndMessage,
-  SignatureTypes,
-} from "../../extensions/access_control/permitV2/generate";
-import { GenerateSealingKey, SealingKey } from "../sealing";
-import { isString } from "../validation";
+import { getAddress, id, keccak256, ZeroAddress } from "ethers";
 import {
   AbstractSigner,
   isSealedAddress,
@@ -19,11 +13,22 @@ import {
   SerializedPermitV2,
 } from "../types";
 import {
+  getSignatureDomain,
+  getSignatureTypesAndMessage,
+  PermitV2SignaturePrimaryType,
+  SignatureTypes,
+} from "./generate";
+import {
   FullyFormedPermitV2Validator,
   PermitV2ParamsValidator,
 } from "./permitV2.z";
+import { GenerateSealingKey, SealingKey } from "fhenixjs";
 
 export class PermitV2 implements PermitV2Interface {
+  /**
+   * Name for this permit, only for organization and UX
+   */
+  public name: string;
   /**
    * The type of the PermitV2 (self / sharing)
    * (self) Permit that will be signed and used by the issuer
@@ -83,6 +88,7 @@ export class PermitV2 implements PermitV2Interface {
   public recipientSignature: string;
 
   public constructor(options: PermitV2Interface) {
+    this.name = options.name;
     this.type = options.type;
     this.issuer = options.issuer;
     this.expiration = options.expiration;
@@ -134,6 +140,10 @@ export class PermitV2 implements PermitV2Interface {
     return permit;
   }
 
+  updateName = (name: string) => {
+    this.name = name;
+  };
+
   /**
    * Creates a `PermitV2` from a serialized permit, hydrating methods and classes
    * NOTE: Does not return a stringified permit
@@ -161,6 +171,7 @@ export class PermitV2 implements PermitV2Interface {
    */
   getInterface = (): PermitV2Interface => {
     return {
+      name: this.name,
       type: this.type,
       issuer: this.issuer,
       expiration: this.expiration,
@@ -173,6 +184,30 @@ export class PermitV2 implements PermitV2Interface {
       issuerSignature: this.issuerSignature,
       recipientSignature: this.recipientSignature,
     };
+  };
+
+  /**
+   * Export the necessary permit data to share a permit with another user
+   */
+  export = () => {
+    const cleanedPermit: Record<string, unknown> = {
+      name: this.name,
+      type: this.type,
+      issuer: this.issuer,
+      expiration: this.expiration,
+    };
+
+    if (this.contracts.length > 0) cleanedPermit.contracts = this.contracts;
+    if (this.projects.length > 0) cleanedPermit.projects = this.projects;
+    if (this.recipient !== ZeroAddress)
+      cleanedPermit.recipient = this.recipient;
+    if (this.validatorId !== 0) cleanedPermit.validatorId = this.validatorId;
+    if (this.validatorContract !== ZeroAddress)
+      cleanedPermit.validatorContract = this.validatorContract;
+    if (this.type === "sharing" && this.issuerSignature !== "0x")
+      cleanedPermit.issuerSignature = this.issuerSignature;
+
+    return JSON.stringify(cleanedPermit, undefined, 2);
   };
 
   /**
@@ -198,7 +233,7 @@ export class PermitV2 implements PermitV2Interface {
    * @permit {boolean} skipValidation - Flag to prevent running validation on the permit before returning the extracted permission. Used internally.
    * @returns {PermissionV2}
    */
-  getPermission = (skipValidation: boolean = false): PermissionV2 => {
+  getPermission = (skipValidation = false): PermissionV2 => {
     const permitData = this.getInterface();
 
     if (!skipValidation) {
@@ -207,13 +242,17 @@ export class PermitV2 implements PermitV2Interface {
 
       if (!validationResult.success) {
         throw new Error(
-          `PermitV2 :: getPermission :: permit validation failed - ${JSON.stringify(validationResult.error, null, 2)} ${JSON.stringify(permitData, null, 2)}`,
+          `PermitV2 :: getPermission :: permit validation failed - ${JSON.stringify(
+            validationResult.error,
+            null,
+            2,
+          )} ${JSON.stringify(permitData, null, 2)}`,
         );
       }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { type, sealingPair, ...permit } = permitData;
+    const { name, type, sealingPair, ...permit } = permitData;
     return {
       ...permit,
       sealingKey: `0x${sealingPair.publicKey}`,
@@ -225,17 +264,38 @@ export class PermitV2 implements PermitV2Interface {
    * Is used in the store as each permit's key in the permit map.
    */
   getHash = () =>
-    id(
-      JSON.stringify({
-        type: this.type,
-        issuer: this.issuer,
-        contracts: this.contracts,
-        projects: this.projects,
-        recipient: this.recipient,
-        validatorId: this.validatorId,
-        validatorContract: this.validatorContract,
-      }),
+    keccak256(
+      id(
+        JSON.stringify({
+          type: this.type,
+          issuer: this.issuer,
+          expiration: this.expiration,
+          contracts: this.contracts,
+          projects: this.projects,
+          recipient: this.recipient,
+          validatorId: this.validatorId,
+          validatorContract: this.validatorContract,
+        }),
+      ),
     );
+
+  /**
+   * Returns the domain, types, primaryType, and message fields required to request the user's signature
+   * Primary type is returned to allow viem clients to more easily connect
+   */
+  getSignatureParams = (
+    chainId: string,
+    primaryType: PermitV2SignaturePrimaryType,
+  ) => {
+    return {
+      domain: getSignatureDomain(chainId),
+      ...getSignatureTypesAndMessage(
+        primaryType,
+        SignatureTypes[primaryType],
+        this.getPermission(true),
+      ),
+    };
+  };
 
   /**
    * Determines the required signature type.
@@ -259,42 +319,27 @@ export class PermitV2 implements PermitV2Interface {
         "PermitV2 :: sign - signer undefined, you must pass in a `signer` for the connected user to create a permitV2 signature",
       );
 
-    const domain = {
-      name: "Fhenix Permission v2.0.0",
-      version: "v2.0.0",
+    let primaryType: PermitV2SignaturePrimaryType = "PermissionedV2IssuerSelf";
+    if (this.type === "self") primaryType = "PermissionedV2IssuerSelf";
+    if (this.type === "sharing") primaryType = "PermissionedV2IssuerShared";
+    if (this.type === "recipient") primaryType = "PermissionedV2Recipient";
+
+    const { domain, types, message } = this.getSignatureParams(
       chainId,
-      verifyingContract: ZeroAddress,
-    };
+      primaryType,
+    );
+    const signature = await signer.signTypedData(
+      domain,
+      types,
+      primaryType,
+      message,
+    );
 
-    if (this.type === "self") {
-      const { types, message } = getSignatureTypesAndMessage(
-        "PermissionedV2IssuerSelf",
-        SignatureTypes.PermissionedV2IssuerSelf,
-        this.getPermission(true),
-      );
-      this.issuerSignature = await signer.signTypedData(domain, types, message);
+    if (this.type === "self" || this.type === "sharing") {
+      this.issuerSignature = signature;
     }
-
-    if (this.type === "sharing") {
-      const { types, message } = getSignatureTypesAndMessage(
-        "PermissionedV2IssuerShared",
-        SignatureTypes.PermissionedV2IssuerShared,
-        this.getPermission(true),
-      );
-      this.issuerSignature = await signer.signTypedData(domain, types, message);
-    }
-
     if (this.type === "recipient") {
-      const { types, message } = getSignatureTypesAndMessage(
-        "PermissionedV2Receiver",
-        SignatureTypes["PermissionedV2Receiver"],
-        this.getPermission(true),
-      );
-      this.recipientSignature = await signer.signTypedData(
-        domain,
-        types,
-        message,
-      );
+      this.recipientSignature = signature;
     }
   };
 
@@ -302,8 +347,10 @@ export class PermitV2 implements PermitV2Interface {
    * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
    */
   unsealCiphertext = (ciphertext: string): bigint => {
-    isString(ciphertext);
-    return this.sealingPair.unseal(ciphertext);
+    // NOTE: the returned type is currently a stringified number
+    // it does not need to be unsealed using the sealingPair privateKey
+    // return this.sealingPair.unseal(ciphertext);
+    return BigInt(ciphertext);
   };
 
   /**
@@ -319,7 +366,10 @@ export class PermitV2 implements PermitV2Interface {
   unseal<T>(item: T) {
     // SealedItem
     if (isSealedItem(item)) {
-      const bn = this.sealingPair.unseal(item.data);
+      // NOTE: the returned type is currently a stringified number
+      // it does not need to be unsealed using the sealingPair privateKey
+      // const bn = this.sealingPair.unseal(item.data);
+      const bn = BigInt(item.data);
       if (isSealedBool(item)) {
         // Return a boolean for SealedBool
         return Boolean(bn).valueOf() as any;
@@ -370,7 +420,7 @@ export class PermitV2 implements PermitV2Interface {
         unsatisfiedContracts: string[];
         unsatisfiedProjects: string[];
       } => {
-    let contractsSatisfied: boolean = true;
+    let contractsSatisfied = true;
     const unsatisfiedContracts: string[] = [];
     for (const contract in requirements.contracts) {
       if (!this.contracts.includes(contract)) {
@@ -379,7 +429,7 @@ export class PermitV2 implements PermitV2Interface {
       }
     }
 
-    let projectsSatisfied: boolean = true;
+    let projectsSatisfied = true;
     const unsatisfiedProjects: string[] = [];
     for (const project in requirements.projects) {
       if (!this.projects.includes(project)) {

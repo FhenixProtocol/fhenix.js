@@ -4,7 +4,7 @@ import { produce } from "immer";
 import { TfheCompactPublicKey } from "../fhe/fhe";
 import { fromHexString, toABIEncodedUint32 } from "../utils";
 import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "../consts";
-import { AbstractProvider, AbstractSigner } from "../types";
+import { AbstractProvider, AbstractSigner } from "./types";
 
 type ChainRecord<T> = Record<string, T>;
 type SecurityZoneRecord<T> = Record<number, T>;

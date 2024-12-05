@@ -11,17 +11,17 @@ import {
   PermitV2Interface,
   PermitV2Options,
   SerializedPermitV2,
-} from "../types";
+} from "./types";
 import {
   getSignatureDomain,
   getSignatureTypesAndMessage,
   PermitV2SignaturePrimaryType,
   SignatureTypes,
-} from "./permitV2.generate";
+} from "./permit.generate";
 import {
   FullyFormedPermitV2Validator,
   PermitV2ParamsValidator,
-} from "./permitV2.z";
+} from "./permit.z";
 import { GenerateSealingKey, SealingKey } from "../sealing";
 
 export class PermitV2 implements PermitV2Interface {

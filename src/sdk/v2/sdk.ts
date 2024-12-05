@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "../consts.js";
 import { ValidateUintInRange } from "../utils.js";
-import { PermitV2 } from "./permitV2.js";
+import { PermitV2 } from "./permit.js";
 import {
-  EncryptedNumber,
-  EncryptionTypes,
   FheUType,
   isEncryptableItem,
   MappedEncryptedTypes,
@@ -14,8 +12,8 @@ import {
   PermissionV2,
   PermitV2Interface,
   PermitV2Options,
-} from "../types.js";
-import { permitStore } from "./permitV2.store.js";
+} from "./types.js";
+import { permitStore } from "./permit.store.js";
 import { isString } from "../validation.js";
 import {
   _sdkStore,
@@ -37,7 +35,8 @@ import {
   encrypt_address as tfhe_encrypt_address,
 } from "../encrypt.js";
 import { InitFhevm } from "../init.js";
-import { PermitV2ParamsValidator } from "./permitV2.z.js";
+import { PermitV2ParamsValidator } from "./permit.z.js";
+import { EncryptedNumber, EncryptionTypes } from "../types.js";
 
 const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
   // Initialize the fhevm

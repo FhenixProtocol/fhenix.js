@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { JsonRpcProvider, AbiCoder, ethers } from "ethers";
-import { AbstractProvider, AbstractSigner } from "../src/sdk/types";
+import { AbstractProvider, AbstractSigner } from "../src";
 
 // Initialize genesis accounts
 const mnemonics = [

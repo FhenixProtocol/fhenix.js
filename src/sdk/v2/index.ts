@@ -1,3 +1,3 @@
-export { PermitV2 } from "./permitV2";
-export { permitStore } from "./permitV2.store";
+export { PermitV2 } from "./permit";
+export { permitStore } from "./permit.store";
 export { fhenixsdk } from "./sdk";

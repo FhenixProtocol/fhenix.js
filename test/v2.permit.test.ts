@@ -10,8 +10,7 @@ import { createTfhePublicKey } from "./keygen";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import { getAddress, ZeroAddress } from "ethers";
-import { SealedAddress, SealedBool, SealedUint } from "../src/sdk/types";
-import { PermitV2 } from "../src";
+import { SealedAddress, SealedBool, SealedUint, PermitV2 } from "../src";
 
 describe("PermitV2 Tests", () => {
   let bobPublicKey: string;

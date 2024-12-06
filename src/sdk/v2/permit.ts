@@ -23,6 +23,7 @@ import {
   PermitV2ParamsValidator,
 } from "./permit.z";
 import { GenerateSealingKey, SealingKey } from "../sealing";
+import { chainIsHardhat, hardhatMockUnseal } from "../utils";
 
 export class PermitV2 implements PermitV2Interface {
   /**
@@ -86,6 +87,11 @@ export class PermitV2 implements PermitV2Interface {
    * ** required for shared permits **
    */
   public recipientSignature: string;
+
+  /**
+   * Internal tracker for the signed chainId
+   */
+  public signedChainId: string | undefined = undefined;
 
   public constructor(options: PermitV2Interface) {
     this.name = options.name;
@@ -151,14 +157,21 @@ export class PermitV2 implements PermitV2Interface {
    * @param {SerializedPermitV2} - Permit structure excluding classes
    * @returns {PermitV2} - New instance of PermitV2 class
    */
-  static deserialize = ({ sealingPair, ...permit }: SerializedPermitV2) => {
-    return new PermitV2({
+  static deserialize = ({
+    signedChainId,
+    sealingPair,
+    ...permit
+  }: SerializedPermitV2) => {
+    const deserializedPermit = new PermitV2({
       ...permit,
       sealingPair: new SealingKey(
         sealingPair.privateKey,
         sealingPair.publicKey,
       ),
     });
+
+    deserializedPermit.signedChainId = signedChainId;
+    return deserializedPermit;
   };
 
   static validate = (permit: PermitV2) => {
@@ -218,6 +231,7 @@ export class PermitV2 implements PermitV2Interface {
     const { sealingPair, ...permit } = this.getInterface();
     return {
       ...permit,
+      signedChainId: this.signedChainId,
       sealingPair: {
         publicKey: sealingPair.publicKey,
         privateKey: sealingPair.privateKey,
@@ -336,12 +350,19 @@ export class PermitV2 implements PermitV2Interface {
     if (this.type === "recipient") {
       this.recipientSignature = signature;
     }
+
+    this.signedChainId = chainId;
   };
 
   /**
-   * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
+   * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain.
+   * Useful when not using `SealedItem` structs and need to unseal an individual ciphertext.
    */
   unsealCiphertext = (ciphertext: string): bigint => {
+    // Early exit with mock unseal if interacting with hardhat network
+    if (chainIsHardhat(this.signedChainId))
+      return hardhatMockUnseal(ciphertext);
+
     return this.sealingPair.unseal(ciphertext);
   };
 
@@ -358,7 +379,10 @@ export class PermitV2 implements PermitV2Interface {
   unseal<T>(item: T) {
     // SealedItem
     if (isSealedItem(item)) {
-      const bn = this.sealingPair.unseal(item.data);
+      const bn = chainIsHardhat(this.signedChainId)
+        ? hardhatMockUnseal(item.data)
+        : this.sealingPair.unseal(item.data);
+
       if (isSealedBool(item)) {
         // Return a boolean for SealedBool
         return Boolean(bn).valueOf() as any;

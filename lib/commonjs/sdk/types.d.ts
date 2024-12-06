@@ -77,10 +77,10 @@ export declare function determineRequestMethod(provider: SupportedProvider): Fun
  * @returns {Function} - The determined request signer function.
  */
 export declare function determineRequestSigner(provider: SupportedProvider): Function;
-export interface EncryptedNumber {
+export type EncryptedNumber = {
     data: Uint8Array;
     securityZone: number;
-}
+};
 export interface EncryptedBool extends EncryptedNumber {
 }
 export interface EncryptedUint8 extends EncryptedNumber {

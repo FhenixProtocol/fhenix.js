@@ -34,7 +34,7 @@ import { _permitStore } from "../src/sdk/v2/permit.store";
 import { toHexString, uint8ArrayToString } from "../src/sdk/utils";
 import { FheUType } from "../src/sdk/v2/types";
 
-describe.only("Sdk Tests", () => {
+describe("Sdk Tests", () => {
   let bobPublicKey: string;
   let bobProvider: MockProvider;
   let bobSigner: MockSigner;

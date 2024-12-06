@@ -2,7 +2,7 @@
 import { createStore } from "zustand/vanilla";
 import { produce } from "immer";
 import { TfheCompactPublicKey } from "../fhe/fhe";
-import { fromHexString, toABIEncodedUint32 } from "../utils";
+import { chainIsHardhat, fromHexString, toABIEncodedUint32 } from "../utils";
 import { FheOpsAddress, PUBLIC_KEY_LENGTH_MIN } from "../consts";
 import { AbstractProvider, AbstractSigner } from "./types";
 
@@ -84,9 +84,12 @@ export const _sdkStore = createStore<SdkStore>(
 
 // Store getters / setters
 
+export const _store_chainId = (): string | undefined =>
+  _sdkStore.getState().chainId;
+
 export const _store_getFheKey = (
   chainId: string | undefined,
-  securityZone: number | undefined,
+  securityZone = 0,
 ): TfheCompactPublicKey | undefined => {
   if (chainId == null || securityZone == null) return undefined;
 
@@ -97,7 +100,7 @@ export const _store_getFheKey = (
 };
 
 export const _store_getConnectedChainFheKey = (
-  securityZone: number | undefined,
+  securityZone = 0,
 ): TfheCompactPublicKey | undefined => {
   const state = _sdkStore.getState();
 
@@ -144,14 +147,14 @@ export type InitParams = {
   securityZones?: number[];
 } & PermitV2AccessRequirementsParams;
 
-export const _store_initialize = async (init: InitParams) => {
+export const _store_initialize = async (params: InitParams) => {
   const {
     provider,
     signer,
     securityZones = [0],
     contracts: contractRequirements = [],
     projects: projectRequirements = [],
-  } = init;
+  } = params;
 
   _sdkStore.setState({
     providerInitialized: false,
@@ -192,8 +195,8 @@ export const _store_initialize = async (init: InitParams) => {
     });
   }
 
-  // FHE KEYS
-  if (!_sdkStore.getState().fheKeysInitialized) {
+  // Fetch FHE keys (skipped if hardhat)
+  if (!chainIsHardhat(chainId) && !_sdkStore.getState().fheKeysInitialized) {
     await Promise.all(
       securityZones.map((securityZone) =>
         _store_fetchFheKey(chainId, provider, securityZone),

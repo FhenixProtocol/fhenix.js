@@ -228,48 +228,9 @@ As with `fhenixsdk.encrypt` above, `unseal` will also recursively unseal any nes
 - `fhenixsdk` uses `zustand` behind the scenes to persist your user's Permits. These zustand stores can be imported directly to be used as part of hooks. In the future we will also expose hooks to streamline interacting with the sdk in your react enabled dApps.
 - We plan to provide viem hooks inspired by `scaffold-eth`'s `useScaffoldContractRead` and `useScaffoldContractWrite` to automatically encrypt input data, inject permissions, and unseal output data.
 
-```typescript
-const provider = new JsonRpcProvider("http://localhost:8545");
-
-const client = new FhenixClientV2();
-await client.initialize({
-  send: provider.send,
-  signTypedData: (await provider.getSigner()).signTypedData
-})
-
-// Create PermitV2 (will trigger a wallet signature in web3 frontend)
-await client.createPermit({
-  type: 'self',
-  issuer: account,
-  projects: ["COUNTER", "FHERC20"],
-})
-
-// Encrypt (will encrypt any nested encryptables)
-const encrypted = client.encryptTyped([
-  Encryptable.uint8(5),
-  [Encryptable.uint128("50"), Encryptable.bool(true)],
-  50n,
-  "hello"
-])
-// encrypted - [EncryptedUint8, [EncryptedUint128, EncryptedBool], bigint, string]
-
-// Inject permission (read operation)
-const sealed = await counter.connect(bob).getCount(client.getPermission())
-// sealed - SealedUint({ data: ciphertext, utype: 0-5 })
-
-// Unseal (will unseal any nested SealedItems)
-const unsealed = await client.unsealTyped([
-  sealed, 
-  MockSealedUint, 
-  MockSealedBool, 
-  { hello: "world", sealed: MockSealedAddress }
-])
-// unsealed - [bigint, bigint, bool, { hello: string, sealed: string }]
-```
-
 ## `FhenixClient` and `FhenixClientSync`
 
-We have updated our Permit system to V2. Opting in to V2 Permits will break existing FhenixClient / FhenixClientSync usage. It is recommended to use the V2 sdk to enable V2 Permits.
+`FhenixClient` uses the legacy Permission system (V1), it is recommended to migrate to `fhenixsdk` and `PermitV2`s above.
 
 ### Usage
 

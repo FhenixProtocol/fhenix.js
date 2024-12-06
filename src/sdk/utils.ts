@@ -1,3 +1,4 @@
+import { EncryptedNumber } from "./types.js";
 import { isNumber } from "./validation.js";
 
 export const ValidateUintInRange = (
@@ -151,3 +152,56 @@ export function toABIEncodedUint32(value: number) {
   // Convert the number to a hexadecimal string and pad it to 64 characters (32 bytes)
   return value.toString(16).padStart(64, "0");
 }
+
+// Uint8Array conversions
+
+export const stringToUint8Array = (value: string): Uint8Array => {
+  return new Uint8Array(value.split("").map((c) => c.charCodeAt(0)));
+};
+export const uint8ArrayToString = (value: Uint8Array): string => {
+  return Array.from(value)
+    .map((byte) => String.fromCharCode(byte))
+    .join("");
+};
+function bigintToUint8Array(bigNum: bigint): Uint8Array {
+  const byteLength = 32;
+  const byteArray = new Uint8Array(byteLength);
+
+  // Create a BigInt mask for each byte
+  const mask = BigInt(0xff);
+
+  // Initialize an index to start from the end of the array
+  for (let i = 0; i < byteLength; i++) {
+    // Extract the last byte and assign it to the corresponding position in the array
+    byteArray[byteLength - 1 - i] = Number(bigNum & mask);
+    // Shift bigint right by 8 bits to process the next byte in the next iteration
+    bigNum >>= BigInt(8);
+  }
+
+  return byteArray;
+}
+
+// HARDHAT MOCKS
+// Mock FHE operations are automatically injected on the hardhat network
+// The utility functions allow the client / sdk to interact with the mocked FHE ops
+
+export const chainIsHardhat = (chainId?: string): boolean => {
+  if (chainId == null) return false;
+  return parseInt(chainId) === 31337;
+};
+
+export const hardhatMockUnseal = (value: string): bigint => {
+  let result = BigInt(0);
+  for (const byteArrayItem of stringToUint8Array(value)) {
+    result = (result << BigInt(8)) + BigInt(byteArrayItem);
+  }
+  return result;
+};
+
+export const hardhatMockEncrypt = (
+  value: bigint,
+  securityZone = 0,
+): EncryptedNumber => ({
+  data: bigintToUint8Array(BigInt(value)),
+  securityZone: securityZone || 0,
+});

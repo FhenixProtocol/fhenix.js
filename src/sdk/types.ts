@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
 import { Permit } from "../extensions/access_control/index.js";
 export { PermitSigner } from "../extensions/access_control/index.js";
@@ -116,10 +117,10 @@ export function determineRequestSigner(provider: SupportedProvider): Function {
   }
 }
 
-export interface EncryptedNumber {
+export type EncryptedNumber = {
   data: Uint8Array;
   securityZone: number;
-}
+};
 
 export interface EncryptedBool extends EncryptedNumber {}
 export interface EncryptedUint8 extends EncryptedNumber {}

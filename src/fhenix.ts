@@ -24,3 +24,5 @@ export {
 export * from "./extensions/access_control/index.js";
 
 export { SealingKey, GenerateSealingKey } from "./sdk/sealing.js";
+
+export * from "./sdk/v2";

@@ -439,7 +439,7 @@ describe("Sdk Tests", () => {
     const unsealedValue = fhenixsdk.unsealCiphertext(
       uint8ArrayToString(encryptedValue.data),
     );
-    expect(unsealedValue).toEqual(5);
+    expect(unsealedValue).toEqual(5n);
 
     // `unseal`
 
@@ -457,7 +457,7 @@ describe("Sdk Tests", () => {
     ];
 
     const [unsealedInt, unsealedBool] = fhenixsdk.unseal(sealed);
-    expect(unsealedInt).to.eq(intValue);
+    expect(unsealedInt).to.eq(BigInt(intValue));
     expect(unsealedBool).to.eq(boolValue);
   });
 });

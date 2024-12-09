@@ -258,7 +258,7 @@ export interface AbstractSigner {
  */
 export type PermitV2Interface = {
   /**
-   * Name for this permit, only for organization and UX
+   * Name for this permit, for organization and UI usage, not included in signature.
    */
   name: string;
   /**
@@ -320,6 +320,19 @@ export type PermitV2Interface = {
   recipientSignature: string;
 };
 
+/**
+ * Optional additional metadata of a PermitV2
+ * Can be passed into the constructor, but not necessary
+ * Useful for deserialization
+ */
+export type PermitV2Metadata = {
+  /**
+   * Chain that this permit was signed on. In part used for mock encrypt/unseal on hardhat network.
+   * Should not be set manually, included in metadata as part of serialization flows.
+   */
+  _signedChainId: string | undefined;
+};
+
 export type PickPartial<T, F extends keyof T> = Expand<
   Omit<T, F> & Partial<Pick<T, F>>
 >;
@@ -371,13 +384,13 @@ export type PermitV2Options =
       }
     >;
 
-export type SerializedPermitV2 = Omit<PermitV2Interface, "sealingPair"> & {
-  signedChainId: string | undefined;
-  sealingPair: {
-    privateKey: string;
-    publicKey: string;
+export type SerializedPermitV2 = Omit<PermitV2Interface, "sealingPair"> &
+  PermitV2Metadata & {
+    sealingPair: {
+      privateKey: string;
+      publicKey: string;
+    };
   };
-};
 
 /**
  * A type representing the PermissionV2 struct that is passed to PermissionedV2.sol to grant encrypted data access.

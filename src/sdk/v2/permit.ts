@@ -165,7 +165,7 @@ export class PermitV2 implements PermitV2Interface, PermitV2Metadata {
    * @returns {PermitV2} - New instance of PermitV2 class
    */
   static deserialize = ({
-    _signedChainId: signedChainId,
+    _signedChainId,
     sealingPair,
     ...permit
   }: SerializedPermitV2) => {
@@ -178,7 +178,7 @@ export class PermitV2 implements PermitV2Interface, PermitV2Metadata {
         ),
       },
       {
-        _signedChainId: signedChainId,
+        _signedChainId,
       },
     );
   };

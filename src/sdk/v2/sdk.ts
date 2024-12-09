@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "../consts.js";
-import { ValidateUintInRange } from "../utils.js";
+import {
+  chainIsHardhat,
+  hardhatMockEncrypt,
+  ValidateUintInRange,
+} from "../utils.js";
 import { PermitV2 } from "./permit.js";
 import {
   FheUType,
@@ -17,6 +21,7 @@ import { permitStore } from "./permit.store.js";
 import { isString } from "../validation.js";
 import {
   _sdkStore,
+  _store_chainId,
   _store_getConnectedChainFheKey,
   _store_getFheKey,
   _store_initialize,
@@ -243,6 +248,7 @@ const getAllPermits = (): Result<Record<string, PermitV2>> => {
 
 /**
  * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
+ * Useful when not using `Encryptable` utility structures.
  * @param {number} value - The numeric value to encrypt.
  * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
  * @param securityZone - The security zone for which to encrypt the value (default 0).
@@ -255,6 +261,9 @@ const encryptValue = (
 ): EncryptedNumber => {
   const state = _sdkStore.getState();
   _checkSignerInitialized(state, encryptValue.name);
+
+  // Early exit with mock encrypted value if chain is hardhat
+  if (chainIsHardhat(state.chainId)) return hardhatMockEncrypt(BigInt(value));
 
   const fhePublicKey = _store_getFheKey(state.chainId, securityZone);
   if (fhePublicKey == null)
@@ -295,9 +304,6 @@ const encryptValue = (
 
 function encrypt<T>(item: T): MappedEncryptedTypes<T>;
 function encrypt<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
-function encrypt<T extends any[]>(
-  ...item: [...T]
-): [...MappedEncryptedTypes<T>];
 function encrypt<T>(item: T) {
   // Permission
   if (item === "permission") {
@@ -306,6 +312,10 @@ function encrypt<T>(item: T) {
 
   // EncryptableItem
   if (isEncryptableItem(item)) {
+    // Early exit with mock encrypted value if chain is hardhat
+    if (chainIsHardhat(_store_chainId()))
+      return hardhatMockEncrypt(BigInt(item.data));
+
     const fhePublicKey = _store_getConnectedChainFheKey(item.securityZone ?? 0);
     if (fhePublicKey == null)
       throw new Error("encrypt :: fheKey for current chain not found");

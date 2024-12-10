@@ -5,12 +5,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import { SealingKey } from "../lib/esm";
-import { createTfhePublicKey } from "./keygen";
+import {
+  createTfhePublicKey,
+  PermitV2,
+  SealedAddress,
+  SealedBool,
+  SealedUint,
+  SealingKey,
+} from "../lib/esm";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import { getAddress, ZeroAddress } from "ethers";
-import { SealedAddress, SealedBool, SealedUint, PermitV2 } from "../src";
 
 describe("PermitV2 Tests", () => {
   let bobPublicKey: string;

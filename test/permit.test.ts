@@ -6,17 +6,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  createTfhePublicKey,
   FhenixClient,
   FhenixClientSync,
   GenerateSealingKey,
+  getAllExistingPermits,
   getPermit,
   Permit,
   SealingKey,
 } from "../lib/esm";
-import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 import { afterEach } from "vitest";
-import { getAllExistingPermits } from "../src/fhenix";
 
 describe("Permit Tests", () => {
   let tfhePublicKey: string;

@@ -5,34 +5,39 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
-import { afterEach } from "vitest";
 import {
-  fhenixsdk,
-  PermitV2,
-  SealingKey,
+  AdaWallet,
+  BobWallet,
+  MockProvider,
+  MockSigner,
+  uint8ArrayToString,
+} from "./utils";
+import { afterEach } from "vitest";
+import { getAddress } from "ethers";
+import {
+  createTfhePublicKey,
   Encryptable,
   EncryptedAddress,
   EncryptedBool,
   EncryptedUint64,
   EncryptedUint8,
+  EncryptionTypes,
+  fhenixsdk,
+  PermissionV2,
+  permitStore,
+  PermitV2,
   SealedAddress,
   SealedBool,
   SealedUint,
-  PermissionV2,
-  permitStore,
-  EncryptionTypes,
-  createTfhePublicKey,
-} from "../src";
-import { getAddress } from "ethers";
+  SealingKey,
+} from "../lib/esm";
+import { _permitStore } from "../lib/esm/sdk/v2/permit.store";
 import {
   _store_chainId,
   _store_getFheKey,
   InitParams,
-} from "../src/sdk/v2/sdk.store";
-import { _permitStore } from "../src/sdk/v2/permit.store";
-import { toHexString, uint8ArrayToString } from "../src/sdk/utils";
-import { FheUType } from "../src/sdk/v2/types";
+} from "../lib/esm/sdk/v2/sdk.store";
+import { FheUType } from "../lib/esm/sdk/v2/types";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;

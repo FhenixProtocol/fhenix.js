@@ -19,9 +19,8 @@ import {
   encrypt_uint256,
   encrypt_address,
 } from "../lib/esm/sdk/encrypt";
-import { EncryptionTypes } from "../lib/esm";
+import { createTfheKeypair, EncryptionTypes } from "../lib/esm";
 import { expect, describe, it, beforeAll } from "vitest";
-import { createTfheKeypair } from "../src";
 
 describe("encrypt_uint8", () => {
   let clientKey: TfheClientKey;

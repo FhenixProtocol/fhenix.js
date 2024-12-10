@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { JsonRpcProvider, AbiCoder, ethers } from "ethers";
-import { AbstractProvider, AbstractSigner } from "../src";
+import { AbstractProvider, AbstractSigner } from "../lib/esm";
 
 // Initialize genesis accounts
 const mnemonics = [
@@ -109,3 +109,9 @@ export class MockProvider implements AbstractProvider {
     return new MockSigner(this.wallet);
   }
 }
+
+export const uint8ArrayToString = (value: Uint8Array): string => {
+  return Array.from(value)
+    .map((byte) => String.fromCharCode(byte))
+    .join("");
+};

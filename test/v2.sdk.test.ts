@@ -5,26 +5,39 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import { createTfhePublicKey } from "./keygen";
-import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
-import { afterEach } from "vitest";
 import {
-  fhenixsdk,
-  PermitV2,
-  SealingKey,
+  AdaWallet,
+  BobWallet,
+  MockProvider,
+  MockSigner,
+  uint8ArrayToString,
+} from "./utils";
+import { afterEach } from "vitest";
+import { getAddress } from "ethers";
+import {
+  createTfhePublicKey,
   Encryptable,
   EncryptedAddress,
   EncryptedBool,
   EncryptedUint64,
   EncryptedUint8,
+  EncryptionTypes,
+  fhenixsdk,
+  PermissionV2,
+  permitStore,
+  PermitV2,
   SealedAddress,
   SealedBool,
   SealedUint,
-  PermissionV2,
-  permitStore,
-} from "../src";
-import { getAddress } from "ethers";
-import { InitParams } from "../src/sdk/v2/sdk.store";
+  SealingKey,
+} from "../lib/esm";
+import { _permitStore } from "../lib/esm/sdk/v2/permit.store";
+import {
+  _store_chainId,
+  _store_getFheKey,
+  InitParams,
+} from "../lib/esm/sdk/v2/sdk.store";
+import { FheUType } from "../lib/esm/sdk/v2/types";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;
@@ -67,11 +80,15 @@ describe("Sdk Tests", () => {
     adaProvider = new MockProvider(adaPublicKey, AdaWallet);
     adaSigner = await adaProvider.getSigner();
     adaAddress = await adaSigner.getAddress();
+
+    localStorage.clear();
+    fhenixsdk.store.setState(fhenixsdk.store.getInitialState());
   });
 
   afterEach(() => {
     localStorage.clear();
     fhenixsdk.store.setState(fhenixsdk.store.getInitialState());
+    _permitStore.setState(_permitStore.getInitialState());
   });
 
   it("should be in happy-dom environment", async () => {
@@ -200,19 +217,6 @@ describe("Sdk Tests", () => {
     expectTypeOf<Readonly<ExpectedEncryptedType>>().toEqualTypeOf(
       nestedEncrypt,
     );
-
-    const inlineEncrypt = fhenixsdk.encrypt(
-      PermissionSlot,
-      {
-        a: Encryptable.bool(false),
-        b: Encryptable.uint64(10n),
-        c: "hello",
-      } as const,
-      ["hello", 20n, Encryptable.address(contractAddress)] as const,
-      Encryptable.uint8(10),
-    );
-
-    expectTypeOf<ExpectedEncryptedType>().toEqualTypeOf(inlineEncrypt);
   });
 
   // PERMITS
@@ -331,7 +335,7 @@ describe("Sdk Tests", () => {
 
   // UNSEAL
 
-  it("unseal", async () => {
+  it("unsealCiphertext", async () => {
     await initSdkWithBob();
     const permit = await fhenixsdk.createPermit({
       type: "self",
@@ -369,7 +373,7 @@ describe("Sdk Tests", () => {
     const addressCleartext = permit.unsealCiphertext(addressCiphertext);
     expect(bnToAddress(addressCleartext)).toEqual(addressValue);
   });
-  it("unsealTyped", async () => {
+  it("unseal", async () => {
     const permit = await PermitV2.create({
       type: "self",
       issuer: bobAddress,
@@ -412,5 +416,53 @@ describe("Sdk Tests", () => {
     expectTypeOf(nestedCleartext).toEqualTypeOf<ExpectedCleartextType>();
 
     expect(nestedCleartext).toEqual(expectedCleartext);
+  });
+
+  it("hardhat encrypt/unseal", async () => {
+    const hardhatChainId = "31337";
+
+    bobProvider = new MockProvider(bobPublicKey, BobWallet, hardhatChainId);
+    bobSigner = await bobProvider.getSigner();
+
+    // Should initialize correctly, but fhe public key for hardhat not set
+    await fhenixsdk.initialize({
+      provider: bobProvider,
+      signer: bobSigner,
+      projects: [counterProjectId],
+    });
+    await fhenixsdk.createPermit();
+
+    expect(fhenixsdk.store.getState().chainId).toEqual(hardhatChainId);
+    expect(_store_chainId()).toEqual(hardhatChainId);
+
+    expect(_store_getFheKey(hardhatChainId)).toEqual(undefined);
+    expect(fhenixsdk.store.getState().fheKeys).toEqual({});
+
+    // `unsealCiphertext`
+
+    const encryptedValue = fhenixsdk.encryptValue(5, EncryptionTypes.uint8);
+    const unsealedValue = fhenixsdk.unsealCiphertext(
+      uint8ArrayToString(encryptedValue.data),
+    );
+    expect(unsealedValue).toEqual(5n);
+
+    // `unseal`
+
+    const intValue = 5;
+    const boolValue = false;
+
+    const [encryptedInt, encryptedBool] = fhenixsdk.encrypt([
+      Encryptable.uint8(intValue),
+      Encryptable.bool(boolValue),
+    ]);
+
+    const sealed = [
+      { data: uint8ArrayToString(encryptedInt.data), utype: FheUType.uint8 },
+      { data: uint8ArrayToString(encryptedBool.data), utype: FheUType.bool },
+    ];
+
+    const [unsealedInt, unsealedBool] = fhenixsdk.unseal(sealed);
+    expect(unsealedInt).to.eq(BigInt(intValue));
+    expect(unsealedBool).to.eq(boolValue);
   });
 });

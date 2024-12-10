@@ -3,6 +3,7 @@
 import { JsonRpcProvider } from "ethers";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  createTfhePublicKey,
   FhenixClient,
   FhenixClientSync,
   GenerateSealingKey,
@@ -10,7 +11,6 @@ import {
   Permit,
   SealingKey,
 } from "../lib/esm";
-import { createTfhePublicKey } from "./keygen";
 import { MockProvider } from "./utils";
 
 describe("Instance", () => {

@@ -9,6 +9,7 @@ import {
   MappedUnsealedTypes,
   PermissionV2,
   PermitV2Interface,
+  PermitV2Metadata,
   PermitV2Options,
   SerializedPermitV2,
 } from "./types";
@@ -23,10 +24,11 @@ import {
   PermitV2ParamsValidator,
 } from "./permit.z";
 import { GenerateSealingKey, SealingKey } from "../sealing";
+import { chainIsHardhat, hardhatMockUnseal } from "../utils";
 
-export class PermitV2 implements PermitV2Interface {
+export class PermitV2 implements PermitV2Interface, PermitV2Metadata {
   /**
-   * Name for this permit, only for organization and UX
+   * Name for this permit, for organization and UI usage, not included in signature.
    */
   public name: string;
   /**
@@ -87,7 +89,16 @@ export class PermitV2 implements PermitV2Interface {
    */
   public recipientSignature: string;
 
-  public constructor(options: PermitV2Interface) {
+  /**
+   * Chain that this permit was signed on. In part used for mock encrypt/unseal on hardhat network.
+   * Should not be set manually, included in metadata as part of serialization flows.
+   */
+  public _signedChainId: string | undefined = undefined;
+
+  public constructor(
+    options: PermitV2Interface,
+    metadata?: Partial<PermitV2Metadata>,
+  ) {
     this.name = options.name;
     this.type = options.type;
     this.issuer = options.issuer;
@@ -100,6 +111,8 @@ export class PermitV2 implements PermitV2Interface {
     this.sealingPair = options.sealingPair;
     this.issuerSignature = options.issuerSignature;
     this.recipientSignature = options.recipientSignature;
+
+    this._signedChainId = metadata?._signedChainId;
   }
 
   static async create(options: PermitV2Options) {
@@ -151,14 +164,23 @@ export class PermitV2 implements PermitV2Interface {
    * @param {SerializedPermitV2} - Permit structure excluding classes
    * @returns {PermitV2} - New instance of PermitV2 class
    */
-  static deserialize = ({ sealingPair, ...permit }: SerializedPermitV2) => {
-    return new PermitV2({
-      ...permit,
-      sealingPair: new SealingKey(
-        sealingPair.privateKey,
-        sealingPair.publicKey,
-      ),
-    });
+  static deserialize = ({
+    _signedChainId,
+    sealingPair,
+    ...permit
+  }: SerializedPermitV2) => {
+    return new PermitV2(
+      {
+        ...permit,
+        sealingPair: new SealingKey(
+          sealingPair.privateKey,
+          sealingPair.publicKey,
+        ),
+      },
+      {
+        _signedChainId,
+      },
+    );
   };
 
   static validate = (permit: PermitV2) => {
@@ -218,6 +240,7 @@ export class PermitV2 implements PermitV2Interface {
     const { sealingPair, ...permit } = this.getInterface();
     return {
       ...permit,
+      _signedChainId: this._signedChainId,
       sealingPair: {
         publicKey: sealingPair.publicKey,
         privateKey: sealingPair.privateKey,
@@ -336,12 +359,19 @@ export class PermitV2 implements PermitV2Interface {
     if (this.type === "recipient") {
       this.recipientSignature = signature;
     }
+
+    this._signedChainId = chainId;
   };
 
   /**
-   * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
+   * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain.
+   * Useful when not using `SealedItem` structs and need to unseal an individual ciphertext.
    */
   unsealCiphertext = (ciphertext: string): bigint => {
+    // Early exit with mock unseal if interacting with hardhat network
+    if (chainIsHardhat(this._signedChainId))
+      return hardhatMockUnseal(ciphertext);
+
     return this.sealingPair.unseal(ciphertext);
   };
 
@@ -358,7 +388,10 @@ export class PermitV2 implements PermitV2Interface {
   unseal<T>(item: T) {
     // SealedItem
     if (isSealedItem(item)) {
-      const bn = this.sealingPair.unseal(item.data);
+      const bn = chainIsHardhat(this._signedChainId)
+        ? hardhatMockUnseal(item.data)
+        : this.sealingPair.unseal(item.data);
+
       if (isSealedBool(item)) {
         // Return a boolean for SealedBool
         return Boolean(bn).valueOf() as any;

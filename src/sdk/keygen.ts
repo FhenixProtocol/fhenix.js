@@ -2,7 +2,7 @@ import {
   TfheClientKey,
   TfheConfigBuilder,
   TfheCompactPublicKey,
-} from "../lib/esm/sdk/fhe/tfhe";
+} from "./fhe/tfhe";
 
 export const createTfheKeypair = () => {
   // const block_params = new ShortintParameters(

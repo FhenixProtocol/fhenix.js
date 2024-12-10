@@ -82,21 +82,21 @@ export type EncryptableAddress = {
 };
 
 export const Encryptable = {
-  bool: (data: EncryptableBool["data"], securityZone?: number) =>
+  bool: (data: EncryptableBool["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.bool }) as EncryptableBool,
-  uint8: (data: EncryptableUint8["data"], securityZone?: number) =>
+  uint8: (data: EncryptableUint8["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.uint8 }) as EncryptableUint8,
-  uint16: (data: EncryptableUint16["data"], securityZone?: number) =>
+  uint16: (data: EncryptableUint16["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.uint16 }) as EncryptableUint16,
-  uint32: (data: EncryptableUint32["data"], securityZone?: number) =>
+  uint32: (data: EncryptableUint32["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.uint32 }) as EncryptableUint32,
-  uint64: (data: EncryptableUint64["data"], securityZone?: number) =>
+  uint64: (data: EncryptableUint64["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.uint64 }) as EncryptableUint64,
-  uint128: (data: EncryptableUint128["data"], securityZone?: number) =>
+  uint128: (data: EncryptableUint128["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.uint128 }) as EncryptableUint128,
-  uint256: (data: EncryptableUint256["data"], securityZone?: number) =>
+  uint256: (data: EncryptableUint256["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.uint256 }) as EncryptableUint256,
-  address: (data: EncryptableAddress["data"], securityZone?: number) =>
+  address: (data: EncryptableAddress["data"], securityZone = 0) =>
     ({ data, securityZone, utype: FheUType.address }) as EncryptableAddress,
 } as const;
 
@@ -144,7 +144,7 @@ export function isEncryptableItem(value: any): value is EncryptableItem {
   return (
     typeof value === "object" &&
     value !== null &&
-    typeof value.data === "string" &&
+    ["string", "number", "bigint", "boolean"].includes(typeof value.data) &&
     typeof value.securityZone === "number" &&
     FheAllUTypes.includes(value.utype)
   );
@@ -258,7 +258,7 @@ export interface AbstractSigner {
  */
 export type PermitV2Interface = {
   /**
-   * Name for this permit, only for organization and UX
+   * Name for this permit, for organization and UI usage, not included in signature.
    */
   name: string;
   /**
@@ -320,6 +320,19 @@ export type PermitV2Interface = {
   recipientSignature: string;
 };
 
+/**
+ * Optional additional metadata of a PermitV2
+ * Can be passed into the constructor, but not necessary
+ * Useful for deserialization
+ */
+export type PermitV2Metadata = {
+  /**
+   * Chain that this permit was signed on. In part used for mock encrypt/unseal on hardhat network.
+   * Should not be set manually, included in metadata as part of serialization flows.
+   */
+  _signedChainId: string | undefined;
+};
+
 export type PickPartial<T, F extends keyof T> = Expand<
   Omit<T, F> & Partial<Pick<T, F>>
 >;
@@ -371,12 +384,13 @@ export type PermitV2Options =
       }
     >;
 
-export type SerializedPermitV2 = Omit<PermitV2Interface, "sealingPair"> & {
-  sealingPair: {
-    privateKey: string;
-    publicKey: string;
+export type SerializedPermitV2 = Omit<PermitV2Interface, "sealingPair"> &
+  PermitV2Metadata & {
+    sealingPair: {
+      privateKey: string;
+      publicKey: string;
+    };
   };
-};
 
 /**
  * A type representing the PermissionV2 struct that is passed to PermissionedV2.sol to grant encrypted data access.

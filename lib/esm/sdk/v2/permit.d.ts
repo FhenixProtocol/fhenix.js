@@ -1,9 +1,9 @@
-import { AbstractSigner, MappedUnsealedTypes, PermissionV2, PermitV2Interface, PermitV2Options, SerializedPermitV2 } from "./types";
+import { AbstractSigner, MappedUnsealedTypes, PermissionV2, PermitV2Interface, PermitV2Metadata, PermitV2Options, SerializedPermitV2 } from "./types";
 import { PermitV2SignaturePrimaryType } from "./permit.generate";
 import { SealingKey } from "../sealing";
-export declare class PermitV2 implements PermitV2Interface {
+export declare class PermitV2 implements PermitV2Interface, PermitV2Metadata {
     /**
-     * Name for this permit, only for organization and UX
+     * Name for this permit, for organization and UI usage, not included in signature.
      */
     name: string;
     /**
@@ -63,7 +63,12 @@ export declare class PermitV2 implements PermitV2Interface {
      * ** required for shared permits **
      */
     recipientSignature: string;
-    constructor(options: PermitV2Interface);
+    /**
+     * Chain that this permit was signed on. In part used for mock encrypt/unseal on hardhat network.
+     * Should not be set manually, included in metadata as part of serialization flows.
+     */
+    _signedChainId: string | undefined;
+    constructor(options: PermitV2Interface, metadata?: Partial<PermitV2Metadata>);
     static create(options: PermitV2Options): Promise<PermitV2>;
     static createAndSign(options: PermitV2Options, chainId: string | undefined, signer: AbstractSigner | undefined): Promise<PermitV2>;
     updateName: (name: string) => void;
@@ -74,7 +79,7 @@ export declare class PermitV2 implements PermitV2Interface {
      * @param {SerializedPermitV2} - Permit structure excluding classes
      * @returns {PermitV2} - New instance of PermitV2 class
      */
-    static deserialize: ({ sealingPair, ...permit }: SerializedPermitV2) => PermitV2;
+    static deserialize: ({ _signedChainId, sealingPair, ...permit }: SerializedPermitV2) => PermitV2;
     static validate: (permit: PermitV2) => import("zod").SafeParseReturnType<{
         type: "recipient" | "self" | "sharing";
         sealingPair: {
@@ -162,7 +167,8 @@ export declare class PermitV2 implements PermitV2Interface {
      */
     sign: (chainId: string | undefined, signer: AbstractSigner | undefined) => Promise<void>;
     /**
-     * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
+     * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain.
+     * Useful when not using `SealedItem` structs and need to unseal an individual ciphertext.
      */
     unsealCiphertext: (ciphertext: string) => bigint;
     /**

@@ -4,7 +4,6 @@ import { InitParams, SdkStore } from "./sdk.store.js";
 import { EncryptedNumber, EncryptionTypes } from "../types.js";
 declare function encrypt<T>(item: T): MappedEncryptedTypes<T>;
 declare function encrypt<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
-declare function encrypt<T extends any[]>(...item: [...T]): [...MappedEncryptedTypes<T>];
 /**
  * Uses the privateKey of `permit.sealingPair` to recursively unseal any contained `SealedItems`.
  * If `item` is a single `SealedItem` it will be individually.

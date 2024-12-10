@@ -40,15 +40,16 @@ export type SdkStore = SdkStoreProviderInitialization & SdkStoreSignerInitializa
     accessRequirements: PermitV2AccessRequirements;
 };
 export declare const _sdkStore: import("zustand/vanilla").StoreApi<SdkStore>;
-export declare const _store_getFheKey: (chainId: string | undefined, securityZone: number | undefined) => TfheCompactPublicKey | undefined;
-export declare const _store_getConnectedChainFheKey: (securityZone: number | undefined) => TfheCompactPublicKey | undefined;
+export declare const _store_chainId: () => string | undefined;
+export declare const _store_getFheKey: (chainId: string | undefined, securityZone?: number) => TfheCompactPublicKey | undefined;
+export declare const _store_getConnectedChainFheKey: (securityZone?: number) => TfheCompactPublicKey | undefined;
 export declare const _store_setFheKey: (chainId: string | undefined, securityZone: number | undefined, fheKey: TfheCompactPublicKey | undefined) => void;
 export type InitParams = {
     provider: AbstractProvider;
     signer?: AbstractSigner;
     securityZones?: number[];
 } & PermitV2AccessRequirementsParams;
-export declare const _store_initialize: (init: InitParams) => Promise<void>;
+export declare const _store_initialize: (params: InitParams) => Promise<void>;
 /**
  * Retrieves the FHE public key from the provider.
  * If the key already exists in the store it is returned, else it is fetched, stored, and returned

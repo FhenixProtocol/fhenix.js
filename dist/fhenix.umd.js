@@ -5036,6 +5036,54 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   }
   /**
    */
+  class TfheConfigBuilder {
+      static __wrap(ptr) {
+          ptr = ptr >>> 0;
+          const obj = Object.create(TfheConfigBuilder.prototype);
+          obj.__wbg_ptr = ptr;
+          return obj;
+      }
+      __destroy_into_raw() {
+          const ptr = this.__wbg_ptr;
+          this.__wbg_ptr = 0;
+          return ptr;
+      }
+      free() {
+          const ptr = this.__destroy_into_raw();
+          wasm.__wbg_tfheconfigbuilder_free(ptr);
+      }
+      /**
+       * @returns {TfheConfigBuilder}
+       */
+      static default() {
+          const ret = wasm.tfheconfigbuilder_default();
+          return TfheConfigBuilder.__wrap(ret);
+      }
+      /**
+       * @returns {TfheConfigBuilder}
+       */
+      static default_with_small_encryption() {
+          const ret = wasm.tfheconfigbuilder_default_with_small_encryption();
+          return TfheConfigBuilder.__wrap(ret);
+      }
+      /**
+       * @returns {TfheConfigBuilder}
+       */
+      static default_with_big_encryption() {
+          const ret = wasm.tfheconfigbuilder_default();
+          return TfheConfigBuilder.__wrap(ret);
+      }
+      /**
+       * @returns {TfheConfig}
+       */
+      build() {
+          const ptr = this.__destroy_into_raw();
+          const ret = wasm.tfheconfigbuilder_build(ptr);
+          return TfheConfig.__wrap(ret);
+      }
+  }
+  /**
+   */
   class TfhePublicKey {
       static __wrap(ptr) {
           ptr = ptr >>> 0;
@@ -5549,7 +5597,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           return new Uint8Array();
       return new Uint8Array(arr.map((byte) => parseInt(byte, 16)));
   };
-  const toHexString = (bytes) => bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "");
+  const toHexString$1 = (bytes) => bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "");
   function toBigInt(value) {
       return ethersToBigInt(value);
   }
@@ -5661,6 +5709,43 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       // Convert the number to a hexadecimal string and pad it to 64 characters (32 bytes)
       return value.toString(16).padStart(64, "0");
   }
+  // Uint8Array conversions
+  const stringToUint8Array = (value) => {
+      return new Uint8Array(value.split("").map((c) => c.charCodeAt(0)));
+  };
+  function bigintToUint8Array(bigNum) {
+      const byteLength = 32;
+      const byteArray = new Uint8Array(byteLength);
+      // Create a BigInt mask for each byte
+      const mask = BigInt(0xff);
+      // Initialize an index to start from the end of the array
+      for (let i = 0; i < byteLength; i++) {
+          // Extract the last byte and assign it to the corresponding position in the array
+          byteArray[byteLength - 1 - i] = Number(bigNum & mask);
+          // Shift bigint right by 8 bits to process the next byte in the next iteration
+          bigNum >>= BigInt(8);
+      }
+      return byteArray;
+  }
+  // HARDHAT MOCKS
+  // Mock FHE operations are automatically injected on the hardhat network
+  // The utility functions allow the client / sdk to interact with the mocked FHE ops
+  const chainIsHardhat = (chainId) => {
+      if (chainId == null)
+          return false;
+      return parseInt(chainId) === 31337;
+  };
+  const hardhatMockUnseal = (value) => {
+      let result = BigInt(0);
+      for (const byteArrayItem of stringToUint8Array(value)) {
+          result = (result << BigInt(8)) + BigInt(byteArrayItem);
+      }
+      return result;
+  };
+  const hardhatMockEncrypt = (value, securityZone = 0) => ({
+      data: bigintToUint8Array(BigInt(value)),
+      securityZone: securityZone || 0,
+  });
 
   /**
    * An enumeration of supported encryption types.
@@ -8323,7 +8408,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           ciphertext: naclUtilExports.encodeBase64(encryptedMessage),
       };
       // mimicking encoding from the chain
-      return toHexString(Buffer.from(JSON.stringify(output)));
+      return toHexString$1(Buffer.from(JSON.stringify(output)));
   };
   /**
    * Asynchronously generates a new SealingKey.
@@ -8333,7 +8418,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
    */
   const GenerateSealingKey = async () => {
       const sodiumKeypair = naclFastExports.box.keyPair();
-      return new SealingKey(toHexString(sodiumKeypair.secretKey), toHexString(sodiumKeypair.publicKey));
+      return new SealingKey(toHexString$1(sodiumKeypair.secretKey), toHexString$1(sodiumKeypair.publicKey));
   };
 
   const PERMIT_PREFIX = "Fhenix_saved_permit_";
@@ -9112,6 +9197,24 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           return encrypt$1(value, fhePublicKey, type, securityZone);
       }
   }
+
+  const createTfheKeypair = () => {
+      // const block_params = new ShortintParameters(
+      //   ShortintParametersName.PARAM_MESSAGE_2_CARRY_2_COMPACT_PK_PBS_KS,
+      // );
+      const config = TfheConfigBuilder.default()
+          //..(block_params)
+          .build();
+      const clientKey = TfheClientKey.generate(config);
+      let publicKey = TfheCompactPublicKey.new(clientKey);
+      publicKey = TfheCompactPublicKey.deserialize(publicKey.serialize());
+      return { clientKey, publicKey };
+  };
+  const createTfhePublicKey = () => {
+      const { publicKey } = createTfheKeypair();
+      return toHexString(publicKey.serialize());
+  };
+  const toHexString = (bytes) => bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "");
 
   /* Do NOT modify this file; see /src.ts/_admin/update-version.ts */
   /**
@@ -9923,20 +10026,20 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       FheUType.address,
   ];
   const Encryptable = {
-      bool: (data, securityZone) => ({ data, securityZone, utype: FheUType.bool }),
-      uint8: (data, securityZone) => ({ data, securityZone, utype: FheUType.uint8 }),
-      uint16: (data, securityZone) => ({ data, securityZone, utype: FheUType.uint16 }),
-      uint32: (data, securityZone) => ({ data, securityZone, utype: FheUType.uint32 }),
-      uint64: (data, securityZone) => ({ data, securityZone, utype: FheUType.uint64 }),
-      uint128: (data, securityZone) => ({ data, securityZone, utype: FheUType.uint128 }),
-      uint256: (data, securityZone) => ({ data, securityZone, utype: FheUType.uint256 }),
-      address: (data, securityZone) => ({ data, securityZone, utype: FheUType.address }),
+      bool: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.bool }),
+      uint8: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.uint8 }),
+      uint16: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.uint16 }),
+      uint32: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.uint32 }),
+      uint64: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.uint64 }),
+      uint128: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.uint128 }),
+      uint256: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.uint256 }),
+      address: (data, securityZone = 0) => ({ data, securityZone, utype: FheUType.address }),
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function isEncryptableItem(value) {
       return (typeof value === "object" &&
           value !== null &&
-          typeof value.data === "string" &&
+          ["string", "number", "bigint", "boolean"].includes(typeof value.data) &&
           typeof value.securityZone === "number" &&
           FheAllUTypes.includes(value.utype));
   }
@@ -14436,7 +14539,12 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   class PermitV2 {
-      constructor(options) {
+      constructor(options, metadata) {
+          /**
+           * Chain that this permit was signed on. In part used for mock encrypt/unseal on hardhat network.
+           * Should not be set manually, included in metadata as part of serialization flows.
+           */
+          this._signedChainId = undefined;
           this.updateName = (name) => {
               this.name = name;
           };
@@ -14492,6 +14600,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
               const { sealingPair, ...permit } = this.getInterface();
               return {
                   ...permit,
+                  _signedChainId: this._signedChainId,
                   sealingPair: {
                       publicKey: sealingPair.publicKey,
                       privateKey: sealingPair.privateKey,
@@ -14574,11 +14683,16 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
               if (this.type === "recipient") {
                   this.recipientSignature = signature;
               }
+              this._signedChainId = chainId;
           };
           /**
-           * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain
+           * Use the privateKey of `permit.sealingPair` to unseal `ciphertext` returned from the Fhenix chain.
+           * Useful when not using `SealedItem` structs and need to unseal an individual ciphertext.
            */
           this.unsealCiphertext = (ciphertext) => {
+              // Early exit with mock unseal if interacting with hardhat network
+              if (chainIsHardhat(this._signedChainId))
+                  return hardhatMockUnseal(ciphertext);
               return this.sealingPair.unseal(ciphertext);
           };
           /**
@@ -14665,6 +14779,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           this.sealingPair = options.sealingPair;
           this.issuerSignature = options.issuerSignature;
           this.recipientSignature = options.recipientSignature;
+          this._signedChainId = metadata?._signedChainId;
       }
       static async create(options) {
           const { success, data: parsed, error, } = PermitV2ParamsValidator.safeParse(options);
@@ -14688,7 +14803,9 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       unseal(item) {
           // SealedItem
           if (isSealedItem(item)) {
-              const bn = this.sealingPair.unseal(item.data);
+              const bn = chainIsHardhat(this._signedChainId)
+                  ? hardhatMockUnseal(item.data)
+                  : this.sealingPair.unseal(item.data);
               if (isSealedBool(item)) {
                   // Return a boolean for SealedBool
                   return Boolean(bn).valueOf();
@@ -14728,10 +14845,12 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
    * @param {SerializedPermitV2} - Permit structure excluding classes
    * @returns {PermitV2} - New instance of PermitV2 class
    */
-  PermitV2.deserialize = ({ sealingPair, ...permit }) => {
+  PermitV2.deserialize = ({ _signedChainId, sealingPair, ...permit }) => {
       return new PermitV2({
           ...permit,
           sealingPair: new SealingKey(sealingPair.privateKey, sealingPair.publicKey),
+      }, {
+          _signedChainId,
       });
   };
   PermitV2.validate = (permit) => {
@@ -15743,7 +15862,8 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       account: undefined,
   }));
   // Store getters / setters
-  const _store_getFheKey = (chainId, securityZone) => {
+  const _store_chainId = () => _sdkStore.getState().chainId;
+  const _store_getFheKey = (chainId, securityZone = 0) => {
       if (chainId == null || securityZone == null)
           return undefined;
       const serialized = _sdkStore.getState().fheKeys[chainId]?.[securityZone];
@@ -15751,7 +15871,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           return undefined;
       return TfheCompactPublicKey.deserialize(serialized);
   };
-  const _store_getConnectedChainFheKey = (securityZone) => {
+  const _store_getConnectedChainFheKey = (securityZone = 0) => {
       const state = _sdkStore.getState();
       if (securityZone == null)
           return undefined;
@@ -15777,8 +15897,8 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
           throw new Error("sdk :: getChainIdFromProvider :: provider.getChainId returned a null result, ensure that your provider is connected to a network");
       return chainId;
   };
-  const _store_initialize = async (init) => {
-      const { provider, signer, securityZones = [0], contracts: contractRequirements = [], projects: projectRequirements = [], } = init;
+  const _store_initialize = async (params) => {
+      const { provider, signer, securityZones = [0], contracts: contractRequirements = [], projects: projectRequirements = [], } = params;
       _sdkStore.setState({
           providerInitialized: false,
           signerInitialized: false,
@@ -15810,8 +15930,8 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
               fheKeysInitialized: false,
           });
       }
-      // FHE KEYS
-      if (!_sdkStore.getState().fheKeysInitialized) {
+      // Fetch FHE keys (skipped if hardhat)
+      if (!chainIsHardhat(chainId) && !_sdkStore.getState().fheKeysInitialized) {
           await Promise.all(securityZones.map((securityZone) => _store_fetchFheKey(chainId, provider, securityZone)));
       }
       _sdkStore.setState({ fheKeysInitialized: true });
@@ -16012,6 +16132,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   // Encrypt
   /**
    * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
+   * Useful when not using `Encryptable` utility structures.
    * @param {number} value - The numeric value to encrypt.
    * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
    * @param securityZone - The security zone for which to encrypt the value (default 0).
@@ -16020,6 +16141,9 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   const encryptValue = (value, type, securityZone = 0) => {
       const state = _sdkStore.getState();
       _checkSignerInitialized(state, encryptValue.name);
+      // Early exit with mock encrypted value if chain is hardhat
+      if (chainIsHardhat(state.chainId))
+          return hardhatMockEncrypt(BigInt(value));
       const fhePublicKey = _store_getFheKey(state.chainId, securityZone);
       if (fhePublicKey == null)
           throw new Error(`encryptValue :: fheKey not found for chain <${state.chainId}> and securityZone <${securityZone}>`);
@@ -16059,6 +16183,9 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
       }
       // EncryptableItem
       if (isEncryptableItem(item)) {
+          // Early exit with mock encrypted value if chain is hardhat
+          if (chainIsHardhat(_store_chainId()))
+              return hardhatMockEncrypt(BigInt(item.data));
           const fhePublicKey = _store_getConnectedChainFheKey(item.securityZone ?? 0);
           if (fhePublicKey == null)
               throw new Error("encrypt :: fheKey for current chain not found");
@@ -16170,6 +16297,8 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
     GenerateSealingKey: GenerateSealingKey,
     PermitV2: PermitV2,
     SealingKey: SealingKey,
+    createTfheKeypair: createTfheKeypair,
+    createTfhePublicKey: createTfhePublicKey,
     fhenixsdk: fhenixsdk,
     generatePermit: generatePermit,
     getAllExistingPermits: getAllExistingPermits,
@@ -16188,6 +16317,8 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   exports.GenerateSealingKey = GenerateSealingKey;
   exports.PermitV2 = PermitV2;
   exports.SealingKey = SealingKey;
+  exports.createTfheKeypair = createTfheKeypair;
+  exports.createTfhePublicKey = createTfhePublicKey;
   exports.fhenixjs = fhenix;
   exports.fhenixsdk = fhenixsdk;
   exports.generatePermit = generatePermit;

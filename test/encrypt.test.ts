@@ -9,7 +9,6 @@ import {
   TfheClientKey,
   TfheCompactPublicKey,
 } from "../lib/esm/sdk/fhe/fhe";
-import { createTfheKeypair } from "./keygen";
 import {
   encrypt_uint8,
   encrypt_uint16,
@@ -22,6 +21,7 @@ import {
 } from "../lib/esm/sdk/encrypt";
 import { EncryptionTypes } from "../lib/esm";
 import { expect, describe, it, beforeAll } from "vitest";
+import { createTfheKeypair } from "../src";
 
 describe("encrypt_uint8", () => {
   let clientKey: TfheClientKey;

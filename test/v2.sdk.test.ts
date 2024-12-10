@@ -5,7 +5,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import { createTfhePublicKey } from "./keygen";
 import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import {
@@ -23,6 +22,7 @@ import {
   PermissionV2,
   permitStore,
   EncryptionTypes,
+  createTfhePublicKey,
 } from "../src";
 import { getAddress } from "ethers";
 import {

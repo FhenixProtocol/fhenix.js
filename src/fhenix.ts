@@ -24,6 +24,6 @@ export {
 export * from "./extensions/access_control/index.js";
 
 export { SealingKey, GenerateSealingKey } from "./sdk/sealing.js";
-export { createTfhePublicKey } from "./sdk/keygen.js";
+export { createTfheKeypair, createTfhePublicKey } from "./sdk/keygen.js";
 
 export * from "./sdk/v2";

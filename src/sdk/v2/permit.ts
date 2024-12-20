@@ -4,7 +4,7 @@ import {
   AbstractSigner,
   isSealedAddress,
   isSealedBool,
-  isSealedItem,
+  getAsSealedItem,
   isSealedUint,
   MappedUnsealedTypes,
   PermissionV2,
@@ -387,20 +387,21 @@ export class PermitV2 implements PermitV2Interface, PermitV2Metadata {
   unseal<T extends any[]>(item: [...T]): [...MappedUnsealedTypes<T>];
   unseal<T>(item: T) {
     // SealedItem
-    if (isSealedItem(item)) {
+    const sealedItem = getAsSealedItem(item);
+    if (sealedItem != null) {
       const bn = chainIsHardhat(this._signedChainId)
-        ? hardhatMockUnseal(item.data)
-        : this.sealingPair.unseal(item.data);
+        ? hardhatMockUnseal(sealedItem.data)
+        : this.sealingPair.unseal(sealedItem.data);
 
-      if (isSealedBool(item)) {
+      if (isSealedBool(sealedItem)) {
         // Return a boolean for SealedBool
         return Boolean(bn).valueOf() as any;
       }
-      if (isSealedAddress(item)) {
+      if (isSealedAddress(sealedItem)) {
         // Return a string for SealedAddress
         return getAddress(`0x${bn.toString(16).slice(-40)}`) as any;
       }
-      if (isSealedUint(item)) {
+      if (isSealedUint(sealedItem)) {
         // Return a bigint for SealedUint
         return bn as any;
       }

@@ -38,6 +38,7 @@ import {
   InitParams,
 } from "../lib/esm/sdk/v2/sdk.store";
 import { FheUType } from "../lib/esm/sdk/v2/types";
+import { Result } from "../src/sdk/v2/types";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;
@@ -56,14 +57,14 @@ describe("Sdk Tests", () => {
   const uniswapProjectId = "UNISWAP";
 
   const initSdkWithBob = async () => {
-    await fhenixsdk.initialize({
+    return fhenixsdk.initialize({
       provider: bobProvider,
       signer: bobSigner,
       projects: [counterProjectId],
     });
   };
   const initSdkWithAda = async () => {
-    await fhenixsdk.initialize({
+    return fhenixsdk.initialize({
       provider: adaProvider,
       signer: adaSigner,
       projects: [counterProjectId],
@@ -105,85 +106,53 @@ describe("Sdk Tests", () => {
     expect(fhenixsdk.store.getState().signerInitialized).toEqual(true);
     expect(fhenixsdk.store.getState().fheKeysInitialized).toEqual(true);
 
-    expect(
-      fhenixsdk.initialize({
-        // provider: bobProvider,
-        // signer: bobSigner,
-      } as unknown as InitParams),
-    ).rejects.toThrow(
+    const initWithoutProviderResult = await fhenixsdk.initialize({
+      // provider: bobProvider,
+      // signer: bobSigner,
+    } as unknown as InitParams);
+    expect(initWithoutProviderResult.success).toEqual(false);
+    expect(initWithoutProviderResult.error).toEqual(
       "initialize :: missing provider - Please provide an AbstractProvider interface",
     );
-    expect(
-      fhenixsdk.initialize({
-        provider: bobProvider,
-        signer: bobSigner,
-        securityZones: [],
-      } as unknown as InitParams),
-    ).rejects.toThrow(
+
+    const initWithoutSecurityZonesResult = await fhenixsdk.initialize({
+      provider: bobProvider,
+      signer: bobSigner,
+      securityZones: [],
+    } as unknown as InitParams);
+    expect(initWithoutSecurityZonesResult.success).toEqual(false);
+    expect(initWithoutSecurityZonesResult.error).toEqual(
       "initialize :: a list of securityZones was provided, but it is empty",
     );
   });
 
   it("re-initialize (change account)", async () => {
-    await initSdkWithBob();
-
-    // Bob doesn't have an active permit before it is created
-
-    let bobFetchedPermit = await fhenixsdk.getPermit();
-    expect(bobFetchedPermit.success).toEqual(false);
-    expect(bobFetchedPermit.error).toEqual(
-      "getPermit :: active permit not found",
-    );
-
-    const bobCreatedPermit = await fhenixsdk.createPermit({
-      type: "self",
-      issuer: bobAddress,
-      projects: [counterProjectId],
-    });
+    const bobPermit = (await initSdkWithBob())!;
+    expect(bobPermit.success).toEqual(true);
+    expect(bobPermit.data).to.not.equal(undefined);
 
     // Bob's new permit is the active permit
 
-    bobFetchedPermit = await fhenixsdk.getPermit();
+    let bobFetchedPermit = await fhenixsdk.getPermit();
     expect(bobFetchedPermit.success).toEqual(true);
-    expect(bobFetchedPermit.data?.getHash()).toEqual(
-      bobCreatedPermit.getHash(),
-    );
+    expect(bobFetchedPermit.data?.getHash()).toEqual(bobPermit.data?.getHash());
 
-    await initSdkWithAda();
+    const adaPermit = (await initSdkWithAda())!;
+    expect(adaPermit.success).toEqual(true);
+    expect(adaPermit.data).to.not.equal(undefined);
 
     // Ada does not have an active permit
 
-    let adaFetchedPermit = await fhenixsdk.getPermit();
-    expect(adaFetchedPermit.success).toEqual(false);
-    expect(adaFetchedPermit.error).toEqual(
-      "getPermit :: active permit not found",
-    );
-
-    const adaCreatedPermit = await fhenixsdk.createPermit({
-      type: "self",
-      issuer: adaAddress,
-      projects: [counterProjectId],
-    });
-
-    // Adas active permit set
-
-    adaFetchedPermit = await fhenixsdk.getPermit();
+    const adaFetchedPermit = await fhenixsdk.getPermit();
     expect(adaFetchedPermit.success).toEqual(true);
-    expect(adaFetchedPermit.data?.getHash()).toEqual(
-      adaCreatedPermit.getHash(),
-    );
+    expect(adaFetchedPermit.data?.getHash()).toEqual(adaPermit.data?.getHash());
 
     // Switch back to bob
 
-    await initSdkWithBob();
-
-    // Bob's active permit is pulled from the store and exists
-
-    bobFetchedPermit = await fhenixsdk.getPermit();
+    // Bob's active permit is pulled from the store during init and exists
+    bobFetchedPermit = (await initSdkWithBob()) as Result<PermitV2>;
     expect(bobFetchedPermit.success).toEqual(true);
-    expect(bobFetchedPermit.data?.getHash()).toEqual(
-      bobCreatedPermit.getHash(),
-    );
+    expect(bobFetchedPermit.data?.getHash()).toEqual(bobPermit.data?.getHash());
   });
 
   it("encrypt", async () => {
@@ -198,7 +167,7 @@ describe("Sdk Tests", () => {
     const PermissionSlot = "permission" as const;
 
     const injectedPermission = fhenixsdk.encrypt(PermissionSlot);
-    expectTypeOf(injectedPermission).toEqualTypeOf<PermissionV2>();
+    expectTypeOf(injectedPermission.data!).toEqualTypeOf<PermissionV2>();
 
     const nestedEncrypt = fhenixsdk.encrypt([
       PermissionSlot,
@@ -215,7 +184,7 @@ describe("Sdk Tests", () => {
     ];
 
     expectTypeOf<Readonly<ExpectedEncryptedType>>().toEqualTypeOf(
-      nestedEncrypt,
+      nestedEncrypt.data!,
     );
   });
 
@@ -271,24 +240,24 @@ describe("Sdk Tests", () => {
     const bobsPermitsDumped =
       dumped["fhenixjs-permits"]["state"]["permits"][bobAddress];
     expect(bobsPermitsDumped).to.have.keys(
-      permit1.getHash(),
-      permit2.getHash(),
+      permit1?.data?.getHash() ?? "permit1Hash",
+      permit2?.data?.getHash() ?? "permit2Hash",
     );
 
     // ActivePermit
     expect(
       dumped["fhenixjs-permits"]["state"]["activePermitHash"][bobAddress],
-    ).toEqual(permit2.getHash());
+    ).toEqual(permit2?.data?.getHash());
   });
   it("createPermit", async () => {
-    expect(
-      fhenixsdk.createPermit({
-        type: "self",
-        issuer: bobAddress,
-        projects: [counterProjectId],
-      }),
-    ).rejects.toThrow(
-      "createPermit :: fhenixsdk provider not initialized, use `fhenixsdk.initialize(...)` with a valid AbstractProvider",
+    const createPermitWithoutInitResult = await fhenixsdk.createPermit({
+      type: "self",
+      issuer: bobAddress,
+      projects: [counterProjectId],
+    });
+    expect(createPermitWithoutInitResult.success).toEqual(false);
+    expect(createPermitWithoutInitResult.error).toEqual(
+      "createPermit :: fhenixsdk not initialized. Use `fhenixsdk.initialize(...)`.",
     );
 
     await initSdkWithBob();
@@ -301,17 +270,19 @@ describe("Sdk Tests", () => {
     // Permit established in store
 
     const storePermitSerialized =
-      permitStore.store.getState().permits[bobAddress]?.[permit.getHash()];
+      permitStore.store.getState().permits[bobAddress]?.[
+        permit.data!.getHash()
+      ];
     expect(storePermitSerialized).to.not.be.null;
 
     const storePermit = PermitV2.deserialize(storePermitSerialized!);
-    expect(storePermit.getHash()).toEqual(permit.getHash());
+    expect(storePermit.getHash()).toEqual(permit.data?.getHash());
 
     // Is active permit
 
     const storeActivePermitHash =
       permitStore.store.getState().activePermitHash[bobAddress];
-    expect(storeActivePermitHash).toEqual(permit.getHash());
+    expect(storeActivePermitHash).toEqual(permit.data?.getHash());
 
     // Creating new permit
 
@@ -323,7 +294,7 @@ describe("Sdk Tests", () => {
 
     const storeActivePermitHash2 =
       permitStore.store.getState().activePermitHash[bobAddress];
-    expect(storeActivePermitHash2).toEqual(permit2.getHash());
+    expect(storeActivePermitHash2).toEqual(permit2.data?.getHash());
   });
 
   // The remaining functions rely on the same logic:
@@ -337,12 +308,14 @@ describe("Sdk Tests", () => {
 
   it("unsealCiphertext", async () => {
     await initSdkWithBob();
-    const permit = await fhenixsdk.createPermit({
-      type: "self",
-      issuer: bobAddress,
-      contracts: [contractAddress, contractAddress2],
-      projects: [counterProjectId],
-    });
+    const permit = (
+      await fhenixsdk.createPermit({
+        type: "self",
+        issuer: bobAddress,
+        contracts: [contractAddress, contractAddress2],
+        projects: [counterProjectId],
+      })
+    ).data!;
 
     // Bool
     const boolValue = true;
@@ -442,9 +415,10 @@ describe("Sdk Tests", () => {
 
     const encryptedValue = fhenixsdk.encryptValue(5, EncryptionTypes.uint8);
     const unsealedValue = fhenixsdk.unsealCiphertext(
-      uint8ArrayToString(encryptedValue.data),
+      uint8ArrayToString(encryptedValue.data!.data),
     );
-    expect(unsealedValue).toEqual(5n);
+    expect(unsealedValue.success).toEqual(true);
+    expect(unsealedValue.data).toEqual(5n);
 
     // `unseal`
 
@@ -454,14 +428,14 @@ describe("Sdk Tests", () => {
     const [encryptedInt, encryptedBool] = fhenixsdk.encrypt([
       Encryptable.uint8(intValue),
       Encryptable.bool(boolValue),
-    ]);
+    ]).data!;
 
     const sealed = [
       { data: uint8ArrayToString(encryptedInt.data), utype: FheUType.uint8 },
       { data: uint8ArrayToString(encryptedBool.data), utype: FheUType.bool },
     ];
 
-    const [unsealedInt, unsealedBool] = fhenixsdk.unseal(sealed);
+    const [unsealedInt, unsealedBool] = fhenixsdk.unseal(sealed).data!;
     expect(unsealedInt).to.eq(BigInt(intValue));
     expect(unsealedBool).to.eq(boolValue);
   });

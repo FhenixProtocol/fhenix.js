@@ -180,45 +180,41 @@ export type MappedUnsealedTypes<T> = T extends Primitive
         [K in keyof T]: MappedUnsealedTypes<T[K]>;
       };
 
-// Type guard for any SealedItem
+// Determine if `value` is an instance of a `sealedItem` { data: string, utype: 0-5 | 12 | 13 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isSealedItem(value: any): value is SealedItem {
-  return (
+export function getAsSealedItem(value: any): SealedItem | undefined {
+  if (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === "string" &&
+    FheAllUTypes.includes(parseInt(`${value[1]}`))
+  )
+    return {
+      data: value[0],
+      utype: value[1],
+    };
+
+  if (
     typeof value === "object" &&
     value !== null &&
     typeof value.data === "string" &&
     FheAllUTypes.includes(value.utype)
-  );
+  )
+    return value as SealedItem;
+
+  return undefined;
 }
 
-// Type guard for SealedBool
-export function isSealedBool(value: SealedItem): value is SealedBool {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof value.data === "string" &&
-    value.utype === FheUType.bool
-  );
+export function isSealedBool(value: SealedItem): boolean {
+  return parseInt(`${value.utype}`) === FheUType.bool;
 }
 
-// Type guard for SealedUint
-export function isSealedUint(value: SealedItem): value is SealedUint {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof value.data === "string" &&
-    FheUintUTypes.includes(value.utype as number)
-  );
+export function isSealedUint(value: SealedItem): boolean {
+  return FheUintUTypes.includes(parseInt(`${value.utype}`));
 }
 
-// Type guard for SealedAddress
-export function isSealedAddress(value: SealedItem): value is SealedAddress {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof value.data === "string" &&
-    value.utype === FheUType.address
-  );
+export function isSealedAddress(value: SealedItem): boolean {
+  return parseInt(`${value.utype}`) === FheUType.address;
 }
 
 export type Result<T, E = string> =

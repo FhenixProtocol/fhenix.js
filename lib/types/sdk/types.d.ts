@@ -36,6 +36,8 @@ export type InstanceParams = {
     provider: SupportedProvider;
     ignoreErrors?: boolean;
     skipPubKeyFetch?: boolean;
+    cofhe?: boolean;
+    cofheURL?: string;
 };
 /**
  * Type of the constructor of the sync fhenix client

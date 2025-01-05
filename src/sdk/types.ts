@@ -41,6 +41,8 @@ export type InstanceParams = {
   provider: SupportedProvider;
   ignoreErrors?: boolean;
   skipPubKeyFetch?: boolean;
+  cofhe?: boolean;
+  cofheURL?: string;
 };
 
 /**

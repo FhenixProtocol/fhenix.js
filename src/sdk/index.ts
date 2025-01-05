@@ -40,6 +40,7 @@ import {
   MAX_UINT32,
   MAX_UINT8,
   PUBLIC_KEY_LENGTH_MIN,
+  DEFAULT_COFHE_URL
 } from "./consts.js";
 import * as tfheEncrypt from "./encrypt.js";
 import {
@@ -50,12 +51,15 @@ import {
 } from "./validation.js";
 import { InitFhevm } from "./init.js";
 
+
 abstract class FhenixClientBase {
   private permits: ContractPermits = {};
   abstract fhePublicKeys:
     | Array<Promise<TfheCompactPublicKey | undefined>>
     | Array<TfheCompactPublicKey | undefined>;
   protected provider: SupportedProvider;
+  protected isCoFHE: boolean = false;
+  protected cofheURL: string;
 
   /**
    * Creates an instance of FhenixClient.
@@ -68,6 +72,8 @@ abstract class FhenixClientBase {
     const { provider } = params;
 
     this.provider = provider;
+    this.isCoFHE = params.cofhe == true;
+    this.cofheURL = params.cofheURL ? params.cofheURL : DEFAULT_COFHE_URL;
 
     if (!this.provider) {
       throw new Error(
@@ -383,7 +389,53 @@ abstract class FhenixClientBase {
       throw new Error(`Error deserializing public key ${err}`);
     }
   }
+
+  /**
+   * Retrieves the FHE public key from FHEOS.
+   * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+   * @param securityZone - The security zone for which to retrieve the key (default 0).
+   * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
+   */
+  static async getFheKeyFromFHEOS(
+    securityZone: number = 0,
+    cofheURL: string
+  ): Promise<TfheCompactPublicKey> {
+    var publicKey = "";
+    try {
+      const res = await fetch(`${cofheURL}/GetNetworkPublickKey`, {
+        method: 'POST',
+        body: JSON.stringify({
+          SecurityZone: securityZone,
+        })
+      });
+
+      const data = await res.json();
+      publicKey = '0x'+(data as any).securityZone;
+    } catch (err) {
+      console.log(err);
+    }
+    if (typeof publicKey !== "string") {
+      throw new Error("Error using publicKey from provider: expected string");
+    }
+
+    if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
+      throw new Error(
+        `Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`,
+      );
+    }
+
+    const buff = fromHexString(publicKey);
+
+    try {
+      return TfheCompactPublicKey.deserialize(buff);
+    } catch (err) {
+      throw new Error(`Error deserializing public key ${err}`);
+    }
+  }
+
 }
+
+
 
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -392,7 +444,6 @@ abstract class FhenixClientBase {
 export class FhenixClient extends FhenixClientBase {
   private defaultSecurityZone = 0;
   public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
-
   /**
    * Creates an instance of FhenixClient.
    * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
@@ -400,7 +451,8 @@ export class FhenixClient extends FhenixClientBase {
    */
   public constructor(params: InstanceParams) {
     super(params);
-
+    
+   
     InitFhevm().catch((err: unknown) => {
       if (params.ignoreErrors) {
         return undefined;
@@ -416,7 +468,9 @@ export class FhenixClient extends FhenixClientBase {
     // By default, doesn't skip fetching the public key
     if (params.skipPubKeyFetch !== true) {
       this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
-        FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+        //FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+      (params.cofhe == true) ? FhenixClientBase.getFheKeyFromFHEOS(securityZone, this.cofheURL) : FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone)
+
       );
     }
   }
@@ -426,10 +480,18 @@ export class FhenixClient extends FhenixClientBase {
   ): Promise<TfheCompactPublicKey> {
     let fhePublicKey = await this.fhePublicKeys[securityZone];
     if (!fhePublicKey) {
-      this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(
-        this.provider,
-        securityZone,
-      );
+      if (this.isCoFHE == true) {
+        this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromFHEOS(
+          securityZone,
+          this.cofheURL
+        );
+      } else {
+        this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(
+          this.provider,
+          securityZone,
+        );
+      }
+
       fhePublicKey = await this.fhePublicKeys[securityZone];
       if (!fhePublicKey) {
         throw new Error(
@@ -620,7 +682,7 @@ export class FhenixClientSync extends FhenixClientBase {
 
     const fhePublicKeys = await Promise.all(
       securityZones.map((securityZone) =>
-        FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+        (params.cofhe == true) ? FhenixClientBase.getFheKeyFromFHEOS(securityZone, params.cofheURL ? params.cofheURL : DEFAULT_COFHE_URL) : FhenixClientBase.getFheKeyFromProvider(provider, securityZone)
       ),
     );
 
@@ -724,7 +786,6 @@ export class FhenixClientSync extends FhenixClientBase {
     securityZone: number = 0,
   ): EncryptedNumber {
     isNumber(value);
-
     let outputSize = type;
 
     const fhePublicKey = this._getPublicKey(securityZone);

@@ -5,6 +5,8 @@ declare abstract class FhenixClientBase {
     private permits;
     abstract fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> | Array<TfheCompactPublicKey | undefined>;
     protected provider: SupportedProvider;
+    protected isCoFHE: boolean;
+    protected cofheURL: string;
     /**
      * Creates an instance of FhenixClient.
      * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
@@ -145,6 +147,13 @@ declare abstract class FhenixClientBase {
      * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
      */
     static getFheKeyFromProvider(provider: SupportedProvider, securityZone?: number): Promise<TfheCompactPublicKey>;
+    /**
+     * Retrieves the FHE public key from FHEOS.
+     * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+     * @param securityZone - The security zone for which to retrieve the key (default 0).
+     * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
+     */
+    static getFheKeyFromFHEOS(securityZone: number | undefined, cofheURL: string): Promise<TfheCompactPublicKey>;
 }
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.

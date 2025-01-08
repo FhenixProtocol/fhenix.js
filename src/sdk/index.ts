@@ -30,6 +30,7 @@ import {
   Permission,
   Permit,
   PermitSigner,
+  parsePermit,
   removePermitFromLocalstorage,
   storePermitInLocalStorage,
 } from "../extensions/access_control/index.js";
@@ -293,7 +294,11 @@ abstract class FhenixClientBase {
    */
   storePermit(permit: Permit, account: string) {
     storePermitInLocalStorage(permit, account);
-    this.permits[permit.contractAddress] = permit;
+    if (typeof permit.sealingKey.unseal == "undefined") {
+      this.permits[permit.contractAddress] = (typeof permit == "string") ? parsePermit(permit) : parsePermit(JSON.stringify(permit));
+    } else {
+      this.permits[permit.contractAddress] = permit;
+    }
   }
 
   /**

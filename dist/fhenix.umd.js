@@ -8891,7 +8891,12 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
        */
       storePermit(permit, account) {
           storePermitInLocalStorage(permit, account);
-          this.permits[permit.contractAddress] = permit;
+          if (typeof permit.sealingKey.unseal == "undefined") {
+              this.permits[permit.contractAddress] = (typeof permit == "string") ? parsePermit(permit) : parsePermit(JSON.stringify(permit));
+          }
+          else {
+              this.permits[permit.contractAddress] = permit;
+          }
       }
       /**
        * Removes a stored permit for a specific contract address.
@@ -16451,6 +16456,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
     getAllPermits: getAllPermits$1,
     getPermit: getPermit$2,
     getPermitFromLocalstorage: getPermitFromLocalstorage,
+    parsePermit: parsePermit,
     permitStore: permitStore,
     removePermit: removePermit$1,
     removePermitFromLocalstorage: removePermitFromLocalstorage,
@@ -16472,6 +16478,7 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
   exports.getAllPermits = getAllPermits$1;
   exports.getPermit = getPermit$2;
   exports.getPermitFromLocalstorage = getPermitFromLocalstorage;
+  exports.parsePermit = parsePermit;
   exports.permitStore = permitStore;
   exports.removePermit = removePermit$1;
   exports.removePermitFromLocalstorage = removePermitFromLocalstorage;

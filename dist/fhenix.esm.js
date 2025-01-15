@@ -8884,7 +8884,12 @@ class FhenixClientBase {
      */
     storePermit(permit, account) {
         storePermitInLocalStorage(permit, account);
-        this.permits[permit.contractAddress] = permit;
+        if (typeof permit.sealingKey.unseal == "undefined") {
+            this.permits[permit.contractAddress] = (typeof permit == "string") ? parsePermit(permit) : parsePermit(JSON.stringify(permit));
+        }
+        else {
+            this.permits[permit.contractAddress] = permit;
+        }
     }
     /**
      * Removes a stored permit for a specific contract address.
@@ -16444,11 +16449,12 @@ var fhenix = /*#__PURE__*/Object.freeze({
   getAllPermits: getAllPermits$1,
   getPermit: getPermit$2,
   getPermitFromLocalstorage: getPermitFromLocalstorage,
+  parsePermit: parsePermit,
   permitStore: permitStore,
   removePermit: removePermit$1,
   removePermitFromLocalstorage: removePermitFromLocalstorage,
   storePermitInLocalStorage: storePermitInLocalStorage
 });
 
-export { Encryptable, EncryptionTypes, FhenixClient, FhenixClientSync, GenerateSealingKey, PermitV2, SealingKey, createTfheKeypair, createTfhePublicKey, fhenix as fhenixjs, fhenixsdk, generatePermit, getAllExistingPermits, getAllPermits$1 as getAllPermits, getPermit$2 as getPermit, getPermitFromLocalstorage, permitStore, removePermit$1 as removePermit, removePermitFromLocalstorage, storePermitInLocalStorage };
+export { Encryptable, EncryptionTypes, FhenixClient, FhenixClientSync, GenerateSealingKey, PermitV2, SealingKey, createTfheKeypair, createTfhePublicKey, fhenix as fhenixjs, fhenixsdk, generatePermit, getAllExistingPermits, getAllPermits$1 as getAllPermits, getPermit$2 as getPermit, getPermitFromLocalstorage, parsePermit, permitStore, removePermit$1 as removePermit, removePermitFromLocalstorage, storePermitInLocalStorage };
 //# sourceMappingURL=fhenix.esm.js.map

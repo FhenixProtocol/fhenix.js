@@ -16,6 +16,7 @@ import {
   PermissionV2,
   PermitV2Interface,
   PermitV2Options,
+  MappedUnsealedTypes,
 } from "./types.js";
 import { permitStore } from "./permit.store.js";
 import { isString } from "../validation.js";
@@ -43,44 +44,72 @@ import { InitFhevm } from "../init.js";
 import { PermitV2ParamsValidator } from "./permit.z.js";
 import { EncryptedNumber, EncryptionTypes } from "../types.js";
 
-const initialize = async (params: InitParams & { ignoreErrors?: boolean }) => {
+/**
+ * Initializes the `fhenixsdk` to enable encrypting input data, creating permits / permissions, and decrypting sealed outputs.
+ * Initializes `fhevm` client FHE wasm module and fetches the provided chain's FHE publicKey.
+ * If a valid signer is provided, a `permit/permission` is generated automatically
+ */
+const initialize = async (
+  params: InitParams & { ignoreErrors?: boolean; generatePermit?: boolean },
+): Promise<Result<PermitV2 | undefined>> => {
   // Initialize the fhevm
   await InitFhevm().catch((err: unknown) => {
     if (params.ignoreErrors) {
       return undefined;
     } else {
-      throw new Error(
+      return ResultErr(
         `initialize :: failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
       );
     }
   });
 
   if (params.provider == null)
-    throw new Error(
+    return ResultErr(
       "initialize :: missing provider - Please provide an AbstractProvider interface",
     );
 
   if (params.securityZones != null && params.securityZones.length === 0)
-    throw new Error(
+    return ResultErr(
       "initialize :: a list of securityZones was provided, but it is empty",
     );
 
   await _store_initialize(params);
+
+  // `generatePermit` must set to `false` to early exit here
+  if (params.generatePermit === false) return ResultOk(undefined);
+
+  // Return the existing active permit
+  const userActivePermit = getPermit();
+  if (userActivePermit.success) return userActivePermit;
+
+  // Create permit and return it
+  return createPermit();
 };
 
 /**
  * Internal reusable initialization checker
  */
-const _checkSignerInitialized = (state: SdkStore, fnName: string) => {
-  if (!state.providerInitialized)
-    throw new Error(
-      `${fnName} :: fhenixsdk provider not initialized, use \`fhenixsdk.initialize(...)\` with a valid AbstractProvider`,
+const _checkInitialized = (
+  state: SdkStore,
+  options?: { fheKeys?: boolean; provider?: boolean; signer?: boolean },
+) => {
+  if (options?.fheKeys !== false && !state.fheKeysInitialized) {
+    return ResultErr(
+      "fhenixsdk not initialized. Use `fhenixsdk.initialize(...)`.",
+    );
+  }
+
+  if (options?.provider !== false && !state.providerInitialized)
+    return ResultErr(
+      "fhenixsdk not initialized with valid provider. Use `fhenixsdk.initialize(...)` with a valid provider that satisfies `AbstractProvider`.",
     );
 
-  if (!state.signerInitialized)
-    throw new Error(
-      `${fnName} :: fhenixsdk signer not initialized, use \`fhenixsdk.initialize(...)\` with a valid AbstractSigner`,
+  if (options?.signer !== false && !state.signerInitialized)
+    return ResultErr(
+      "fhenixsdk not initialized with a valid signer. Use `fhenixsdk.initialize(...)` with a valid signer that satisfies `AbstractSigner`.",
     );
+
+  return ResultOk(null);
 };
 
 // Permit
@@ -93,11 +122,16 @@ const _checkSignerInitialized = (state: SdkStore, fnName: string) => {
  *
  * @param {PermitV2Options} options - Partial PermitV2 fields to create the Permit with, if no options provided will be filled with the defaults:
  * { type: "self", issuer: initializedUserAddress, projects: initializedProjects, contracts: initializedContracts }
- * @returns {PermitV2} - Newly created PermitV2
+ * @returns {Result<PermitV2>} - Newly created PermitV2 as a Result object
  */
-const createPermit = async (options?: PermitV2Options): Promise<PermitV2> => {
+const createPermit = async (
+  options?: PermitV2Options,
+): Promise<Result<PermitV2>> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, createPermit.name);
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${createPermit.name} :: ${initialized.error}`);
 
   const optionsWithDefaults: PermitV2Options = {
     type: "self",
@@ -107,16 +141,21 @@ const createPermit = async (options?: PermitV2Options): Promise<PermitV2> => {
     ...options,
   };
 
-  const permit = await PermitV2.createAndSign(
-    optionsWithDefaults,
-    state.chainId,
-    state.signer,
-  );
+  let permit: PermitV2;
+  try {
+    permit = await PermitV2.createAndSign(
+      optionsWithDefaults,
+      state.chainId,
+      state.signer,
+    );
+  } catch (e) {
+    return ResultErr(`${createPermit.name} :: ${e}`);
+  }
 
   permitStore.setPermit(state.account!, permit);
   permitStore.setActivePermitHash(state.account!, permit.getHash());
 
-  return permit;
+  return ResultOk(permit);
 };
 
 /**
@@ -127,16 +166,21 @@ const createPermit = async (options?: PermitV2Options): Promise<PermitV2> => {
  *
  * @param {string | PermitV2Interface} imported - Permit to import as a text string or PermitV2Interface
  */
-const importPermit = async (imported: string | PermitV2Interface) => {
+const importPermit = async (
+  imported: string | PermitV2Interface,
+): Promise<Result<PermitV2>> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, importPermit.name);
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${createPermit.name} :: ${initialized.error}`);
 
   // Import validation
   if (typeof imported === "string") {
     try {
       imported = JSON.parse(imported);
     } catch (e) {
-      throw new Error(`importPermit :: json parsing failed - ${e}`);
+      return ResultErr(`importPermit :: json parsing failed - ${e}`);
     }
   }
 
@@ -149,30 +193,37 @@ const importPermit = async (imported: string | PermitV2Interface) => {
     const errorString = Object.entries(permitParsingError.flatten().fieldErrors)
       .map(([field, err]) => `- ${field}: ${err}`)
       .join("\n");
-    throw new Error(`importPermit :: invalid permit data - ${errorString}`);
+    return ResultErr(`importPermit :: invalid permit data - ${errorString}`);
   }
   if (parsedPermit.type !== "self") {
     if (parsedPermit.issuer === state.account) parsedPermit.type = "sharing";
     else if (parsedPermit.recipient === state.account)
       parsedPermit.type = "recipient";
     else {
-      throw new Error(
+      return ResultErr(
         `importPermit :: invalid Permit - connected account <${state.account}> is not issuer or recipient`,
       );
     }
   }
 
-  const permit = await PermitV2.create(parsedPermit as PermitV2Interface);
+  let permit: PermitV2;
+  try {
+    permit = await PermitV2.create(parsedPermit as PermitV2Interface);
+  } catch (e) {
+    return ResultErr(`importPermit :: ${e}`);
+  }
 
   const { valid, error } = permit.isValid();
   if (!valid) {
-    throw new Error(
+    return ResultErr(
       `importPermit :: newly imported permit is invalid - ${error}`,
     );
   }
 
   permitStore.setPermit(state.account!, permit);
   permitStore.setActivePermitHash(state.account!, permit.getHash());
+
+  return ResultOk(permit);
 };
 
 /**
@@ -182,14 +233,22 @@ const importPermit = async (imported: string | PermitV2Interface) => {
  *
  * @param {string} hash - The `PermitV2.getHash` of the target permit.
  */
-const selectActivePermit = (hash: string) => {
+const selectActivePermit = (hash: string): Result<PermitV2> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, selectActivePermit.name);
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${selectActivePermit.name} :: ${initialized.error}`);
 
   const permit = permitStore.getPermit(state.account, hash);
-  if (permit == null) return;
+  if (permit == null)
+    return ResultErr(
+      `${selectActivePermit.name} :: Permit with hash <${hash}> not found`,
+    );
 
   permitStore.setActivePermitHash(state.account!, permit.getHash());
+
+  return ResultOk(permit);
 };
 
 /**
@@ -201,7 +260,10 @@ const selectActivePermit = (hash: string) => {
  */
 const getPermit = (hash?: string): Result<PermitV2> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, getPermit.name);
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${getPermit.name} :: ${initialized.error}`);
 
   if (hash == null) {
     const permit = permitStore.getActivePermit(state.account);
@@ -228,7 +290,8 @@ const getPermit = (hash?: string): Result<PermitV2> => {
  */
 const getPermission = (hash?: string): Result<PermissionV2> => {
   const permitResult = getPermit(hash);
-  if (!permitResult.success) return permitResult;
+  if (!permitResult.success)
+    return ResultErr(`${getPermission.name} :: ${permitResult.error}`);
 
   return ResultOk(permitResult.data.getPermission());
 };
@@ -239,7 +302,10 @@ const getPermission = (hash?: string): Result<PermissionV2> => {
  */
 const getAllPermits = (): Result<Record<string, PermitV2>> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, getAllPermits.name);
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${getAllPermits.name} :: ${initialized.error}`);
 
   return ResultOk(permitStore.getPermits(state.account));
 };
@@ -258,17 +324,25 @@ const encryptValue = (
   value: number,
   type?: EncryptionTypes,
   securityZone: number = 0,
-): EncryptedNumber => {
+): Result<EncryptedNumber> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, encryptValue.name);
+
+  // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
+  const initialized = _checkInitialized(state, {
+    provider: false,
+    signer: false,
+  });
+  if (!initialized.success)
+    return ResultErr(`${encryptValue.name} :: ${initialized.error}`);
 
   // Early exit with mock encrypted value if chain is hardhat
-  if (chainIsHardhat(state.chainId)) return hardhatMockEncrypt(BigInt(value));
+  if (chainIsHardhat(state.chainId))
+    return ResultOk(hardhatMockEncrypt(BigInt(value)));
 
   const fhePublicKey = _store_getFheKey(state.chainId, securityZone);
   if (fhePublicKey == null)
-    throw new Error(
-      `encryptValue :: fheKey not found for chain <${state.chainId}> and securityZone <${securityZone}>`,
+    return ResultErr(
+      `encryptValue :: FHE publicKey not found for chain <${state.chainId}> and securityZone <${securityZone}>`,
     );
 
   let outputSize = type;
@@ -282,29 +356,54 @@ const encryptValue = (
     } else if (value < MAX_UINT32) {
       outputSize = EncryptionTypes.uint32;
     } else {
-      throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
+      return ResultErr(
+        `encryptValue :: Encryption input must be smaller than ${MAX_UINT32}`,
+      );
     }
   }
 
-  switch (outputSize) {
-    case EncryptionTypes.uint8:
-      ValidateUintInRange(value, MAX_UINT8, 0);
-      break;
-    case EncryptionTypes.uint16:
-      ValidateUintInRange(value, MAX_UINT16, 0);
-      break;
-    case EncryptionTypes.uint32:
-      ValidateUintInRange(value, MAX_UINT32, 0);
-      break;
-    default:
+  try {
+    switch (outputSize) {
+      case EncryptionTypes.uint8:
+        ValidateUintInRange(value, MAX_UINT8, 0);
+        break;
+      case EncryptionTypes.uint16:
+        ValidateUintInRange(value, MAX_UINT16, 0);
+        break;
+      case EncryptionTypes.uint32:
+        ValidateUintInRange(value, MAX_UINT32, 0);
+        break;
+      default:
+    }
+  } catch (e) {
+    return ResultErr(`encryptValue :: outputSize :: ${e}`);
   }
 
-  return tfhe_encrypt(value, fhePublicKey, type, securityZone);
+  let encrypted: EncryptedNumber;
+  try {
+    encrypted = tfhe_encrypt(value, fhePublicKey, type, securityZone);
+  } catch (e) {
+    return ResultErr(`encryptValue :: tfhe_encrypt :: ${e}`);
+  }
+
+  return ResultOk(encrypted);
 };
 
-function encrypt<T>(item: T): MappedEncryptedTypes<T>;
-function encrypt<T extends any[]>(item: [...T]): [...MappedEncryptedTypes<T>];
+function encrypt<T>(item: T): Result<MappedEncryptedTypes<T>>;
+function encrypt<T extends any[]>(
+  item: [...T],
+): Result<[...MappedEncryptedTypes<T>]>;
 function encrypt<T>(item: T) {
+  const state = _sdkStore.getState();
+
+  // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
+  const initialized = _checkInitialized(state, {
+    provider: false,
+    signer: false,
+  });
+  if (!initialized.success)
+    return ResultErr(`${encrypt.name} :: ${initialized.error}`);
+
   // Permission
   if (item === "permission") {
     return getPermission();
@@ -314,45 +413,56 @@ function encrypt<T>(item: T) {
   if (isEncryptableItem(item)) {
     // Early exit with mock encrypted value if chain is hardhat
     if (chainIsHardhat(_store_chainId()))
-      return hardhatMockEncrypt(BigInt(item.data));
+      return ResultOk(hardhatMockEncrypt(BigInt(item.data)));
 
     const fhePublicKey = _store_getConnectedChainFheKey(item.securityZone ?? 0);
     if (fhePublicKey == null)
-      throw new Error("encrypt :: fheKey for current chain not found");
+      return ResultErr("encrypt :: fheKey for current chain not found");
 
-    // Prevent wrapping taking up too much vertical space
     // prettier-ignore
-    {
-        switch (item.utype) {
-          case FheUType.bool: return tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint8: return tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint16: return tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint32: return tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint64: return tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint128: return tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
-          case FheUType.uint256: return tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
-          case FheUType.address: return tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
-        }
+    try {
+      switch (item.utype) {
+        case FheUType.bool: return ResultOk(tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone));
+        case FheUType.uint8: return ResultOk(tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone));
+        case FheUType.uint16: return ResultOk(tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone));
+        case FheUType.uint32: return ResultOk(tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone));
+        case FheUType.uint64: return ResultOk(tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone));
+        case FheUType.uint128: return ResultOk(tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone));
+        case FheUType.uint256: return ResultOk(tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone));
+        case FheUType.address: return ResultOk(tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone));
       }
+    } catch (e) {
+      return ResultErr(`encrypt :: tfhe_encrypt_xxxx :: ${e}`)
+    }
   }
 
   // Object | Array
   if (typeof item === "object" && item !== null) {
     if (Array.isArray(item)) {
       // Array - recurse
-      return item.map((nestedItem) => encrypt(nestedItem));
+      const nestedItems = item.map((nestedItem) => encrypt(nestedItem));
+
+      // Any nested error break out
+      const nestedItemResultErr = nestedItems.find(
+        (nestedItem) => !nestedItem.success,
+      );
+      if (nestedItemResultErr) return nestedItemResultErr;
+
+      return ResultOk(nestedItems.map((nestedItem) => nestedItem.data));
     } else {
       // Object - recurse
-      const result: any = {};
+      const result: Record<string, any> = {};
       for (const key in item) {
-        result[key] = encrypt(item[key]);
+        const encryptedResult = encrypt(item[key]);
+        if (!encryptedResult.success) return encryptedResult;
+        result[key] = encryptedResult.data;
       }
-      return result;
+      return ResultOk(result);
     }
   }
 
   // Primitive
-  return item;
+  return ResultOk(item);
 }
 
 // Unseal
@@ -370,25 +480,37 @@ const unsealCiphertext = (
   ciphertext: string,
   account?: string,
   hash?: string,
-): bigint => {
+): Result<bigint> => {
   const state = _sdkStore.getState();
-  _checkSignerInitialized(state, unsealCiphertext.name);
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${getAllPermits.name} :: ${initialized.error}`);
 
   isString(ciphertext);
   const resolvedAccount = account ?? state.account;
   const resolvedHash = hash ?? permitStore.getActivePermitHash(resolvedAccount);
   if (resolvedAccount == null || resolvedHash == null) {
-    throw new Error(`PermitV2 hash not provided and active PermitV2 not found`);
+    return ResultErr(
+      `unsealCiphertext :: PermitV2 hash not provided and active PermitV2 not found`,
+    );
   }
 
   const permit = permitStore.getPermit(resolvedAccount, resolvedHash);
   if (permit == null) {
-    throw new Error(
-      `PermitV2 with account <${account}> and hash <${hash}> not found`,
+    return ResultErr(
+      `unsealCiphertext :: PermitV2 with account <${account}> and hash <${hash}> not found`,
     );
   }
 
-  return permit.unsealCiphertext(ciphertext);
+  let unsealed: bigint;
+  try {
+    unsealed = permit.unsealCiphertext(ciphertext);
+  } catch (e) {
+    return ResultErr(`unsealCiphertext :: ${e}`);
+  }
+
+  return ResultOk(unsealed);
 };
 
 /**
@@ -399,21 +521,34 @@ const unsealCiphertext = (
  * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
  * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
  */
-function unseal<T>(item: T, account?: string, hash?: string) {
+function unseal<T>(
+  item: T,
+  account?: string,
+  hash?: string,
+): Result<MappedUnsealedTypes<T>> {
   const resolvedAccount = account ?? _sdkStore.getState().account;
   const resolvedHash = hash ?? permitStore.getActivePermitHash(resolvedAccount);
   if (resolvedAccount == null || resolvedHash == null) {
-    throw new Error(`PermitV2 hash not provided and active PermitV2 not found`);
+    return ResultErr(
+      `unseal :: PermitV2 hash not provided and active PermitV2 not found`,
+    );
   }
 
   const permit = permitStore.getPermit(resolvedAccount, resolvedHash);
   if (permit == null) {
-    throw new Error(
-      `PermitV2 with account <${account}> and hash <${hash}> not found`,
+    return ResultErr(
+      `unseal :: PermitV2 with account <${account}> and hash <${hash}> not found`,
     );
   }
 
-  return permit.unseal(item);
+  let unsealed: MappedUnsealedTypes<T>;
+  try {
+    unsealed = permit.unseal(item);
+  } catch (e) {
+    return ResultErr(`unseal :: ${e}`);
+  }
+
+  return ResultOk(unsealed);
 }
 
 // Export

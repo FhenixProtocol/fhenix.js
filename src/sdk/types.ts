@@ -25,6 +25,38 @@ export enum EncryptionTypes {
 }
 
 /**
+ * Mapping of encryption types to their utype integer
+ */
+export enum FheUType {
+  bool = 13,
+  uint8 = 0,
+  uint16 = 1,
+  uint32 = 2,
+  uint64 = 3,
+  uint128 = 4,
+  uint256 = 5,
+  address = 12,
+}
+export const FheUintUTypes = [
+  FheUType.uint8,
+  FheUType.uint16,
+  FheUType.uint32,
+  FheUType.uint64,
+  FheUType.uint128,
+  FheUType.uint256,
+] as const;
+export const FheAllUTypes = [
+  FheUType.bool,
+  FheUType.uint8,
+  FheUType.uint16,
+  FheUType.uint32,
+  FheUType.uint64,
+  FheUType.uint128,
+  FheUType.uint256,
+  FheUType.address,
+] as const;
+
+/**
  * A type representing the signature for a permit.
  * Contains a public key and a signature string.
  */
@@ -132,3 +164,21 @@ export interface EncryptedUint64 extends EncryptedNumber {}
 export interface EncryptedUint128 extends EncryptedNumber {}
 export interface EncryptedUint256 extends EncryptedNumber {}
 export interface EncryptedAddress extends EncryptedNumber {}
+
+export type CoFheEncryptedBool = EncryptedNumber & {
+  uType: FheUType.bool;
+};
+
+export type CoFheInBase = {
+  securityZone: number;
+  hash: bigint;
+  signature: string;
+};
+export type CoFheInBool = CoFheInBase & { uType: FheUType.bool };
+export type CoFheInUint8 = CoFheInBase & { uType: FheUType.uint8 };
+export type CoFheInUint16 = CoFheInBase & { uType: FheUType.uint16 };
+export type CoFheInUint32 = CoFheInBase & { uType: FheUType.uint32 };
+export type CoFheInUint64 = CoFheInBase & { uType: FheUType.uint64 };
+export type CoFheInUint128 = CoFheInBase & { uType: FheUType.uint128 };
+export type CoFheInUint256 = CoFheInBase & { uType: FheUType.uint256 };
+export type CoFheInAddress = CoFheInBase & { uType: FheUType.address };

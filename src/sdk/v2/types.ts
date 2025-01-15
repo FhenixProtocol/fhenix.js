@@ -9,36 +9,10 @@ import {
   EncryptedUint128,
   EncryptedUint256,
   EncryptedAddress,
+  FheAllUTypes,
+  FheUintUTypes,
+  FheUType,
 } from "../types";
-
-export enum FheUType {
-  bool = 13,
-  uint8 = 0,
-  uint16 = 1,
-  uint32 = 2,
-  uint64 = 3,
-  uint128 = 4,
-  uint256 = 5,
-  address = 12,
-}
-export const FheUintUTypes = [
-  FheUType.uint8,
-  FheUType.uint16,
-  FheUType.uint32,
-  FheUType.uint64,
-  FheUType.uint128,
-  FheUType.uint256,
-] as const;
-export const FheAllUTypes = [
-  FheUType.bool,
-  FheUType.uint8,
-  FheUType.uint16,
-  FheUType.uint32,
-  FheUType.uint64,
-  FheUType.uint128,
-  FheUType.uint256,
-  FheUType.address,
-] as const;
 
 export type EncryptableBool = {
   data: boolean;

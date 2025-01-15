@@ -86,10 +86,10 @@ export type UnsealedItemMap<S extends SealedItem> = S extends SealedBool ? boole
 export type MappedUnsealedTypes<T> = T extends Primitive ? LiteralToPrimitive<T> : T extends SealedItem ? UnsealedItemMap<T> : {
     [K in keyof T]: MappedUnsealedTypes<T[K]>;
 };
-export declare function isSealedItem(value: any): value is SealedItem;
-export declare function isSealedBool(value: SealedItem): value is SealedBool;
-export declare function isSealedUint(value: SealedItem): value is SealedUint;
-export declare function isSealedAddress(value: SealedItem): value is SealedAddress;
+export declare function getAsSealedItem(value: any): SealedItem | undefined;
+export declare function isSealedBool(value: SealedItem): boolean;
+export declare function isSealedUint(value: SealedItem): boolean;
+export declare function isSealedAddress(value: SealedItem): boolean;
 export type Result<T, E = string> = {
     success: true;
     data: T;

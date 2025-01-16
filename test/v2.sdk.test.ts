@@ -176,13 +176,6 @@ describe("Sdk Tests", () => {
       Encryptable.uint8(10),
     ] as const);
 
-    const uint8enc = nestedEncrypt.data![3];
-    const uint8Str = `${Array.from(uint8enc.data)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")}`;
-
-    console.log("encrypted", uint8enc, uint8Str);
-
     type ExpectedEncryptedType = [
       PermissionV2,
       Readonly<{ a: EncryptedBool; b: EncryptedUint64; c: string }>,

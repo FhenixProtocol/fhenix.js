@@ -333,6 +333,11 @@ const encryptValue = (
 ): Result<EncryptedNumber> => {
   const state = _sdkStore.getState();
 
+  if (state.coFhe.enabled)
+    return ResultErr(
+      "encryptValue :: fhenixsdk initialized to interact with CoFHE. Remove `isCoFHE: true` or set to `false` in `fhenixsdk.initialize`.",
+    );
+
   // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
   const initialized = _checkInitialized(state, {
     provider: false,

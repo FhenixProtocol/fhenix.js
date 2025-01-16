@@ -7,7 +7,6 @@ import {
 } from "../utils.js";
 import { PermitV2 } from "./permit.js";
 import {
-  FheUType,
   isEncryptableItem,
   MappedEncryptedTypes,
   Result,
@@ -42,7 +41,7 @@ import {
 } from "../encrypt.js";
 import { InitFhevm } from "../init.js";
 import { PermitV2ParamsValidator } from "./permit.z.js";
-import { EncryptedNumber, EncryptionTypes } from "../types.js";
+import { EncryptedNumber, EncryptionTypes, FheUType } from "../types.js";
 
 /**
  * Initializes the `fhenixsdk` to enable encrypting input data, creating permits / permissions, and decrypting sealed outputs.

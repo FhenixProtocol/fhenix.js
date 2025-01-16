@@ -12,6 +12,14 @@ import {
   FheAllUTypes,
   FheUintUTypes,
   FheUType,
+  CoFheEncryptedAddress,
+  CoFheEncryptedBool,
+  CoFheEncryptedUint128,
+  CoFheEncryptedUint16,
+  CoFheEncryptedUint256,
+  CoFheEncryptedUint32,
+  CoFheEncryptedUint64,
+  CoFheEncryptedUint8,
 } from "../types";
 
 export type EncryptableBool = {
@@ -111,6 +119,36 @@ export type MappedEncryptedTypes<T> = T extends "permission"
       ? EncryptedItemMap<T>
       : {
           [K in keyof T]: MappedEncryptedTypes<T[K]>;
+        };
+
+// COFHE Encrypt
+export type CoFheEncryptedItemMap<E extends EncryptableItem> =
+  E extends EncryptableBool
+    ? CoFheEncryptedBool
+    : E extends EncryptableUint8
+      ? CoFheEncryptedUint8
+      : E extends EncryptableUint16
+        ? CoFheEncryptedUint16
+        : E extends EncryptableUint32
+          ? CoFheEncryptedUint32
+          : E extends EncryptableUint64
+            ? CoFheEncryptedUint64
+            : E extends EncryptableUint128
+              ? CoFheEncryptedUint128
+              : E extends EncryptableUint256
+                ? CoFheEncryptedUint256
+                : E extends EncryptableAddress
+                  ? CoFheEncryptedAddress
+                  : never;
+
+export type MappedCoFheEncryptedTypes<T> = T extends "permission"
+  ? PermissionV2
+  : T extends Primitive
+    ? LiteralToPrimitive<T>
+    : T extends EncryptableItem
+      ? CoFheEncryptedItemMap<T>
+      : {
+          [K in keyof T]: MappedCoFheEncryptedTypes<T[K]>;
         };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

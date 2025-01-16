@@ -165,20 +165,33 @@ export interface EncryptedUint128 extends EncryptedNumber {}
 export interface EncryptedUint256 extends EncryptedNumber {}
 export interface EncryptedAddress extends EncryptedNumber {}
 
-export type CoFheEncryptedBool = EncryptedNumber & {
-  uType: FheUType.bool;
-};
-
-export type CoFheInBase = {
+export type CoFheEncryptedNumber = {
   securityZone: number;
   hash: bigint;
   signature: string;
+  utype: FheUType;
 };
-export type CoFheInBool = CoFheInBase & { uType: FheUType.bool };
-export type CoFheInUint8 = CoFheInBase & { uType: FheUType.uint8 };
-export type CoFheInUint16 = CoFheInBase & { uType: FheUType.uint16 };
-export type CoFheInUint32 = CoFheInBase & { uType: FheUType.uint32 };
-export type CoFheInUint64 = CoFheInBase & { uType: FheUType.uint64 };
-export type CoFheInUint128 = CoFheInBase & { uType: FheUType.uint128 };
-export type CoFheInUint256 = CoFheInBase & { uType: FheUType.uint256 };
-export type CoFheInAddress = CoFheInBase & { uType: FheUType.address };
+export type CoFheEncryptedBool = CoFheEncryptedNumber & {
+  utype: FheUType.bool;
+};
+export type CoFheEncryptedUint8 = CoFheEncryptedNumber & {
+  utype: FheUType.uint8;
+};
+export type CoFheEncryptedUint16 = CoFheEncryptedNumber & {
+  utype: FheUType.uint16;
+};
+export type CoFheEncryptedUint32 = CoFheEncryptedNumber & {
+  utype: FheUType.uint32;
+};
+export type CoFheEncryptedUint64 = CoFheEncryptedNumber & {
+  utype: FheUType.uint64;
+};
+export type CoFheEncryptedUint128 = CoFheEncryptedNumber & {
+  utype: FheUType.uint128;
+};
+export type CoFheEncryptedUint256 = CoFheEncryptedNumber & {
+  utype: FheUType.uint256;
+};
+export type CoFheEncryptedAddress = CoFheEncryptedNumber & {
+  utype: FheUType.address;
+};

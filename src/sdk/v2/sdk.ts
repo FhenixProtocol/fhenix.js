@@ -3,6 +3,7 @@ import { MAX_UINT16, MAX_UINT32, MAX_UINT8 } from "../consts.js";
 import {
   chainIsHardhat,
   hardhatMockEncrypt,
+  toHexString,
   ValidateUintInRange,
 } from "../utils.js";
 import { PermitV2 } from "./permit.js";
@@ -16,6 +17,7 @@ import {
   PermitV2Interface,
   PermitV2Options,
   MappedUnsealedTypes,
+  MappedCoFheEncryptedTypes,
 } from "./types.js";
 import { permitStore } from "./permit.store.js";
 import { isString } from "../validation.js";
@@ -41,7 +43,12 @@ import {
 } from "../encrypt.js";
 import { InitFhevm } from "../init.js";
 import { PermitV2ParamsValidator } from "./permit.z.js";
-import { EncryptedNumber, EncryptionTypes, FheUType } from "../types.js";
+import {
+  CoFheEncryptedNumber,
+  EncryptedNumber,
+  EncryptionTypes,
+  FheUType,
+} from "../types.js";
 
 /**
  * Initializes the `fhenixsdk` to enable encrypting input data, creating permits / permissions, and decrypting sealed outputs.
@@ -395,6 +402,11 @@ function encrypt<T extends any[]>(
 function encrypt<T>(item: T) {
   const state = _sdkStore.getState();
 
+  if (state.coFhe.enabled)
+    return ResultErr(
+      "encrypt :: fhenixsdk initialized to interact with CoFHE. Remove `isCoFHE: true` or set to `false` in `fhenixsdk.initialize`.",
+    );
+
   // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
   const initialized = _checkInitialized(state, {
     provider: false,
@@ -418,77 +430,153 @@ function encrypt<T>(item: T) {
     if (fhePublicKey == null)
       return ResultErr("encrypt :: fheKey for current chain not found");
 
-    let encryptedItem;
+    // prettier-ignore
+    try {
+      switch (item.utype) {
+        case FheUType.bool: return tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
+        case FheUType.uint8: return tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
+        case FheUType.uint16: return tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
+        case FheUType.uint32: return tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
+        case FheUType.uint64: return tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
+        case FheUType.uint128: return tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
+        case FheUType.uint256: return tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
+        case FheUType.address: return tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
+      }
+    } catch (e) {
+      return ResultErr(`encrypt :: tfhe_encrypt_xxxx :: ${e}`)
+    }
+  }
+
+  // Object | Array
+  if (typeof item === "object" && item !== null) {
+    if (Array.isArray(item)) {
+      // Array - recurse
+      const nestedItems = item.map((nestedItem) => encrypt(nestedItem));
+
+      // Any nested error break out
+      const nestedItemResultErr = nestedItems.find(
+        (nestedItem) => !nestedItem.success,
+      );
+      if (nestedItemResultErr) return nestedItemResultErr;
+
+      return ResultOk(nestedItems.map((nestedItem) => nestedItem.data));
+    } else {
+      // Object - recurse
+      const result: Record<string, any> = {};
+      for (const key in item) {
+        const encryptedResult = encrypt(item[key]);
+        if (!encryptedResult.success) return encryptedResult;
+        result[key] = encryptedResult.data;
+      }
+      return ResultOk(result);
+    }
+  }
+
+  // Primitive
+  return ResultOk(item);
+}
+
+async function coFheEncrypt<T>(
+  item: T,
+): Promise<Result<MappedCoFheEncryptedTypes<T>>>;
+async function coFheEncrypt<T extends any[]>(
+  item: [...T],
+): Promise<Result<[...MappedCoFheEncryptedTypes<T>]>>;
+async function coFheEncrypt<T>(item: T) {
+  const state = _sdkStore.getState();
+  if (!state.coFhe.enabled)
+    return ResultErr(
+      "coFheEncrypt :: fhenixsdk not initialized to interact with CoFHE. Set `isCoFHE: true` in `fhenixsdk.initialize`.",
+    );
+
+  // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
+  const initialized = _checkInitialized(state, {
+    provider: false,
+    signer: false,
+  });
+  if (!initialized.success)
+    return ResultErr(`${encrypt.name} :: ${initialized.error}`);
+
+  // Permission
+  if (item === "permission") {
+    return getPermission();
+  }
+
+  // EncryptableItem
+  if (isEncryptableItem(item)) {
+    // Early exit with mock encrypted value if chain is hardhat
+    // TODO: Determine how CoFHE encrypted items will be handled in hardhat
+    if (chainIsHardhat(_store_chainId()))
+      return ResultOk(hardhatMockEncrypt(BigInt(item.data)));
+
+    const fhePublicKey = _store_getConnectedChainFheKey(item.securityZone ?? 0);
+    if (fhePublicKey == null)
+      return ResultErr("coFheEncrypt :: fheKey for current chain not found");
+
+    let preEncryptedItem;
 
     // prettier-ignore
     try {
       switch (item.utype) {
         case FheUType.bool: {
-          encryptedItem = tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.uint8: {
-          encryptedItem = tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.uint16: {
-          encryptedItem = tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.uint32: {
-          encryptedItem = tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.uint64: {
-          encryptedItem = tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.uint128: {
-          encryptedItem = tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.uint256: {
-          encryptedItem = tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
           break;
         }
         case FheUType.address: {
-          encryptedItem = tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
+          preEncryptedItem = tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
           break;
         }
       }
     } catch (e) {
-      return ResultErr(`encrypt :: tfhe_encrypt_xxxx :: ${e}`)
+      return ResultErr(`coFheEncrypt :: tfhe_encrypt_xxxx :: ${e}`)
     }
 
-    // If input is for CoFHE, send it to aggregator to get signature
-    // TODO: (to enable this)
-    //  make encrypt function async
-    //  create types for the output `inEuint` with CoFHE fields
-    //  update the return type of `encrypt`
-    // if (state.coFhe.enabled) {
-    //   const res = (await fetch(`${state.coFhe.url}/UpdateCT`, {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json", // Ensure the server knows you're sending JSON
-    //     },
-    //     body: JSON.stringify({
-    //       UType: item.utype,
-    //       Value: toHexString(encryptedItem.data),
-    //       SecurityZone: item.securityZone,
-    //     }),
-    //   })) as any;
+    // Send preEncryptedItem to CoFHE route `/UpdateCT`, receive `ctHash` to use as contract input
+    const res = (await fetch(`${state.coFhe.url}/UpdateCT`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", // Ensure the server knows you're sending JSON
+      },
+      body: JSON.stringify({
+        UType: item.utype,
+        Value: toHexString(preEncryptedItem.data),
+        SecurityZone: item.securityZone,
+      }),
+    })) as any;
 
-    //   const data = await res.json();
+    const data = await res.json();
 
-    //   return {
-    //     securityZone: item.securityZone,
-    //     hash: BigInt(`0x${data.ctHash}`),
-    //     utype: item.utype,
-    //     signature: data.signature,
-    //   };
-    // }
-
-    return encryptedItem;
+    // Transform data into final CoFHE input variable
+    return {
+      securityZone: item.securityZone,
+      hash: BigInt(`0x${data.ctHash}`),
+      utype: item.utype,
+      signature: data.signature,
+    } as CoFheEncryptedNumber;
   }
 
   // Object | Array
@@ -621,6 +709,7 @@ export const fhenixsdk = {
 
   encryptValue,
   encrypt,
+  coFheEncrypt,
 
   unsealCiphertext,
   unseal,

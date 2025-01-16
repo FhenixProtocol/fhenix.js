@@ -37,8 +37,8 @@ import {
   _store_getFheKey,
   InitParams,
 } from "../lib/esm/sdk/v2/sdk.store";
-import { FheUType } from "../lib/esm/sdk/v2/types";
 import { Result } from "../src/sdk/v2/types";
+import { FheUType } from "../src/sdk/types";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;
@@ -175,6 +175,13 @@ describe("Sdk Tests", () => {
       ["hello", 20n, Encryptable.address(contractAddress)],
       Encryptable.uint8(10),
     ] as const);
+
+    const uint8enc = nestedEncrypt.data![3];
+    const uint8Str = `${Array.from(uint8enc.data)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")}`;
+
+    console.log("encrypted", uint8enc, uint8Str);
 
     type ExpectedEncryptedType = [
       PermissionV2,

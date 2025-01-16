@@ -247,7 +247,7 @@ export const _store_fetchFheKey = async (
 
   let publicKey: string | undefined = undefined;
   // Fetch publicKey from Provider (L2 / LocalFhenix)
-  if (coFhe.enabled) {
+  if (!coFhe.enabled) {
     const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
     const callData = funcSig + toABIEncodedUint32(securityZone);
 
@@ -255,7 +255,7 @@ export const _store_fetchFheKey = async (
   }
 
   // Fetch publicKey from CoFhe
-  if (!coFhe.enabled) {
+  if (coFhe.enabled) {
     try {
       // TODO: misspelling?
       const res = await fetch(`${coFhe.url}/GetNetworkPublickKey`, {

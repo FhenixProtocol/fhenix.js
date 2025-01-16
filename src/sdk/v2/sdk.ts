@@ -418,21 +418,77 @@ function encrypt<T>(item: T) {
     if (fhePublicKey == null)
       return ResultErr("encrypt :: fheKey for current chain not found");
 
+    let encryptedItem;
+
     // prettier-ignore
     try {
       switch (item.utype) {
-        case FheUType.bool: return ResultOk(tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone));
-        case FheUType.uint8: return ResultOk(tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone));
-        case FheUType.uint16: return ResultOk(tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone));
-        case FheUType.uint32: return ResultOk(tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone));
-        case FheUType.uint64: return ResultOk(tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone));
-        case FheUType.uint128: return ResultOk(tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone));
-        case FheUType.uint256: return ResultOk(tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone));
-        case FheUType.address: return ResultOk(tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone));
+        case FheUType.bool: {
+          encryptedItem = tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint8: {
+          encryptedItem = tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint16: {
+          encryptedItem = tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint32: {
+          encryptedItem = tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint64: {
+          encryptedItem = tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint128: {
+          encryptedItem = tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint256: {
+          encryptedItem = tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.address: {
+          encryptedItem = tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
       }
     } catch (e) {
       return ResultErr(`encrypt :: tfhe_encrypt_xxxx :: ${e}`)
     }
+
+    // If input is for CoFHE, send it to aggregator to get signature
+    // TODO: (to enable this)
+    //  make encrypt function async
+    //  create types for the output `inEuint` with CoFHE fields
+    //  update the return type of `encrypt`
+    // if (state.coFhe.enabled) {
+    //   const res = (await fetch(`${state.coFhe.url}/UpdateCT`, {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json", // Ensure the server knows you're sending JSON
+    //     },
+    //     body: JSON.stringify({
+    //       UType: item.utype,
+    //       Value: toHexString(encryptedItem.data),
+    //       SecurityZone: item.securityZone,
+    //     }),
+    //   })) as any;
+
+    //   const data = await res.json();
+
+    //   return {
+    //     securityZone: item.securityZone,
+    //     hash: BigInt(`0x${data.ctHash}`),
+    //     utype: item.utype,
+    //     signature: data.signature,
+    //   };
+    // }
+
+    return encryptedItem;
   }
 
   // Object | Array

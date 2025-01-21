@@ -48,7 +48,7 @@ type SerializedPermit = {
   signature: string;
 };
 
-const parsePermit = (savedPermit: string): Permit => {
+export const parsePermit = (savedPermit: string): Permit => {
   const o = JSON.parse(savedPermit) as SerializedPermit;
   if (o) {
     return {

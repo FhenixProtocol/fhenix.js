@@ -8606,6 +8606,7 @@ const MAX_UINT16 = 65535;
 const MAX_UINT32 = 4294967295;
 const FheOpsAddress = "0x0000000000000000000000000000000000000080";
 const PUBLIC_KEY_LENGTH_MIN = 15000;
+const DEFAULT_COFHE_URL = "http://127.0.0.1:8448";
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
@@ -8793,9 +8794,12 @@ class FhenixClientBase {
      */
     constructor(params) {
         this.permits = {};
+        this.isCoFHE = false;
         isPlainObject$1(params);
         const { provider } = params;
         this.provider = provider;
+        this.isCoFHE = params.cofhe == true;
+        this.cofheURL = params.cofheURL ? params.cofheURL : DEFAULT_COFHE_URL;
         if (!this.provider) {
             throw new Error("Failed to initialize Fhenix Client - must include a web3 provider");
         }
@@ -8880,7 +8884,12 @@ class FhenixClientBase {
      */
     storePermit(permit, account) {
         storePermitInLocalStorage(permit, account);
-        this.permits[permit.contractAddress] = permit;
+        if (typeof permit.sealingKey.unseal == "undefined") {
+            this.permits[permit.contractAddress] = (typeof permit == "string") ? parsePermit(permit) : parsePermit(JSON.stringify(permit));
+        }
+        else {
+            this.permits[permit.contractAddress] = permit;
+        }
     }
     /**
      * Removes a stored permit for a specific contract address.
@@ -8949,6 +8958,41 @@ class FhenixClientBase {
             throw new Error(`Error deserializing public key ${err}`);
         }
     }
+    /**
+     * Retrieves the FHE public key from FHEOS.
+     * @param {SupportedProvider} provider - The provider from which to retrieve the key.
+     * @param securityZone - The security zone for which to retrieve the key (default 0).
+     * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
+     */
+    static async getFheKeyFromFHEOS(securityZone = 0, cofheURL) {
+        var publicKey = "";
+        try {
+            const res = await fetch(`${cofheURL}/GetNetworkPublickKey`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    SecurityZone: securityZone,
+                })
+            });
+            const data = await res.json();
+            publicKey = '0x' + data.securityZone;
+        }
+        catch (err) {
+            console.log(err);
+        }
+        if (typeof publicKey !== "string") {
+            throw new Error("Error using publicKey from provider: expected string");
+        }
+        if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
+            throw new Error(`Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`);
+        }
+        const buff = fromHexString(publicKey);
+        try {
+            return TfheCompactPublicKey.deserialize(buff);
+        }
+        catch (err) {
+            throw new Error(`Error deserializing public key ${err}`);
+        }
+    }
 }
 /**
  * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
@@ -8976,13 +9020,20 @@ class FhenixClient extends FhenixClientBase {
         // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption.
         // By default, doesn't skip fetching the public key
         if (params.skipPubKeyFetch !== true) {
-            this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) => FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone));
+            this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) => 
+            //FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
+            (params.cofhe == true) ? FhenixClientBase.getFheKeyFromFHEOS(securityZone, this.cofheURL) : FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone));
         }
     }
     async _getPublicKey(securityZone) {
         let fhePublicKey = await this.fhePublicKeys[securityZone];
         if (!fhePublicKey) {
-            this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(this.provider, securityZone);
+            if (this.isCoFHE == true) {
+                this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromFHEOS(securityZone, this.cofheURL);
+            }
+            else {
+                this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromProvider(this.provider, securityZone);
+            }
             fhePublicKey = await this.fhePublicKeys[securityZone];
             if (!fhePublicKey) {
                 throw new Error(`Public key for security zone ${securityZone} somehow not initialized`);
@@ -9100,7 +9151,7 @@ class FhenixClientSync extends FhenixClientBase {
                 throw new Error(`Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`);
             }
         });
-        const fhePublicKeys = await Promise.all(securityZones.map((securityZone) => FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone)));
+        const fhePublicKeys = await Promise.all(securityZones.map((securityZone) => (params.cofhe == true) ? FhenixClientBase.getFheKeyFromFHEOS(securityZone, params.cofheURL ? params.cofheURL : DEFAULT_COFHE_URL) : FhenixClientBase.getFheKeyFromProvider(provider, securityZone)));
         return new FhenixClientSync({ ...params, fhePublicKeys });
     }
     // Encryption Methods
@@ -16398,11 +16449,12 @@ var fhenix = /*#__PURE__*/Object.freeze({
   getAllPermits: getAllPermits$1,
   getPermit: getPermit$2,
   getPermitFromLocalstorage: getPermitFromLocalstorage,
+  parsePermit: parsePermit,
   permitStore: permitStore,
   removePermit: removePermit$1,
   removePermitFromLocalstorage: removePermitFromLocalstorage,
   storePermitInLocalStorage: storePermitInLocalStorage
 });
 
-export { Encryptable, EncryptionTypes, FhenixClient, FhenixClientSync, GenerateSealingKey, PermitV2, SealingKey, createTfheKeypair, createTfhePublicKey, fhenix as fhenixjs, fhenixsdk, generatePermit, getAllExistingPermits, getAllPermits$1 as getAllPermits, getPermit$2 as getPermit, getPermitFromLocalstorage, permitStore, removePermit$1 as removePermit, removePermitFromLocalstorage, storePermitInLocalStorage };
+export { Encryptable, EncryptionTypes, FhenixClient, FhenixClientSync, GenerateSealingKey, PermitV2, SealingKey, createTfheKeypair, createTfhePublicKey, fhenix as fhenixjs, fhenixsdk, generatePermit, getAllExistingPermits, getAllPermits$1 as getAllPermits, getPermit$2 as getPermit, getPermitFromLocalstorage, parsePermit, permitStore, removePermit$1 as removePermit, removePermitFromLocalstorage, storePermitInLocalStorage };
 //# sourceMappingURL=fhenix.esm.js.map

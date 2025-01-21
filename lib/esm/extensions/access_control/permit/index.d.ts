@@ -25,6 +25,7 @@ export type Permit = {
      */
     publicKey: string;
 };
+export declare const parsePermit: (savedPermit: string) => Permit;
 export declare const getPermit: (contract: string, provider: SupportedProvider, autoGenerate?: boolean) => Promise<Permit | null>;
 export declare const getAllExistingPermits: (account: string) => Record<string, Permit>;
 export declare const getAllPermits: () => Map<string, Permit>;

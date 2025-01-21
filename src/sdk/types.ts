@@ -25,6 +25,38 @@ export enum EncryptionTypes {
 }
 
 /**
+ * Mapping of encryption types to their utype integer
+ */
+export enum FheUType {
+  bool = 13,
+  uint8 = 0,
+  uint16 = 1,
+  uint32 = 2,
+  uint64 = 3,
+  uint128 = 4,
+  uint256 = 5,
+  address = 12,
+}
+export const FheUintUTypes = [
+  FheUType.uint8,
+  FheUType.uint16,
+  FheUType.uint32,
+  FheUType.uint64,
+  FheUType.uint128,
+  FheUType.uint256,
+] as const;
+export const FheAllUTypes = [
+  FheUType.bool,
+  FheUType.uint8,
+  FheUType.uint16,
+  FheUType.uint32,
+  FheUType.uint64,
+  FheUType.uint128,
+  FheUType.uint256,
+  FheUType.address,
+] as const;
+
+/**
  * A type representing the signature for a permit.
  * Contains a public key and a signature string.
  */
@@ -41,6 +73,8 @@ export type InstanceParams = {
   provider: SupportedProvider;
   ignoreErrors?: boolean;
   skipPubKeyFetch?: boolean;
+  cofhe?: boolean;
+  cofheURL?: string;
 };
 
 /**
@@ -130,3 +164,34 @@ export interface EncryptedUint64 extends EncryptedNumber {}
 export interface EncryptedUint128 extends EncryptedNumber {}
 export interface EncryptedUint256 extends EncryptedNumber {}
 export interface EncryptedAddress extends EncryptedNumber {}
+
+export type CoFheEncryptedNumber = {
+  securityZone: number;
+  hash: bigint;
+  signature: string;
+  utype: FheUType;
+};
+export type CoFheEncryptedBool = CoFheEncryptedNumber & {
+  utype: FheUType.bool;
+};
+export type CoFheEncryptedUint8 = CoFheEncryptedNumber & {
+  utype: FheUType.uint8;
+};
+export type CoFheEncryptedUint16 = CoFheEncryptedNumber & {
+  utype: FheUType.uint16;
+};
+export type CoFheEncryptedUint32 = CoFheEncryptedNumber & {
+  utype: FheUType.uint32;
+};
+export type CoFheEncryptedUint64 = CoFheEncryptedNumber & {
+  utype: FheUType.uint64;
+};
+export type CoFheEncryptedUint128 = CoFheEncryptedNumber & {
+  utype: FheUType.uint128;
+};
+export type CoFheEncryptedUint256 = CoFheEncryptedNumber & {
+  utype: FheUType.uint256;
+};
+export type CoFheEncryptedAddress = CoFheEncryptedNumber & {
+  utype: FheUType.address;
+};

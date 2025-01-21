@@ -37,8 +37,8 @@ import {
   _store_getFheKey,
   InitParams,
 } from "../lib/esm/sdk/v2/sdk.store";
-import { FheUType } from "../lib/esm/sdk/v2/types";
 import { Result } from "../src/sdk/v2/types";
+import { FheUType } from "../src/sdk/types";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;

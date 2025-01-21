@@ -58,6 +58,8 @@ export type SdkStore = SdkStoreProviderInitialization &
     securityZones: number[];
     fheKeys: ChainRecord<SecurityZoneRecord<Uint8Array | undefined>>;
     accessRequirements: PermitV2AccessRequirements;
+
+    coFhe: { enabled: boolean; url: string | undefined };
   };
 
 export const _sdkStore = createStore<SdkStore>(
@@ -71,6 +73,8 @@ export const _sdkStore = createStore<SdkStore>(
         contracts: [],
         projects: [],
       },
+
+      coFhe: { enabled: false, url: undefined },
 
       providerInitialized: false,
       provider: undefined as never,
@@ -145,6 +149,8 @@ export type InitParams = {
   provider: AbstractProvider;
   signer?: AbstractSigner;
   securityZones?: number[];
+  isCoFhe?: boolean;
+  coFheUrl?: string;
 } & PermitV2AccessRequirementsParams;
 
 export const _store_initialize = async (params: InitParams) => {
@@ -154,6 +160,8 @@ export const _store_initialize = async (params: InitParams) => {
     securityZones = [0],
     contracts: contractRequirements = [],
     projects: projectRequirements = [],
+    isCoFhe = false,
+    coFheUrl = undefined,
   } = params;
 
   _sdkStore.setState({
@@ -162,6 +170,10 @@ export const _store_initialize = async (params: InitParams) => {
     accessRequirements: {
       contracts: contractRequirements,
       projects: projectRequirements,
+    },
+    coFhe: {
+      enabled: isCoFhe,
+      url: coFheUrl,
     },
   });
 
@@ -191,10 +203,11 @@ export const _store_initialize = async (params: InitParams) => {
     });
   }
 
-  // If chainId or securityZones changes, update the store and update fheKeys for re-initialization
+  // If chainId, securityZones, or CoFhe enabled changes, update the store and update fheKeys for re-initialization
   const securityZonesChanged =
     securityZones !== _sdkStore.getState().securityZones;
-  if (chainIdChanged || securityZonesChanged) {
+  const coFheEnabledChanged = isCoFhe !== _sdkStore.getState().coFhe.enabled;
+  if (chainIdChanged || securityZonesChanged || coFheEnabledChanged) {
     _sdkStore.setState({
       securityZones,
       fheKeysInitialized: false,
@@ -205,7 +218,7 @@ export const _store_initialize = async (params: InitParams) => {
   if (!chainIsHardhat(chainId) && !_sdkStore.getState().fheKeysInitialized) {
     await Promise.all(
       securityZones.map((securityZone) =>
-        _store_fetchFheKey(chainId, provider, securityZone),
+        _store_fetchFheKey(chainId, provider, securityZone, true),
       ),
     );
   }
@@ -225,18 +238,45 @@ export const _store_fetchFheKey = async (
   chainId: string,
   provider: AbstractProvider,
   securityZone: number = 0,
+  forceFetch = false,
 ): Promise<TfheCompactPublicKey> => {
   const storedKey = _store_getFheKey(chainId, securityZone);
-  if (storedKey != null) return storedKey;
+  if (storedKey != null && !forceFetch) return storedKey;
 
-  const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
-  const callData = funcSig + toABIEncodedUint32(securityZone);
+  const coFhe = _sdkStore.getState().coFhe;
 
-  const publicKey = await provider.call({ to: FheOpsAddress, data: callData });
+  let publicKey: string | undefined = undefined;
+  // Fetch publicKey from Provider (L2 / LocalFhenix)
+  if (!coFhe.enabled) {
+    const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
+    const callData = funcSig + toABIEncodedUint32(securityZone);
 
-  if (typeof publicKey !== "string") {
+    publicKey = await provider.call({ to: FheOpsAddress, data: callData });
+  }
+
+  // Fetch publicKey from CoFhe
+  if (coFhe.enabled) {
+    try {
+      // TODO: misspelling?
+      const res = await fetch(`${coFhe.url}/GetNetworkPublickKey`, {
+        method: "POST",
+        body: JSON.stringify({
+          SecurityZone: securityZone,
+        }),
+      });
+
+      const data = await res.json();
+      publicKey = `0x${data.securityZone}`;
+    } catch (err) {
+      throw new Error(
+        `Error initializing fhenixjs; fetching FHE publicKey from CoFHE failed with error ${err}`,
+      );
+    }
+  }
+
+  if (publicKey == null || typeof publicKey !== "string") {
     throw new Error(
-      "Error initializing fhenixjs; FHE publicKey fetched from provider invalid: not a string",
+      `Error initializing fhenixjs; FHE publicKey fetched from ${coFhe.enabled ? "CoFHE" : "Provider"} invalid: not a string`,
     );
   }
 
@@ -252,8 +292,6 @@ export const _store_fetchFheKey = async (
     );
   }
 
-  // todo (eshel) verify this
-  // magically know how to decode rlp or w/e returns from the evm json-rpc
   const buff = fromHexString(publicKey.slice(130));
 
   try {

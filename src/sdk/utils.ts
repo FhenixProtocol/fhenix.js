@@ -1,4 +1,4 @@
-import { EncryptedNumber } from "./types.js";
+import { EncryptedNumber } from "../types/types.js";
 import { isNumber } from "./validation.js";
 
 export const ValidateUintInRange = (

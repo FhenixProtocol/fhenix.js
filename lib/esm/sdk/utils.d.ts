@@ -1,4 +1,4 @@
-import { EncryptedNumber } from "./types.js";
+import { EncryptedNumber } from "../types/types.js";
 export declare const ValidateUintInRange: (value: number, max: number, min: number) => void;
 export declare const fromHexString: (hexString: string) => Uint8Array;
 export declare const toHexString: (bytes: Uint8Array) => string;

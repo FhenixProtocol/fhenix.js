@@ -1,5 +1,5 @@
 import { TfheCompactPublicKey } from "./fhe/fhe.js";
-import { EncryptedNumber, EncryptedUint16, EncryptedUint32, EncryptedUint8, EncryptedBool, EncryptedUint64, EncryptedUint128, EncryptedUint256, EncryptedAddress, EncryptionTypes } from "./types.js";
+import { EncryptedNumber, EncryptedUint16, EncryptedUint32, EncryptedUint8, EncryptedBool, EncryptedUint64, EncryptedUint128, EncryptedUint256, EncryptedAddress, EncryptionTypes } from "../types/types.js";
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
  * @param {boolean} value - The Boolean value to encrypt.

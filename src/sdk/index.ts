@@ -1,831 +1,564 @@
-import { TfheCompactPublicKey } from "./fhe/fhe.js";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { chainIsHardhat, hardhatMockEncrypt, toHexString } from "./utils.js";
+import { PermitV2 } from "./permit/permit.js";
+import { permitStore } from "./permit/store.js";
+import { isString } from "./validation.js";
 import {
-  fromHexString,
-  isAddress,
-  ValidateUintInRange,
-  toABIEncodedUint32,
-} from "./utils.js";
+  _sdkStore,
+  _store_chainId,
+  _store_getConnectedChainFheKey,
+  _store_initialize,
+  InitParams,
+  SdkStore,
+} from "./store.js";
 import {
-  ContractPermits,
-  determineRequestMethod,
-  EncryptedAddress,
-  EncryptedBool,
-  EncryptedNumber,
-  EncryptedUint128,
-  EncryptedUint16,
-  EncryptedUint256,
-  EncryptedUint32,
-  EncryptedUint64,
-  EncryptedUint8,
-  EncryptionTypes,
-  InstanceParams,
-  InstanceParamsWithFhePublicKeys,
-  SupportedProvider,
-} from "./types.js";
-
-import {
-  generatePermit,
-  getAllExistingPermits,
-  getPermitFromLocalstorage,
-  Permission,
-  Permit,
-  PermitSigner,
-  parsePermit,
-  removePermitFromLocalstorage,
-  storePermitInLocalStorage,
-} from "../extensions/access_control/index.js";
-
-import {
-  FheOpsAddress,
-  MAX_UINT16,
-  MAX_UINT32,
-  MAX_UINT8,
-  PUBLIC_KEY_LENGTH_MIN,
-  DEFAULT_COFHE_URL,
-} from "./consts.js";
-import * as tfheEncrypt from "./encrypt.js";
-import {
-  isBigIntOrHexString,
-  isNumber,
-  isPlainObject,
-  isString,
-} from "./validation.js";
+  encrypt_bool as tfhe_encrypt_bool,
+  encrypt_uint8 as tfhe_encrypt_uint8,
+  encrypt_uint16 as tfhe_encrypt_uint16,
+  encrypt_uint32 as tfhe_encrypt_uint32,
+  encrypt_uint64 as tfhe_encrypt_uint64,
+  encrypt_uint128 as tfhe_encrypt_uint128,
+  encrypt_uint256 as tfhe_encrypt_uint256,
+  encrypt_address as tfhe_encrypt_address,
+} from "./encrypt.js";
 import { InitFhevm } from "./init.js";
+import { PermitV2ParamsValidator } from "./permit/permit.z.js";
+import { CoFheEncryptedNumber, FheUType } from "../types/types.js";
+import {
+  MappedCoFheEncryptedTypes,
+  isEncryptableItem,
+} from "../types/encryptable.js";
+import {
+  PermitV2Options,
+  PermitV2Interface,
+  PermissionV2,
+} from "../types/permit.js";
+import { Result, ResultErr, ResultOk } from "../types/result.js";
+import { MappedUnsealedTypes } from "../types/sealed.js";
 
-abstract class FhenixClientBase {
-  private permits: ContractPermits = {};
-  abstract fhePublicKeys:
-    | Array<Promise<TfheCompactPublicKey | undefined>>
-    | Array<TfheCompactPublicKey | undefined>;
-  protected provider: SupportedProvider;
-  protected isCoFHE: boolean = false;
-  protected cofheURL: string;
-
-  /**
-   * Creates an instance of FhenixClient.
-   * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
-   * @param {InstanceParams} params - Parameters to initialize the client.
-   */
-  public constructor(params: InstanceParams) {
-    isPlainObject(params);
-
-    const { provider } = params;
-
-    this.provider = provider;
-    this.isCoFHE = params.cofhe == true;
-    this.cofheURL = params.cofheURL ? params.cofheURL : DEFAULT_COFHE_URL;
-
-    if (!this.provider) {
-      throw new Error(
-        "Failed to initialize Fhenix Client - must include a web3 provider",
-      );
-    }
-  }
-
-  // Encryption Methods
-
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedBool} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_bool(
-    value: boolean,
-    securityZone?: number,
-  ): Promise<EncryptedBool> | EncryptedBool;
-
-  /**
-   * Encrypts a Uint8 value using the stored public key.
-   * @param {number} value - The Uint8 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint8} - The encrypted value serialized as EncryptedUint8. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_uint8(
-    value: number,
-    securityZone?: number,
-  ): Promise<EncryptedUint8> | EncryptedUint8;
-
-  /**
-   * Encrypts a Uint16 value using the stored public key.
-   * @param {number} value - The Uint16 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint16} - The encrypted value serialized as EncryptedUint16. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_uint16(
-    value: number,
-    securityZone?: number,
-  ): Promise<EncryptedUint16> | EncryptedUint16;
-
-  /**
-   * Encrypts a Uint32 value using the stored public key.
-   * @param {number} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint32} - The encrypted value serialized as EncryptedUint32. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_uint32(
-    value: number,
-    securityZone?: number,
-  ): Promise<EncryptedUint32> | EncryptedUint32;
-
-  /**
-   * Encrypts a Uint64 value using the stored public key.
-   * @param {bigint | string} value - The Uint32 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint64} - The encrypted value serialized as EncryptedUint64. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_uint64(
-    value: bigint | string,
-    securityZone?: number,
-  ): Promise<EncryptedUint64> | EncryptedUint64;
-
-  /**
-   * Encrypts a Uint128 value using the stored public key.
-   * @param {bigint | string} value - The Uint128 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint128} - The encrypted value serialized as EncryptedUint128. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_uint128(
-    value: bigint | string,
-    securityZone?: number,
-  ): Promise<EncryptedUint128> | EncryptedUint128;
-
-  /**
-   * Encrypts a Uint256 value using the stored public key.
-   * @param {bigint | string} value - The Uint256 value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedUint256} - The encrypted value serialized as EncryptedUint256. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_uint256(
-    value: bigint | string,
-    securityZone?: number,
-  ): Promise<EncryptedUint256> | EncryptedUint256;
-
-  /**
-   * Encrypts an Address (Uint160) value using the stored public key.
-   * @param {bigint | string} value - The Address (Uint160) value to encrypt.
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedAddress} - The encrypted value serialized as EncryptedAddress. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt_address(
-    value: bigint | string,
-    securityZone?: number,
-  ): Promise<EncryptedAddress> | EncryptedAddress;
-
-  /**
-   * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
-   * @param {number} value - The numeric value to encrypt.
-   * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
-   * @param securityZone - The security zone for which to encrypt the value (default 0).
-   * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
-   */
-  abstract encrypt(
-    value: number,
-    type?: EncryptionTypes,
-    securityZone?: number,
-  ): Promise<EncryptedNumber> | EncryptedNumber;
-
-  // Unsealing Method
-
-  /**
-   * Unseals an encrypted message using the stored permit for a specific contract address.
-   * @param {string} contractAddress - The address of the contract.
-   * @param {string} ciphertext - The encrypted message to unseal.
-   * @param {string} account - The account attached to existing permits.
-   * @returns bigint - The unsealed message.
-   */
-  unseal(contractAddress: string, ciphertext: string, account: string): bigint {
-    isAddress(contractAddress);
-    isString(ciphertext);
-
-    const permit = this.getPermit(contractAddress, account);
-
-    if (permit == null) {
-      throw new Error(`Missing keypair for ${contractAddress}`);
-    }
-
-    return this.permits[contractAddress].sealingKey.unseal(ciphertext);
-  }
-
-  // Permit Management Methods
-  /**
-   * Creates a new permit for a specific contract address. Also saves the permit to localstorage (if available)
-   * @param {string} contractAddress - The address of the contract.
-   * @param {SupportedProvider} provider - The provider from which to sign the permit - must container a signer.
-   * @param signer - the signer to use to sign the permit if provider does not support signing (e.g. hardhat)
-   * @returns Permit - The permit associated with the contract address.
-   *
-   * @throws {Error} - If the provider does not contain a signer, or if a provider is not set
-   */
-  async generatePermit(
-    contractAddress: string,
-    provider?: SupportedProvider,
-    signer?: PermitSigner,
-  ) {
-    if (!provider && this.provider === undefined) {
-      throw new Error("error getting provider");
-    }
-
-    const permit = await generatePermit(
-      contractAddress,
-      provider || this.provider!,
-      signer,
-    );
-
-    // Permit has already been put into local storage, it can be inserted directly into `this.permits`
-    this.permits[contractAddress] = permit;
-
-    return permit;
-  }
-
-  /**
-   * Reusable permit loading and storing from local storage
-   * @param {string} contractAddress - The address of the contract.
-   * @param {string} account - The address of the user account.
-   * @returns {Permit | undefined} - The permit loaded from local storage
-   */
-  private _loadPermitFromLocalStorage(
-    contractAddress: string,
-    account: string,
-  ): Permit | undefined {
-    const fromLs = getPermitFromLocalstorage(contractAddress, account);
-    if (fromLs == null) return undefined;
-
-    this.permits[contractAddress] = fromLs;
-    return fromLs;
-  }
-
-  /**
-   * Retrieves the stored permit for a specific contract address.
-   * @param {string} contractAddress - The address of the contract.
-   * @param {string} account - The address of the user account.
-   * @returns {Permit} - The permit associated with the contract address.
-   */
-  getPermit(contractAddress: string, account: string): Permit | undefined {
-    const permitFromLs = this._loadPermitFromLocalStorage(
-      contractAddress,
-      account,
-    );
-    if (permitFromLs != null) return permitFromLs;
-
-    return this.permits[contractAddress];
-  }
-
-  /**
-   * Retrieves all stored permits for a specific account.
-   * @param {string} account - The address of the user account.
-   * @returns {Record<string, Permit>} - The permits associated with each contract address.
-   */
-  loadAllPermitsFromLocalStorage(account: string): Record<string, Permit> {
-    const existingPermits = getAllExistingPermits(account);
-
-    Object.keys(existingPermits).forEach((contractAddress) => {
-      this.permits[contractAddress] = existingPermits[contractAddress];
-    });
-
-    return this.permits;
-  }
-
-  /**
-   * Stores a permit for a specific contract address. Will overwrite any existing permit for the same contract address.
-   * Does not store the permit in localstorage (should it?)
-   * @param {Permit} permit - The permit to store.
-   */
-  storePermit(permit: Permit, account: string) {
-    storePermitInLocalStorage(permit, account);
-    if (typeof permit.sealingKey.unseal == "undefined") {
-      this.permits[permit.contractAddress] =
-        typeof permit == "string"
-          ? parsePermit(permit)
-          : parsePermit(JSON.stringify(permit));
+/**
+ * Initializes the `fhenixsdk` to enable encrypting input data, creating permits / permissions, and decrypting sealed outputs.
+ * Initializes `fhevm` client FHE wasm module and fetches the provided chain's FHE publicKey.
+ * If a valid signer is provided, a `permit/permission` is generated automatically
+ */
+const initialize = async (
+  params: InitParams & { ignoreErrors?: boolean; generatePermit?: boolean },
+): Promise<Result<PermitV2 | undefined>> => {
+  // Initialize the fhevm
+  await InitFhevm().catch((err: unknown) => {
+    if (params.ignoreErrors) {
+      return undefined;
     } else {
-      this.permits[permit.contractAddress] = permit;
-    }
-  }
-
-  /**
-   * Removes a stored permit for a specific contract address.
-   * @param {string} contractAddress - The address of the contract.
-   * @param {string} account - The account address of the permit.
-   */
-  removePermit(contractAddress: string, account: string) {
-    if (this.hasPermit(contractAddress, account)) {
-      removePermitFromLocalstorage(contractAddress, account);
-      delete this.permits[contractAddress];
-    }
-  }
-
-  /**
-   * Checks if a permit exists for a specific contract address.
-   * @param {string} contractAddress - The address of the contract.
-   * @param {string} account - The account address attached to the stored permits
-   * @returns {boolean} - True if a permit exists, false otherwise.
-   */
-  hasPermit(contractAddress: string, account: string): boolean {
-    const permitFromLs = this._loadPermitFromLocalStorage(
-      contractAddress,
-      account,
-    );
-    if (permitFromLs != null) return true;
-
-    return this.permits[contractAddress] != null;
-  }
-
-  /**
-   * Exports all stored permits.
-   * @returns {ContractPermits} - All stored permits.
-   */
-  exportPermits() {
-    return this.permits;
-  }
-
-  extractPermitPermission(permit: Permit): Permission {
-    return {
-      signature: permit.signature,
-      publicKey: permit.publicKey,
-    };
-  }
-
-  // Private helper methods
-
-  /**
-   * Retrieves the FHE public key from the provider.
-   * @param {SupportedProvider} provider - The provider from which to retrieve the key.
-   * @param securityZone - The security zone for which to retrieve the key (default 0).
-   * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
-   */
-  static async getFheKeyFromProvider(
-    provider: SupportedProvider,
-    securityZone: number = 0,
-  ): Promise<TfheCompactPublicKey> {
-    const requestMethod = determineRequestMethod(provider);
-
-    const funcSig = "0x1b1b484e"; // cast sig "getNetworkPublicKey(int32)"
-    const callData = funcSig + toABIEncodedUint32(securityZone);
-
-    const callParams = [{ to: FheOpsAddress, data: callData }, "latest"];
-
-    const publicKeyP = requestMethod(provider, "eth_call", callParams).catch(
-      (err: Error) => {
-        throw Error(
-          `Error while requesting network public key from provider for security zone ${securityZone}: ${JSON.stringify(
-            err,
-          )}`,
-        );
-      },
-    );
-
-    const publicKey = await publicKeyP;
-
-    if (typeof publicKey !== "string") {
-      throw new Error("Error using publicKey from provider: expected string");
-    }
-
-    if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
-      throw new Error(
-        `Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`,
+      return ResultErr(
+        `initialize :: failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
       );
     }
+  });
 
-    // magically know how to decode rlp or w/e returns from the evm json-rpc
-    const buff = fromHexString(publicKey.slice(130));
+  if (params.provider == null)
+    return ResultErr(
+      "initialize :: missing provider - Please provide an AbstractProvider interface",
+    );
 
+  if (params.securityZones != null && params.securityZones.length === 0)
+    return ResultErr(
+      "initialize :: a list of securityZones was provided, but it is empty",
+    );
+
+  await _store_initialize(params);
+
+  // `generatePermit` must set to `false` to early exit here
+  if (params.generatePermit === false) return ResultOk(undefined);
+
+  // Return the existing active permit
+  const userActivePermit = getPermit();
+  if (userActivePermit.success) return userActivePermit;
+
+  // Create permit and return it
+  return createPermit();
+};
+
+/**
+ * Internal reusable initialization checker
+ */
+const _checkInitialized = (
+  state: SdkStore,
+  options?: { fheKeys?: boolean; provider?: boolean; signer?: boolean },
+) => {
+  if (options?.fheKeys !== false && !state.fheKeysInitialized) {
+    return ResultErr(
+      "fhenixsdk not initialized. Use `fhenixsdk.initialize(...)`.",
+    );
+  }
+
+  if (options?.provider !== false && !state.providerInitialized)
+    return ResultErr(
+      "fhenixsdk not initialized with valid provider. Use `fhenixsdk.initialize(...)` with a valid provider that satisfies `AbstractProvider`.",
+    );
+
+  if (options?.signer !== false && !state.signerInitialized)
+    return ResultErr(
+      "fhenixsdk not initialized with a valid signer. Use `fhenixsdk.initialize(...)` with a valid signer that satisfies `AbstractSigner`.",
+    );
+
+  return ResultOk(null);
+};
+
+// Permit
+
+/**
+ * Creates a new permit with options, prompts user for signature.
+ * Handles all `permit.type`s, and prompts for the correct signature type.
+ * The created PermitV2 will be inserted into the store and marked as the active permit.
+ * NOTE: This is a wrapper around `PermitV2.create` and `PermitV2.sign`
+ *
+ * @param {PermitV2Options} options - Partial PermitV2 fields to create the Permit with, if no options provided will be filled with the defaults:
+ * { type: "self", issuer: initializedUserAddress, projects: initializedProjects, contracts: initializedContracts }
+ * @returns {Result<PermitV2>} - Newly created PermitV2 as a Result object
+ */
+const createPermit = async (
+  options?: PermitV2Options,
+): Promise<Result<PermitV2>> => {
+  const state = _sdkStore.getState();
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${createPermit.name} :: ${initialized.error}`);
+
+  const optionsWithDefaults: PermitV2Options = {
+    type: "self",
+    issuer: state.account,
+    contracts: state.accessRequirements.contracts,
+    projects: state.accessRequirements.projects,
+    ...options,
+  };
+
+  let permit: PermitV2;
+  try {
+    permit = await PermitV2.createAndSign(
+      optionsWithDefaults,
+      state.chainId,
+      state.signer,
+    );
+  } catch (e) {
+    return ResultErr(`${createPermit.name} :: ${e}`);
+  }
+
+  permitStore.setPermit(state.account!, permit);
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
+
+  return ResultOk(permit);
+};
+
+/**
+ * Imports a fully formed existing permit, expected to be valid.
+ * Does not ask for user signature, expects to already be populated.
+ * Will throw an error if the imported permit is invalid, see `PermitV2.isValid`.
+ * The imported PermitV2 will be inserted into the store and marked as the active permit.
+ *
+ * @param {string | PermitV2Interface} imported - Permit to import as a text string or PermitV2Interface
+ */
+const importPermit = async (
+  imported: string | PermitV2Interface,
+): Promise<Result<PermitV2>> => {
+  const state = _sdkStore.getState();
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${createPermit.name} :: ${initialized.error}`);
+
+  // Import validation
+  if (typeof imported === "string") {
     try {
-      return TfheCompactPublicKey.deserialize(buff);
-    } catch (err) {
-      throw new Error(`Error deserializing public key ${err}`);
+      imported = JSON.parse(imported);
+    } catch (e) {
+      return ResultErr(`importPermit :: json parsing failed - ${e}`);
     }
   }
 
-  /**
-   * Retrieves the FHE public key from FHEOS.
-   * @param {SupportedProvider} provider - The provider from which to retrieve the key.
-   * @param securityZone - The security zone for which to retrieve the key (default 0).
-   * @returns {Promise<TfheCompactPublicKey>} - The retrieved public key.
-   */
-  static async getFheKeyFromFHEOS(
-    securityZone: number = 0,
-    cofheURL: string,
-  ): Promise<TfheCompactPublicKey> {
-    let publicKey = "";
+  const {
+    success,
+    data: parsedPermit,
+    error: permitParsingError,
+  } = PermitV2ParamsValidator.safeParse(imported as PermitV2Interface);
+  if (!success) {
+    const errorString = Object.entries(permitParsingError.flatten().fieldErrors)
+      .map(([field, err]) => `- ${field}: ${err}`)
+      .join("\n");
+    return ResultErr(`importPermit :: invalid permit data - ${errorString}`);
+  }
+  if (parsedPermit.type !== "self") {
+    if (parsedPermit.issuer === state.account) parsedPermit.type = "sharing";
+    else if (parsedPermit.recipient === state.account)
+      parsedPermit.type = "recipient";
+    else {
+      return ResultErr(
+        `importPermit :: invalid Permit - connected account <${state.account}> is not issuer or recipient`,
+      );
+    }
+  }
+
+  let permit: PermitV2;
+  try {
+    permit = await PermitV2.create(parsedPermit as PermitV2Interface);
+  } catch (e) {
+    return ResultErr(`importPermit :: ${e}`);
+  }
+
+  const { valid, error } = permit.isValid();
+  if (!valid) {
+    return ResultErr(
+      `importPermit :: newly imported permit is invalid - ${error}`,
+    );
+  }
+
+  permitStore.setPermit(state.account!, permit);
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
+
+  return ResultOk(permit);
+};
+
+/**
+ * Selects the active permit using its hash.
+ * If the hash is not found in the stored permits store, throws an error.
+ * The matched permit will be marked as the active permit.
+ *
+ * @param {string} hash - The `PermitV2.getHash` of the target permit.
+ */
+const selectActivePermit = (hash: string): Result<PermitV2> => {
+  const state = _sdkStore.getState();
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${selectActivePermit.name} :: ${initialized.error}`);
+
+  const permit = permitStore.getPermit(state.account, hash);
+  if (permit == null)
+    return ResultErr(
+      `${selectActivePermit.name} :: Permit with hash <${hash}> not found`,
+    );
+
+  permitStore.setActivePermitHash(state.account!, permit.getHash());
+
+  return ResultOk(permit);
+};
+
+/**
+ * Retrieves a stored permit based on its hash.
+ * If no hash is provided, the currently active permit will be retrieved.
+ *
+ * @param {string} hash - Optional `PermitV2.getHash` of the permit.
+ * @returns {Result<PermitV2>} - The active permit or permit associated with `hash` as a Result object.
+ */
+const getPermit = (hash?: string): Result<PermitV2> => {
+  const state = _sdkStore.getState();
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${getPermit.name} :: ${initialized.error}`);
+
+  if (hash == null) {
+    const permit = permitStore.getActivePermit(state.account);
+    if (permit == null)
+      return ResultErr(`getPermit :: active permit not found`);
+
+    return ResultOk(permit);
+  }
+
+  const permit = permitStore.getPermit(state.account, hash);
+  if (permit == null)
+    return ResultErr(`getPermit :: permit with hash <${hash}> not found`);
+
+  return ResultOk(permit);
+};
+
+/**
+ * Retrieves a stored permission based on the permit's hash.
+ * If no hash is provided, the currently active permit will be used.
+ * The `PermissionV2` is extracted from the permit.
+ *
+ * @param {string} hash - Optional hash of the permission to get, defaults to active permit's permission
+ * @returns {Result<PermissionV2>} - The active permission or permission associated with `hash`, as a result object.
+ */
+const getPermission = (hash?: string): Result<PermissionV2> => {
+  const permitResult = getPermit(hash);
+  if (!permitResult.success)
+    return ResultErr(`${getPermission.name} :: ${permitResult.error}`);
+
+  return ResultOk(permitResult.data.getPermission());
+};
+
+/**
+ * Exports all stored permits.
+ * @returns {Result<Record<string, PermitV2>>} - All stored permits.
+ */
+const getAllPermits = (): Result<Record<string, PermitV2>> => {
+  const state = _sdkStore.getState();
+
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${getAllPermits.name} :: ${initialized.error}`);
+
+  return ResultOk(permitStore.getPermits(state.account));
+};
+
+// Encrypt
+
+/**
+ * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
+ * Useful when not using `Encryptable` utility structures.
+ * @param {item} value - The numeric value to encrypt.
+ * @param {EncryptionTypes} type - Optional. The encryption type (uint8, uint16, uint32).
+ * @param securityZone - The security zone for which to encrypt the value (default 0).
+ * @returns {EncryptedNumber} - The encrypted value serialized as Uint8Array. Use the .data property to access the Uint8Array.
+ */
+async function encrypt<T>(
+  item: T,
+): Promise<Result<MappedCoFheEncryptedTypes<T>>>;
+async function encrypt<T extends any[]>(
+  item: [...T],
+): Promise<Result<[...MappedCoFheEncryptedTypes<T>]>>;
+async function encrypt<T>(item: T) {
+  const state = _sdkStore.getState();
+  if (!state.coFhe.enabled)
+    return ResultErr(
+      "coFheEncrypt :: fhenixsdk not initialized to interact with CoFHE. Set `isCoFHE: true` in `fhenixsdk.initialize`.",
+    );
+
+  // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
+  const initialized = _checkInitialized(state, {
+    provider: false,
+    signer: false,
+  });
+  if (!initialized.success)
+    return ResultErr(`${encrypt.name} :: ${initialized.error}`);
+
+  // Permission
+  if (item === "permission") {
+    return getPermission();
+  }
+
+  // EncryptableItem
+  if (isEncryptableItem(item)) {
+    // Early exit with mock encrypted value if chain is hardhat
+    // TODO: Determine how CoFHE encrypted items will be handled in hardhat
+    if (chainIsHardhat(_store_chainId()))
+      return ResultOk(hardhatMockEncrypt(BigInt(item.data)));
+
+    const fhePublicKey = _store_getConnectedChainFheKey(item.securityZone ?? 0);
+    if (fhePublicKey == null)
+      return ResultErr("coFheEncrypt :: fheKey for current chain not found");
+
+    let preEncryptedItem;
+
+    // prettier-ignore
     try {
-      const res = await fetch(`${cofheURL}/GetNetworkPublickKey`, {
-        method: "POST",
-        body: JSON.stringify({
-          SecurityZone: securityZone,
-        }),
+      switch (item.utype) {
+        case FheUType.bool: {
+          preEncryptedItem = tfhe_encrypt_bool(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint8: {
+          preEncryptedItem = tfhe_encrypt_uint8(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint16: {
+          preEncryptedItem = tfhe_encrypt_uint16(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint32: {
+          preEncryptedItem = tfhe_encrypt_uint32(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint64: {
+          preEncryptedItem = tfhe_encrypt_uint64(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint128: {
+          preEncryptedItem = tfhe_encrypt_uint128(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.uint256: {
+          preEncryptedItem = tfhe_encrypt_uint256(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+        case FheUType.address: {
+          preEncryptedItem = tfhe_encrypt_address(item.data, fhePublicKey, item.securityZone);
+          break;
+        }
+      }
+    } catch (e) {
+      return ResultErr(`coFheEncrypt :: tfhe_encrypt_xxxx :: ${e}`)
+    }
+
+    // Send preEncryptedItem to CoFHE route `/UpdateCT`, receive `ctHash` to use as contract input
+    const res = (await fetch(`${state.coFhe.url}/UpdateCT`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", // Ensure the server knows you're sending JSON
+      },
+      body: JSON.stringify({
+        UType: item.utype,
+        Value: toHexString(preEncryptedItem.data),
+        SecurityZone: item.securityZone,
+      }),
+    })) as any;
+
+    const data = await res.json();
+
+    // Transform data into final CoFHE input variable
+    return {
+      securityZone: item.securityZone,
+      hash: BigInt(`0x${data.ctHash}`),
+      utype: item.utype,
+      signature: data.signature,
+    } as CoFheEncryptedNumber;
+  }
+
+  // Object | Array
+  if (typeof item === "object" && item !== null) {
+    if (Array.isArray(item)) {
+      // Array - recurse
+      const nestedItems = await Promise.all(
+        item.map((nestedItem) => encrypt(nestedItem)),
+      );
+
+      // Any nested error break out
+      const nestedItemResultErr = nestedItems.find(
+        (nestedItem) => !nestedItem.success,
+      );
+      if (nestedItemResultErr != null) return nestedItemResultErr;
+
+      return ResultOk(nestedItems.map((nestedItem) => nestedItem.data));
+    } else {
+      // Object - recurse
+      const nestedKeyedItems = await Promise.all(
+        Object.entries(item).map(async ([key, value]) => ({
+          key,
+          value: await encrypt(value),
+        })),
+      );
+
+      // Any nested error break out
+      const nestedItemResultErr = nestedKeyedItems.find(
+        ({ value }) => !value.success,
+      );
+      if (nestedItemResultErr != null) return nestedItemResultErr;
+
+      const result: Record<string, any> = {};
+      nestedKeyedItems.forEach(({ key, value }) => {
+        result[key] = value.data;
       });
 
-      const data = await res.json();
-      publicKey = `0x${data?.securityZone ?? 0}`;
-    } catch (err) {
-      console.log(err);
-    }
-    if (typeof publicKey !== "string") {
-      throw new Error("Error using publicKey from provider: expected string");
-    }
-
-    if (publicKey.length < PUBLIC_KEY_LENGTH_MIN) {
-      throw new Error(
-        `Error initializing fhenixjs; got shorter than expected public key: ${publicKey.length}`,
-      );
-    }
-
-    const buff = fromHexString(publicKey);
-
-    try {
-      return TfheCompactPublicKey.deserialize(buff);
-    } catch (err) {
-      throw new Error(`Error deserializing public key ${err}`);
+      return ResultOk(result);
     }
   }
+
+  // Primitive
+  return ResultOk(item);
 }
 
-/**
- * The FhenixClient class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
- * It includes methods for encryption, unsealing, and managing permits.
- */
-export class FhenixClient extends FhenixClientBase {
-  private defaultSecurityZone = 0;
-  public fhePublicKeys: Array<Promise<TfheCompactPublicKey | undefined>> = [];
-  /**
-   * Creates an instance of FhenixClient.
-   * Initializes the fhevm library if needed and retrieves the public key for encryption from the provider.
-   * @param {InstanceParams} params - Parameters to initialize the client.
-   */
-  public constructor(params: InstanceParams) {
-    super(params);
-
-    InitFhevm().catch((err: unknown) => {
-      if (params.ignoreErrors) {
-        return undefined;
-      } else {
-        throw new Error(
-          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-        );
-      }
-    });
-
-    // In the future the default array can be updated to include additional security zones
-    // This is not strictly necessary, as the pubKey for additional zones can also be fetched during an encryption.
-    // By default, doesn't skip fetching the public key
-    if (params.skipPubKeyFetch !== true) {
-      this.fhePublicKeys = [this.defaultSecurityZone].map((securityZone) =>
-        //FhenixClientBase.getFheKeyFromProvider(params.provider, securityZone),
-        params.cofhe == true
-          ? FhenixClientBase.getFheKeyFromFHEOS(securityZone, this.cofheURL)
-          : FhenixClientBase.getFheKeyFromProvider(
-              params.provider,
-              securityZone,
-            ),
-      );
-    }
-  }
-
-  private async _getPublicKey(
-    securityZone: number,
-  ): Promise<TfheCompactPublicKey> {
-    let fhePublicKey = await this.fhePublicKeys[securityZone];
-    if (!fhePublicKey) {
-      if (this.isCoFHE == true) {
-        this.fhePublicKeys[securityZone] = FhenixClientBase.getFheKeyFromFHEOS(
-          securityZone,
-          this.cofheURL,
-        );
-      } else {
-        this.fhePublicKeys[securityZone] =
-          FhenixClientBase.getFheKeyFromProvider(this.provider, securityZone);
-      }
-
-      fhePublicKey = await this.fhePublicKeys[securityZone];
-      if (!fhePublicKey) {
-        throw new Error(
-          `Public key for security zone ${securityZone} somehow not initialized`,
-        );
-      }
-    }
-    return fhePublicKey;
-  }
-
-  async encrypt_bool(
-    value: boolean,
-    securityZone: number = 0,
-  ): Promise<EncryptedBool> {
-    const fhePublicKey = await this._getPublicKey(securityZone);
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_uint8(
-    value: number,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint8> {
-    isNumber(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT8, 0);
-
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_uint16(
-    value: number,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint16> {
-    isNumber(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT16, 0);
-    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_uint32(
-    value: number,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint32> {
-    isNumber(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_uint64(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint64> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_uint128(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint128> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_uint256(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedUint256> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt_address(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): Promise<EncryptedAddress> {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
-  }
-
-  async encrypt(
-    value: number,
-    type?: EncryptionTypes,
-    securityZone: number = 0,
-  ): Promise<EncryptedNumber> {
-    isNumber(value);
-
-    let outputSize = type;
-
-    const fhePublicKey = await this._getPublicKey(securityZone);
-
-    // choose the most efficient ciphertext size if not selected
-    if (!outputSize) {
-      if (value < MAX_UINT8) {
-        outputSize = EncryptionTypes.uint8;
-      } else if (value < MAX_UINT16) {
-        outputSize = EncryptionTypes.uint16;
-      } else if (value < MAX_UINT32) {
-        outputSize = EncryptionTypes.uint32;
-      } else {
-        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
-      }
-    }
-
-    switch (outputSize) {
-      case EncryptionTypes.uint8:
-        ValidateUintInRange(value, MAX_UINT8, 0);
-        break;
-      case EncryptionTypes.uint16:
-        ValidateUintInRange(value, MAX_UINT16, 0);
-        break;
-      case EncryptionTypes.uint32:
-        ValidateUintInRange(value, MAX_UINT32, 0);
-        break;
-      default:
-    }
-
-    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
-  }
-}
+// Unseal
 
 /**
- * The FhenixClientSync class provides functionalities to interact with a FHE (Fully Homomorphic Encryption) system.
- * It includes methods for encryption, unsealing, and managing permits.
+ * Unseals an encrypted message using the stored permit for a specific contract address.
+ * NOTE: Wrapper around `PermitV2.unseal`
  *
- * The Sync FhenixClient allows the `client.encrypt_<xxxx>()` functions to be performed synchronously
- *
- * @Note The Sync FhenixClient must be created using `await FhenixClientSync.create({provider})` instead of `new FhenixClient({provider})`
+ * @param {string} ciphertext - The encrypted message to unseal.
+ * @param {string} account - Users address, defaults to store.account
+ * @param {string} hash - The hash of the permit to use for this operation, defaults to active permitV2 hash
+ * @returns bigint - The unsealed message.
  */
-export class FhenixClientSync extends FhenixClientBase {
-  public fhePublicKeys: Array<TfheCompactPublicKey | undefined> = [];
+const unsealCiphertext = (
+  ciphertext: string,
+  account?: string,
+  hash?: string,
+): Result<bigint> => {
+  const state = _sdkStore.getState();
 
-  public constructor(params: InstanceParamsWithFhePublicKeys) {
-    super(params);
+  const initialized = _checkInitialized(state);
+  if (!initialized.success)
+    return ResultErr(`${getAllPermits.name} :: ${initialized.error}`);
 
-    this.fhePublicKeys = params.fhePublicKeys;
-  }
-
-  public static async create(
-    params: InstanceParams & { securityZones?: number[] },
-  ): Promise<FhenixClientSync> {
-    isPlainObject(params);
-
-    if (params.skipPubKeyFetch === true) {
-      console.warn(
-        "warning: FhenixClientSync doesn't support skipping public key fetching on creation",
-      );
-    }
-
-    const { provider, ignoreErrors, securityZones = [0] } = params;
-
-    if (!provider) {
-      throw new Error(
-        "Failed to initialize Fhenix Client - must include a web3 provider",
-      );
-    }
-
-    await InitFhevm().catch((err: unknown) => {
-      if (ignoreErrors) {
-        return undefined;
-      } else {
-        throw new Error(
-          `Failed to initialize fhenixjs - is the network FHE-enabled? ${err}`,
-        );
-      }
-    });
-
-    const fhePublicKeys = await Promise.all(
-      securityZones.map((securityZone) =>
-        params.cofhe == true
-          ? FhenixClientBase.getFheKeyFromFHEOS(
-              securityZone,
-              params.cofheURL ? params.cofheURL : DEFAULT_COFHE_URL,
-            )
-          : FhenixClientBase.getFheKeyFromProvider(provider, securityZone),
-      ),
+  isString(ciphertext);
+  const resolvedAccount = account ?? state.account;
+  const resolvedHash = hash ?? permitStore.getActivePermitHash(resolvedAccount);
+  if (resolvedAccount == null || resolvedHash == null) {
+    return ResultErr(
+      `unsealCiphertext :: PermitV2 hash not provided and active PermitV2 not found`,
     );
-
-    return new FhenixClientSync({ ...params, fhePublicKeys });
   }
 
-  // Encryption Methods
-
-  private _getPublicKey(securityZone: number) {
-    const fhePublicKey = this.fhePublicKeys[securityZone];
-    if (!fhePublicKey) {
-      throw new Error(
-        `Public key for security zone ${securityZone} not initialized`,
-      );
-    }
-    return fhePublicKey;
+  const permit = permitStore.getPermit(resolvedAccount, resolvedHash);
+  if (permit == null) {
+    return ResultErr(
+      `unsealCiphertext :: PermitV2 with account <${account}> and hash <${hash}> not found`,
+    );
   }
 
-  encrypt_bool(value: boolean, securityZone: number = 0): EncryptedBool {
-    const fhePublicKey = this._getPublicKey(securityZone);
-    return tfheEncrypt.encrypt_bool(value, fhePublicKey, securityZone);
+  let unsealed: bigint;
+  try {
+    unsealed = permit.unsealCiphertext(ciphertext);
+  } catch (e) {
+    return ResultErr(`unsealCiphertext :: ${e}`);
   }
 
-  encrypt_uint8(value: number, securityZone: number = 0): EncryptedUint8 {
-    isNumber(value);
+  return ResultOk(unsealed);
+};
 
-    const fhePublicKey = this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT8, 0);
-
-    return tfheEncrypt.encrypt_uint8(value, fhePublicKey, securityZone);
+/**
+ * Uses the privateKey of `permit.sealingPair` to recursively unseal any contained `SealedItems`.
+ * If `item` is a single `SealedItem` it will be individually.
+ * NOTE: Only unseals typed `SealedItem`s returned from `FHE.sealoutputTyped` and the FHE bindings' `e____.sealTyped`.
+ *
+ * @param {any | any[]} item - Array, object, or item. Any nested `SealedItems` will be unsealed.
+ * @returns - Recursively unsealed data in the target type, SealedBool -> boolean, SealedAddress -> string, etc.
+ */
+function unseal<T>(
+  item: T,
+  account?: string,
+  hash?: string,
+): Result<MappedUnsealedTypes<T>> {
+  const resolvedAccount = account ?? _sdkStore.getState().account;
+  const resolvedHash = hash ?? permitStore.getActivePermitHash(resolvedAccount);
+  if (resolvedAccount == null || resolvedHash == null) {
+    return ResultErr(
+      `unseal :: PermitV2 hash not provided and active PermitV2 not found`,
+    );
   }
 
-  encrypt_uint16(value: number, securityZone: number = 0): EncryptedUint16 {
-    isNumber(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-    ValidateUintInRange(value, MAX_UINT16, 0);
-    return tfheEncrypt.encrypt_uint16(value, fhePublicKey, securityZone);
+  const permit = permitStore.getPermit(resolvedAccount, resolvedHash);
+  if (permit == null) {
+    return ResultErr(
+      `unseal :: PermitV2 with account <${account}> and hash <${hash}> not found`,
+    );
   }
 
-  encrypt_uint32(value: number, securityZone: number = 0): EncryptedUint32 {
-    isNumber(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    ValidateUintInRange(value, MAX_UINT32, 0);
-    return tfheEncrypt.encrypt_uint32(value, fhePublicKey, securityZone);
+  let unsealed: MappedUnsealedTypes<T>;
+  try {
+    unsealed = permit.unseal(item);
+  } catch (e) {
+    return ResultErr(`unseal :: ${e}`);
   }
 
-  encrypt_uint64(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedUint64 {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint64(value, fhePublicKey, securityZone);
-  }
-
-  encrypt_uint128(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedUint128 {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint128(value, fhePublicKey, securityZone);
-  }
-
-  encrypt_uint256(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedUint256 {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_uint256(value, fhePublicKey, securityZone);
-  }
-
-  encrypt_address(
-    value: bigint | string,
-    securityZone: number = 0,
-  ): EncryptedAddress {
-    isBigIntOrHexString(value);
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // ValidateUintInRange(value, MAX_UINT64, 0);
-    return tfheEncrypt.encrypt_address(value, fhePublicKey, securityZone);
-  }
-
-  encrypt(
-    value: number,
-    type?: EncryptionTypes,
-    securityZone: number = 0,
-  ): EncryptedNumber {
-    isNumber(value);
-    let outputSize = type;
-
-    const fhePublicKey = this._getPublicKey(securityZone);
-
-    // choose the most efficient ciphertext size if not selected
-    if (!outputSize) {
-      if (value < MAX_UINT8) {
-        outputSize = EncryptionTypes.uint8;
-      } else if (value < MAX_UINT16) {
-        outputSize = EncryptionTypes.uint16;
-      } else if (value < MAX_UINT32) {
-        outputSize = EncryptionTypes.uint32;
-      } else {
-        throw new Error(`Encryption input must be smaller than ${MAX_UINT32}`);
-      }
-    }
-
-    switch (outputSize) {
-      case EncryptionTypes.uint8:
-        ValidateUintInRange(value, MAX_UINT8, 0);
-        break;
-      case EncryptionTypes.uint16:
-        ValidateUintInRange(value, MAX_UINT16, 0);
-        break;
-      case EncryptionTypes.uint32:
-        ValidateUintInRange(value, MAX_UINT32, 0);
-        break;
-      default:
-    }
-
-    return tfheEncrypt.encrypt(value, fhePublicKey, type, securityZone);
-  }
+  return ResultOk(unsealed);
 }
+
+// Export
+
+export const fhenixsdk = {
+  store: _sdkStore,
+  initialize,
+
+  createPermit,
+  importPermit,
+  selectActivePermit,
+  getPermit,
+  getPermission,
+  getAllPermits,
+
+  encrypt,
+
+  unsealCiphertext,
+  unseal,
+};

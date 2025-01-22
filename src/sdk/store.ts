@@ -236,6 +236,7 @@ export const _store_fetchFheKey = async (
     });
 
     const data = await res.json();
+
     publicKey = `0x${data.securityZone}`;
   } catch (err) {
     throw new Error(
@@ -261,7 +262,7 @@ export const _store_fetchFheKey = async (
     );
   }
 
-  const buff = fromHexString(publicKey.slice(130));
+  const buff = fromHexString(publicKey);
 
   try {
     const key = TfheCompactPublicKey.deserialize(buff);

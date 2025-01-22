@@ -1,7 +1,6 @@
 import { PermitV2SignaturePrimaryType } from "./generate";
 import { SealingKey } from "../sealing";
-import { AbstractSigner, PermissionV2, PermitV2Interface, PermitV2Metadata, PermitV2Options, SerializedPermitV2 } from "../../types/permit";
-import { MappedUnsealedTypes } from "../../types/sealed";
+import { PermissionV2, PermitV2Interface, PermitV2Metadata, PermitV2Options, SerializedPermitV2, MappedUnsealedTypes, AbstractSigner } from "../../types";
 export declare class PermitV2 implements PermitV2Interface, PermitV2Metadata {
     /**
      * Name for this permit, for organization and UI usage, not included in signature.
@@ -153,11 +152,7 @@ export declare class PermitV2 implements PermitV2Interface, PermitV2Metadata {
         domain: {
             name: string;
             version: string;
-            chainId: number; /**
-             * (base) The publicKey of a sealingPair used to re-encrypt `issuer`s confidential data
-             *   (non-sharing) Populated by `issuer`
-             *   (sharing)     Populated by `recipient`
-             */
+            chainId: number;
             verifyingContract: string;
         };
     };

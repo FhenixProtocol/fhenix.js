@@ -25,7 +25,7 @@ export function __wbg_fheint160_new(arg0: any): number;
 export function __wbg_fheint16_new(arg0: any): number;
 export function __wbg_fheint8_new(arg0: any): number;
 export function __wbg_fheint128_new(arg0: any): number;
-export function __wbindgen_boolean_get(arg0: any): 0 | 1 | 2;
+export function __wbindgen_boolean_get(arg0: any): 0 | 2 | 1;
 export function __wbindgen_bigint_from_str(arg0: any, arg1: any): number;
 export function __wbindgen_bit_and(arg0: any, arg1: any): number;
 export function __wbindgen_number_new(arg0: any): number;

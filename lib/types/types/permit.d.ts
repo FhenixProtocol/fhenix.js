@@ -1,15 +1,4 @@
 import { SealingKey } from "../sdk/sealing";
-export interface AbstractProvider {
-    getChainId(): Promise<string>;
-    call(tx: {
-        to: string;
-        data: string;
-    }): Promise<string>;
-}
-export interface AbstractSigner {
-    getAddress(): Promise<string>;
-    signTypedData(domain: object, types: Record<string, Array<object>>, value: object): Promise<string>;
-}
 /**
  * Type representing the full PermitV2
  */

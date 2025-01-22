@@ -1,9 +1,6 @@
-import { PermitV2 } from "./permit/permit.js";
-import { InitParams, SdkStore } from "./store.js";
-import { MappedCoFheEncryptedTypes } from "../types/encryptable.js";
-import { PermitV2Options, PermitV2Interface, PermissionV2 } from "../types/permit.js";
-import { Result } from "../types/result.js";
-import { MappedUnsealedTypes } from "../types/sealed.js";
+import { PermitV2 } from "./permit";
+import { SdkStore } from "./store.js";
+import { MappedCoFheEncryptedTypes, PermitV2Options, PermitV2Interface, PermissionV2, Result, MappedUnsealedTypes, InitializationParams } from "../types";
 /**
  * Encrypts a numeric value according to the specified encryption type or the most efficient one based on the value.
  * Useful when not using `Encryptable` utility structures.
@@ -25,7 +22,7 @@ declare function encrypt<T extends any[]>(item: [...T]): Promise<Result<[...Mapp
 declare function unseal<T>(item: T, account?: string, hash?: string): Result<MappedUnsealedTypes<T>>;
 export declare const fhenixsdk: {
     store: import("zustand/vanilla.js").StoreApi<SdkStore>;
-    initialize: (params: InitParams & {
+    initialize: (params: InitializationParams & {
         ignoreErrors?: boolean;
         generatePermit?: boolean;
     }) => Promise<Result<PermitV2 | undefined>>;

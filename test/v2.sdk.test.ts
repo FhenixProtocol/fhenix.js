@@ -50,12 +50,14 @@ describe("Sdk Tests", () => {
   const contractAddress2 = "0xB170fC5BAC4a87A63fC84653Ee7e0db65CC62f96";
   const counterProjectId = "COUNTER";
   const uniswapProjectId = "UNISWAP";
+  const coFheUrl = "http://127.0.0.1:8448";
 
   const initSdkWithBob = async () => {
     return fhenixsdk.initialize({
       provider: bobProvider,
       signer: bobSigner,
       projects: [counterProjectId],
+      coFheUrl,
     });
   };
   const initSdkWithAda = async () => {
@@ -63,6 +65,7 @@ describe("Sdk Tests", () => {
       provider: adaProvider,
       signer: adaSigner,
       projects: [counterProjectId],
+      coFheUrl,
     });
   };
 
@@ -104,6 +107,7 @@ describe("Sdk Tests", () => {
     const initWithoutProviderResult = await fhenixsdk.initialize({
       // provider: bobProvider,
       // signer: bobSigner,
+      coFheUrl,
     } as unknown as InitializationParams);
     expect(initWithoutProviderResult.success).toEqual(false);
     expect(initWithoutProviderResult.error).toEqual(
@@ -114,6 +118,7 @@ describe("Sdk Tests", () => {
       provider: bobProvider,
       signer: bobSigner,
       securityZones: [],
+      coFheUrl,
     } as unknown as InitializationParams);
     expect(initWithoutSecurityZonesResult.success).toEqual(false);
     expect(initWithoutSecurityZonesResult.error).toEqual(

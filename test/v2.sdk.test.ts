@@ -18,6 +18,7 @@ import {
   CoFheEncryptedAddress,
   CoFheEncryptedBool,
   CoFheEncryptedUint64,
+  CoFheEncryptedUint8,
   createTfhePublicKey,
   Encryptable,
   EncryptedUint8,
@@ -174,7 +175,7 @@ describe("Sdk Tests", () => {
       PermissionV2,
       Readonly<{ a: CoFheEncryptedBool; b: CoFheEncryptedUint64; c: string }>,
       Readonly<[string, bigint, CoFheEncryptedAddress]>,
-      EncryptedUint8,
+      CoFheEncryptedUint8,
     ];
 
     expectTypeOf<Readonly<ExpectedEncryptedType>>().toEqualTypeOf(
@@ -385,52 +386,57 @@ describe("Sdk Tests", () => {
     expect(nestedCleartext).toEqual(expectedCleartext);
   });
 
-  it("hardhat encrypt/unseal", async () => {
-    const hardhatChainId = "31337";
+  // TODO: Re-enable once hardhat integration with CoFHE established
+  // it("hardhat encrypt/unseal", async () => {
+  //   const hardhatChainId = "31337";
 
-    bobProvider = new MockProvider(bobPublicKey, BobWallet, hardhatChainId);
-    bobSigner = await bobProvider.getSigner();
+  //   bobProvider = new MockProvider(bobPublicKey, BobWallet, hardhatChainId);
+  //   bobSigner = await bobProvider.getSigner();
 
-    // Should initialize correctly, but fhe public key for hardhat not set
-    await fhenixsdk.initialize({
-      provider: bobProvider,
-      signer: bobSigner,
-      projects: [counterProjectId],
-    });
-    await fhenixsdk.createPermit();
+  //   // Should initialize correctly, but fhe public key for hardhat not set
+  //   await fhenixsdk.initialize({
+  //     provider: bobProvider,
+  //     signer: bobSigner,
+  //     projects: [counterProjectId],
+  //   });
+  //   await fhenixsdk.createPermit();
 
-    // Chain id set to hardhat Chain id
-    expect(fhenixsdk.store.getState().chainId).toEqual(hardhatChainId);
-    expect(fhenixsdk.store.getState().fheKeys).toEqual({});
+  //   // Chain id set to hardhat Chain id
+  //   expect(fhenixsdk.store.getState().chainId).toEqual(hardhatChainId);
+  //   expect(fhenixsdk.store.getState().fheKeys).toEqual({});
 
-    // `unsealCiphertext`
+  //   // `unsealCiphertext`
 
-    // const encryptedValue = fhenixsdk.encryptValue(5, EncryptionTypes.uint8);
-    // const unsealedValue = fhenixsdk.unsealCiphertext(
-    //   uint8ArrayToString(encryptedValue.data!.data),
-    // );
-    // expect(unsealedValue.success).toEqual(true);
-    // expect(unsealedValue.data).toEqual(5n);
+  //   // const encryptedValue = fhenixsdk.encryptValue(5, EncryptionTypes.uint8);
+  //   // const unsealedValue = fhenixsdk.unsealCiphertext(
+  //   //   uint8ArrayToString(encryptedValue.data!.data),
+  //   // );
+  //   // expect(unsealedValue.success).toEqual(true);
+  //   // expect(unsealedValue.data).toEqual(5n);
 
-    // `unseal`
+  //   // `unseal`
 
-    const intValue = 5;
-    const boolValue = false;
+  //   const intValue = 5;
+  //   const boolValue = false;
 
-    const [encryptedInt, encryptedBool] = (
-      await fhenixsdk.encrypt([
-        Encryptable.uint8(intValue),
-        Encryptable.bool(boolValue),
-      ])
-    ).data!;
+  //   const encryptResult = (
+  //     await fhenixsdk.encrypt([
+  //       Encryptable.uint8(intValue),
+  //       Encryptable.bool(boolValue),
+  //     ])
+  //   );
+  //   expect(encryptResult.success).to.equal(true)
+  //   if (!encryptResult.success) return;
 
-    const sealed = [
-      { data: uint8ArrayToString(encryptedInt), utype: FheUType.uint8 },
-      { data: uint8ArrayToString(encryptedBool), utype: FheUType.bool },
-    ];
+  //   const [ encryptedInt, encryptedBool ] = encryptResult.data
 
-    const [unsealedInt, unsealedBool] = fhenixsdk.unseal(sealed).data!;
-    expect(unsealedInt).to.eq(BigInt(intValue));
-    expect(unsealedBool).to.eq(boolValue);
-  });
+  //   const sealed = [
+  //     { data: uint8ArrayToString(encryptedInt), utype: FheUType.uint8 },
+  //     { data: uint8ArrayToString(encryptedBool), utype: FheUType.bool },
+  //   ];
+
+  //   const [unsealedInt, unsealedBool] = fhenixsdk.unseal(sealed).data!;
+  //   expect(unsealedInt).to.eq(BigInt(intValue));
+  //   expect(unsealedBool).to.eq(boolValue);
+  // });
 });

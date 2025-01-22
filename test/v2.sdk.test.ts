@@ -157,10 +157,6 @@ describe("Sdk Tests", () => {
       Encryptable.uint256(256n),
     ] as const);
 
-    console.log({
-      nestedEncrypt: nestedEncryptArr.data,
-    });
-
     expect(nestedEncryptArr.success).to.equal(true);
     if (!nestedEncryptArr.success) return;
 
@@ -182,10 +178,6 @@ describe("Sdk Tests", () => {
       uint64: Encryptable.uint64(64n),
       uint256: Encryptable.uint256(256n),
     } as const);
-
-    console.log({
-      nestedEncryptObj: nestedEncryptObj.data,
-    });
 
     expect(nestedEncryptObj.success).to.equal(true);
     if (!nestedEncryptObj.success) return;

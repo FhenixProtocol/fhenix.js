@@ -399,8 +399,6 @@ async function encrypt<T>(item: T) {
       return ResultErr(`encrypt :: tfhe_encrypt_xxxx :: ${e}`)
     }
 
-    console.log({ preEncryptedItem, item });
-
     // Send preEncryptedItem to CoFHE route `/UpdateCT`, receive `ctHash` to use as contract input
     const res = (await fetch(`${state.coFheUrl}/UpdateCT`, {
       method: "POST",

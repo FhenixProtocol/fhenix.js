@@ -11,22 +11,20 @@ import {
   PermitV2ParamsValidator,
 } from "./permit.z";
 import { GenerateSealingKey, SealingKey } from "../sealing";
-import { chainIsHardhat, hardhatMockUnseal } from "../utils";
+import { chainIsHardhat, hardhatMockUnseal } from "../utils.hardhat";
 import {
-  AbstractSigner,
   PermissionV2,
   PermitV2Interface,
   PermitV2Metadata,
   PermitV2Options,
   SerializedPermitV2,
-} from "../../types/permit";
-import {
   MappedUnsealedTypes,
   getAsSealedItem,
   isSealedBool,
   isSealedAddress,
   isSealedUint,
-} from "../../types/sealed";
+  AbstractSigner,
+} from "../../types";
 
 export class PermitV2 implements PermitV2Interface, PermitV2Metadata {
   /**

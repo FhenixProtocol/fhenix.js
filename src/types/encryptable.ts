@@ -1,6 +1,7 @@
 import { Primitive, LiteralToPrimitive } from "type-fest";
+import { FheAllUTypes, FheUType } from "./base";
+import { PermissionV2 } from "./permit";
 import {
-  FheUType,
   CoFheEncryptedBool,
   CoFheEncryptedUint8,
   CoFheEncryptedUint16,
@@ -9,9 +10,7 @@ import {
   CoFheEncryptedUint128,
   CoFheEncryptedUint256,
   CoFheEncryptedAddress,
-  FheAllUTypes,
-} from "./types";
-import { PermissionV2 } from "./permit";
+} from "./encrypted";
 
 export type EncryptableBool = {
   data: boolean;

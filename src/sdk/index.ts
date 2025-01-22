@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { chainIsHardhat, hardhatMockEncrypt, toHexString } from "./utils.js";
-import { PermitV2 } from "./permit/permit.js";
-import { permitStore } from "./permit/store.js";
+import { toHexString } from "./utils.js";
+import { chainIsHardhat, hardhatMockEncrypt } from "./utils.hardhat.js";
+import { PermitV2, permitStore, PermitV2ParamsValidator } from "./permit";
 import { isString } from "./validation.js";
 import {
   _sdkStore,
-  _store_chainId,
   _store_getConnectedChainFheKey,
   _store_initialize,
-  InitParams,
   SdkStore,
 } from "./store.js";
 import {
@@ -22,19 +20,20 @@ import {
   encrypt_address as tfhe_encrypt_address,
 } from "./encrypt.js";
 import { InitFhevm } from "./init.js";
-import { PermitV2ParamsValidator } from "./permit/permit.z.js";
-import { CoFheEncryptedNumber, FheUType } from "../types/types.js";
 import {
+  CoFheEncryptedNumber,
+  FheUType,
   MappedCoFheEncryptedTypes,
   isEncryptableItem,
-} from "../types/encryptable.js";
-import {
   PermitV2Options,
   PermitV2Interface,
   PermissionV2,
-} from "../types/permit.js";
-import { Result, ResultErr, ResultOk } from "../types/result.js";
-import { MappedUnsealedTypes } from "../types/sealed.js";
+  Result,
+  ResultErr,
+  ResultOk,
+  MappedUnsealedTypes,
+  InitializationParams,
+} from "../types";
 
 /**
  * Initializes the `fhenixsdk` to enable encrypting input data, creating permits / permissions, and decrypting sealed outputs.
@@ -42,7 +41,10 @@ import { MappedUnsealedTypes } from "../types/sealed.js";
  * If a valid signer is provided, a `permit/permission` is generated automatically
  */
 const initialize = async (
-  params: InitParams & { ignoreErrors?: boolean; generatePermit?: boolean },
+  params: InitializationParams & {
+    ignoreErrors?: boolean;
+    generatePermit?: boolean;
+  },
 ): Promise<Result<PermitV2 | undefined>> => {
   // Initialize the fhevm
   await InitFhevm().catch((err: unknown) => {
@@ -83,13 +85,23 @@ const initialize = async (
  */
 const _checkInitialized = (
   state: SdkStore,
-  options?: { fheKeys?: boolean; provider?: boolean; signer?: boolean },
+  options?: {
+    fheKeys?: boolean;
+    provider?: boolean;
+    signer?: boolean;
+    coFheUrl?: boolean;
+  },
 ) => {
   if (options?.fheKeys !== false && !state.fheKeysInitialized) {
     return ResultErr(
       "fhenixsdk not initialized. Use `fhenixsdk.initialize(...)`.",
     );
   }
+
+  if (options?.coFheUrl !== false && !state.coFheUrl)
+    return ResultErr(
+      "fhenixsdk not initialized with a coFheUrl. Set `coFheUrl` in `fhenixsdk.initialize`.",
+    );
 
   if (options?.provider !== false && !state.providerInitialized)
     return ResultErr(
@@ -320,10 +332,6 @@ async function encrypt<T extends any[]>(
 ): Promise<Result<[...MappedCoFheEncryptedTypes<T>]>>;
 async function encrypt<T>(item: T) {
   const state = _sdkStore.getState();
-  if (!state.coFhe.enabled)
-    return ResultErr(
-      "coFheEncrypt :: fhenixsdk not initialized to interact with CoFHE. Set `isCoFHE: true` in `fhenixsdk.initialize`.",
-    );
 
   // Only need to check `fheKeysInitialized`, signer and provider not needed for encryption
   const initialized = _checkInitialized(state, {
@@ -342,12 +350,12 @@ async function encrypt<T>(item: T) {
   if (isEncryptableItem(item)) {
     // Early exit with mock encrypted value if chain is hardhat
     // TODO: Determine how CoFHE encrypted items will be handled in hardhat
-    if (chainIsHardhat(_store_chainId()))
+    if (chainIsHardhat(state.coFheUrl))
       return ResultOk(hardhatMockEncrypt(BigInt(item.data)));
 
     const fhePublicKey = _store_getConnectedChainFheKey(item.securityZone ?? 0);
     if (fhePublicKey == null)
-      return ResultErr("coFheEncrypt :: fheKey for current chain not found");
+      return ResultErr("encrypt :: fheKey for current chain not found");
 
     let preEncryptedItem;
 
@@ -388,11 +396,13 @@ async function encrypt<T>(item: T) {
         }
       }
     } catch (e) {
-      return ResultErr(`coFheEncrypt :: tfhe_encrypt_xxxx :: ${e}`)
+      return ResultErr(`encrypt :: tfhe_encrypt_xxxx :: ${e}`)
     }
 
+    console.log({ preEncryptedItem, item });
+
     // Send preEncryptedItem to CoFHE route `/UpdateCT`, receive `ctHash` to use as contract input
-    const res = (await fetch(`${state.coFhe.url}/UpdateCT`, {
+    const res = (await fetch(`${state.coFheUrl}/UpdateCT`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json", // Ensure the server knows you're sending JSON

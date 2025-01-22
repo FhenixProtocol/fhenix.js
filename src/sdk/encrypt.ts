@@ -20,7 +20,7 @@ import {
   EncryptedUint256,
   EncryptedAddress,
   EncryptionTypes,
-} from "../types/types.js";
+} from "../types";
 import { fromHexString, toBigInt } from "./utils.js";
 
 /**

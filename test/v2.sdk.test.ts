@@ -20,11 +20,7 @@ import {
   CoFheEncryptedUint64,
   createTfhePublicKey,
   Encryptable,
-  EncryptedAddress,
-  EncryptedBool,
-  EncryptedUint64,
   EncryptedUint8,
-  EncryptionTypes,
   fhenixsdk,
   FheUType,
   PermissionV2,
@@ -35,12 +31,8 @@ import {
   SealedUint,
   SealingKey,
 } from "../lib/esm";
-import {
-  _store_chainId,
-  _store_getFheKey,
-  InitParams,
-} from "../lib/esm/sdk/v2/sdk.store";
 import { _permitStore, permitStore } from "../lib/esm/sdk/permit/store";
+import { InitializationParams } from "../src";
 
 describe("Sdk Tests", () => {
   let bobPublicKey: string;
@@ -111,7 +103,7 @@ describe("Sdk Tests", () => {
     const initWithoutProviderResult = await fhenixsdk.initialize({
       // provider: bobProvider,
       // signer: bobSigner,
-    } as unknown as InitParams);
+    } as unknown as InitializationParams);
     expect(initWithoutProviderResult.success).toEqual(false);
     expect(initWithoutProviderResult.error).toEqual(
       "initialize :: missing provider - Please provide an AbstractProvider interface",
@@ -121,7 +113,7 @@ describe("Sdk Tests", () => {
       provider: bobProvider,
       signer: bobSigner,
       securityZones: [],
-    } as unknown as InitParams);
+    } as unknown as InitializationParams);
     expect(initWithoutSecurityZonesResult.success).toEqual(false);
     expect(initWithoutSecurityZonesResult.error).toEqual(
       "initialize :: a list of securityZones was provided, but it is empty",
@@ -407,10 +399,8 @@ describe("Sdk Tests", () => {
     });
     await fhenixsdk.createPermit();
 
+    // Chain id set to hardhat Chain id
     expect(fhenixsdk.store.getState().chainId).toEqual(hardhatChainId);
-    expect(_store_chainId()).toEqual(hardhatChainId);
-
-    expect(_store_getFheKey(hardhatChainId)).toEqual(undefined);
     expect(fhenixsdk.store.getState().fheKeys).toEqual({});
 
     // `unsealCiphertext`

@@ -1,5 +1,5 @@
 import { LiteralToPrimitive, Primitive } from "type-fest";
-import { FheAllUTypes, FheUintUTypes, FheUType } from "./types";
+import { FheAllUTypes, FheUintUTypes, FheUType } from "./base";
 
 export type SealedBool = {
   data: string;

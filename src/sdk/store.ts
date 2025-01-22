@@ -157,7 +157,6 @@ export const _store_initialize = async (params: InitializationParams) => {
 
   // Fetch chain Id from provider
   const chainId = await getChainIdFromProvider(provider);
-  console.log("chain Id fetched from provider", chainId);
   const chainIdChanged =
     chainId != null && chainId !== _sdkStore.getState().chainId;
   if (chainId != null && provider != null) {

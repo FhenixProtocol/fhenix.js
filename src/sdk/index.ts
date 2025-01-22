@@ -417,12 +417,12 @@ async function encrypt<T>(item: T) {
     const data = await res.json();
 
     // Transform data into final CoFHE input variable
-    return {
+    return ResultOk({
       securityZone: item.securityZone,
       hash: BigInt(`0x${data.ctHash}`),
       utype: item.utype,
       signature: data.signature,
-    } as CoFheEncryptedNumber;
+    } as CoFheEncryptedNumber);
   }
 
   // Object | Array

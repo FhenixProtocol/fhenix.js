@@ -5,13 +5,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
-import {
-  AdaWallet,
-  BobWallet,
-  MockProvider,
-  MockSigner,
-  uint8ArrayToString,
-} from "./utils";
+import { AdaWallet, BobWallet, MockProvider, MockSigner } from "./utils";
 import { afterEach } from "vitest";
 import { getAddress } from "ethers";
 import {
@@ -21,7 +15,6 @@ import {
   CoFheEncryptedUint8,
   createTfhePublicKey,
   Encryptable,
-  EncryptedUint8,
   fhenixsdk,
   FheUType,
   PermissionV2,
@@ -156,6 +149,63 @@ describe("Sdk Tests", () => {
   });
 
   it("encrypt", async () => {
+    await initSdkWithBob();
+
+    const nestedEncryptArr = await fhenixsdk.encrypt([
+      Encryptable.uint8(8),
+      Encryptable.uint64(64n),
+      Encryptable.uint256(256n),
+    ] as const);
+
+    console.log({
+      nestedEncrypt: nestedEncryptArr.data,
+    });
+
+    expect(nestedEncryptArr.success).to.equal(true);
+    if (!nestedEncryptArr.success) return;
+
+    nestedEncryptArr.data.forEach((coFheEncryptedInput) => {
+      expect(coFheEncryptedInput.securityZone).to.equal(0);
+      // (example hash: 53077133949660154852355738254566001437975918234711977485445625445799159290262n)
+      // Observed lengths [77, 78]. Please update array if you are here because this test failed. - arch
+      expect(coFheEncryptedInput.hash.toString().length).to.be.gte(76);
+      // TODO: Fix after real signature is included (test will fail)
+      expect(coFheEncryptedInput.signature).to.equal("Haim");
+    });
+
+    expect(nestedEncryptArr.data[0].utype).to.equal(FheUType.uint8);
+    expect(nestedEncryptArr.data[1].utype).to.equal(FheUType.uint64);
+    expect(nestedEncryptArr.data[2].utype).to.equal(FheUType.uint256);
+
+    const nestedEncryptObj = await fhenixsdk.encrypt({
+      uint8: Encryptable.uint8(8),
+      uint64: Encryptable.uint64(64n),
+      uint256: Encryptable.uint256(256n),
+    } as const);
+
+    console.log({
+      nestedEncryptObj: nestedEncryptObj.data,
+    });
+
+    expect(nestedEncryptObj.success).to.equal(true);
+    if (!nestedEncryptObj.success) return;
+
+    Object.entries(nestedEncryptObj.data).forEach(
+      ([utype, coFheEncryptedInput]) => {
+        expect(coFheEncryptedInput.securityZone).to.equal(0);
+        expect(coFheEncryptedInput.utype).to.equal(
+          FheUType[utype as unknown as FheUType],
+        );
+        // (example hash: 53077133949660154852355738254566001437975918234711977485445625445799159290262n)
+        // Observed lengths [77, 78]. Please update array if you are here because this test failed. - arch
+        expect(coFheEncryptedInput.hash.toString().length).to.be.gte(76);
+        // TODO: Fix after real signature is included (test will fail)
+        expect(coFheEncryptedInput.signature).to.equal("Haim");
+      },
+    );
+  });
+
+  it("encrypt (type check)", async () => {
     await initSdkWithBob();
 
     await fhenixsdk.createPermit({

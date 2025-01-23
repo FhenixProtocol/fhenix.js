@@ -123,7 +123,14 @@ export const _store_setFheKey = (
 const getChainIdFromProvider = async (
   provider: AbstractProvider,
 ): Promise<string> => {
-  const chainId = await provider.getChainId();
+  var chainId: string | null = null;
+  try {
+    chainId = await provider.getChainId();
+  } catch (err) {
+    const network = await provider.getNetwork();
+    chainId = network.chainId;
+  }
+  
   if (chainId == null)
     throw new Error(
       "sdk :: getChainIdFromProvider :: provider.getChainId returned a null result, ensure that your provider is connected to a network",

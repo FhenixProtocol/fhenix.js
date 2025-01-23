@@ -1,5 +1,6 @@
 export interface AbstractProvider {
   getChainId(): Promise<string>;
+  getNetwork(): Promise<{ chainId: string }>;
   call(tx: { to: string; data: string }): Promise<string>;
 }
 

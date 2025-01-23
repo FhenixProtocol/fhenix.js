@@ -8,8 +8,8 @@ export default [
     input: "./lib/esm/index.js",
     output: {
       banner: "const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 'undefined' ? window: typeof global !== 'undefined' ? global: typeof self !== 'undefined' ? self: {});",
-      name: 'fhenixjs',
-      file: 'dist/fhenix.umd.js',
+      name: 'cofhejs',
+      file: 'dist/cofhe.umd.js',
       format: 'umd',
       sourcemap: true
     },
@@ -41,7 +41,7 @@ export default [
       })
     ],
     output: [
-      { file: 'dist/fhenix.esm.js', format: 'esm', sourcemap: true },
+      { file: 'dist/cofhe.esm.js', format: 'esm', sourcemap: true },
     ]
   }
 ];

@@ -132,3 +132,5 @@ bundle/
 
 # ide stuff
 .idea/
+/dist
+/lib

@@ -21,7 +21,7 @@ import {
   EncryptedAddress,
   EncryptionTypes,
 } from "../types";
-import { fromHexString, toBigInt } from "./utils.js";
+import { fromHexString, toBigInt, toNumber } from "./utils.js";
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
@@ -47,16 +47,18 @@ export const encrypt_bool = (
 
 /**
  * Encrypts a Uint8 value using TFHE (Fast Fully Homomorphic Encryption over the Torus).
- * @param {number} value - The Uint8 value to encrypt.
+ * @param {number | string | bigint} value - The Uint8 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint8} - The encrypted value serialized as Uint8Array.
  */
 export const encrypt_uint8 = (
-  value: number,
+  value: number | string | bigint,
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint8 => {
+
+  value = toNumber(value);
   const encrypted = CompactFheUint8.encrypt_with_compact_public_key(
     value,
     publicKey,
@@ -69,16 +71,18 @@ export const encrypt_uint8 = (
 
 /**
  * Encrypts a Uint16 value using TFHE.
- * @param {number} value - The Uint16 value to encrypt.
+ * @param {number | string | bigint} value - The Uint16 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint16} - The encrypted value serialized as Uint8Array.
  */
 export const encrypt_uint16 = (
-  value: number,
+  value: number | string | bigint,
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint16 => {
+
+  value = toNumber(value);  
   const encrypted = CompactFheUint16.encrypt_with_compact_public_key(
     value,
     publicKey,
@@ -91,16 +95,18 @@ export const encrypt_uint16 = (
 
 /**
  * Encrypts a Uint32 value using TFHE.
- * @param {number} value - The Uint32 value to encrypt.
+ * @param {number | string | bigint} value - The Uint32 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint32} - The encrypted value serialized as Uint8Array.
  */
 export const encrypt_uint32 = (
-  value: number,
+  value: number | string | bigint,
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint32 => {
+
+  value = toNumber(value);  
   const encrypted = CompactFheUint32.encrypt_with_compact_public_key(
     value,
     publicKey,
@@ -113,21 +119,18 @@ export const encrypt_uint32 = (
 
 /**
  * Encrypts a Uint64 value using TFHE.
- * @param {number} value - The Uint64 value to encrypt.
+ * @param {number | string | bigint} value - The Uint64 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint64} - The encrypted value serialized as Uint8Array.
  */
 export const encrypt_uint64 = (
-  value: bigint | string,
+  value: number | string | bigint,
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint64 => {
-  if (typeof value === "string") {
-    value = toBigInt(fromHexString(value));
-  } else {
-    value = value as bigint;
-  }
+
+  value = toBigInt(value);
 
   const encrypted = CompactFheUint64.encrypt_with_compact_public_key(
     value,
@@ -141,21 +144,18 @@ export const encrypt_uint64 = (
 
 /**
  * Encrypts a Uint128 value using TFHE.
- * @param {bigint} value - The Uint128 value to encrypt.
+ * @param {number | string | bigint} value - The Uint128 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint128} - The encrypted value serialized as Uint8Array.
  */
 export const encrypt_uint128 = (
-  value: bigint | string,
+  value: number | string | bigint,
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint128 => {
-  if (typeof value === "string") {
-    value = toBigInt(fromHexString(value));
-  } else {
-    value = value as bigint;
-  }
+  
+  value = toBigInt(value);
 
   const encrypted = CompactFheUint128.encrypt_with_compact_public_key(
     value,
@@ -169,21 +169,18 @@ export const encrypt_uint128 = (
 
 /**
  * Encrypts a Uint256 value using TFHE.
- * @param {bigint} value - The Uint256 value to encrypt.
+ * @param {number | string | bigint} value - The Uint256 value to encrypt.
  * @param {TfheCompactPublicKey} publicKey - The public key used for encryption.
  * @param securityZone - The security zone to encrypt the value on.
  * @returns {EncryptedUint256} - The encrypted value serialized as Uint8Array.
  */
 export const encrypt_uint256 = (
-  value: bigint | string,
+  value: number | string | bigint,
   publicKey: TfheCompactPublicKey,
   securityZone: number = 0,
 ): EncryptedUint256 => {
-  if (typeof value === "string") {
-    value = toBigInt(fromHexString(value));
-  } else {
-    value = value as bigint;
-  }
+  
+  value = toBigInt(value);
 
   const encrypted = CompactFheUint256.encrypt_with_compact_public_key(
     value,

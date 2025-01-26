@@ -24,8 +24,16 @@ export const fromHexString = (hexString: string): Uint8Array => {
 export const toHexString = (bytes: Uint8Array) =>
   bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "");
 
-export function toBigInt(value: Uint8Array): bigint {
-  return ethersToBigInt(value);
+export function toBigInt(value: number | string | bigint | Uint8Array): bigint {
+  if (typeof value === "string") {
+    return ethersToBigInt(fromHexString(value));
+  } else if (typeof value === "number") {
+    return BigInt(value);
+  } else if (typeof value === "object") { // Uint8Array
+    return ethersToBigInt(value);
+  } else {
+    return value as bigint;
+  }
 }
 
 export function toBeArray(value: bigint | number): Uint8Array {
@@ -35,6 +43,20 @@ export function toBeArray(value: bigint | number): Uint8Array {
 export function isAddress(address: string) {
   if (!_isAddress(address)) {
     throw new Error(`Address ${address} is not valid EVM address`);
+  }
+}
+
+export function toNumber(value: number | string | bigint): number {
+  try {
+    switch (typeof value) {
+      case "string":
+        return parseInt(value);
+      case "bigint":
+        return Number(value);
+    }
+    return value;
+  } catch (error) {
+    throw new Error(`Cannot convert ${value} to number`);
   }
 }
 

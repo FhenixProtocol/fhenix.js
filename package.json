@@ -37,8 +37,8 @@
     "_hack-restore-cjs": "shx mv tfhe.js ./lib/commonjs/sdk/fhe/ && shx mv tfhe-browser.js ./lib/commonjs/sdk/fhe/",
     "test-no-localfhenix": "SKIP_LOCAL_ENV=true VITE_CJS_IGNORE_WARNING=true vitest ",
     "prettier": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\"",
-    "prettier-ci": "prettier --check \"**/*.{js,json,md,sol,ts,yml}\"",
-    "prepare": "pnpm run build"
+    "prettier-ci": "prettier --check \"**/*.{js,json,md,sol,ts,yml}\""
+    
   },
   "repository": {
     "type": "git",
